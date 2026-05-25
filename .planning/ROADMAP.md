@@ -58,7 +58,7 @@
 
 Plans:
 - [ ] 02-01-PLAN.md — Schema migration: ALTER participants (+7 colunas), drop+recreate form_responses.interested_in_events como TEXT[], add content_interests/dietary_details, criar RPC `upsert_participants_batch`, regerar types (`IMPORT-07`, `IMPORT-08`, `IMPORT-09`)
-- [ ] 02-02-PLAN.md — Auth middleware: @supabase/ssr (clientes server/browser), middleware.ts protegendo /dashboard e /api/* (exceto /api/auth/*), /login page com form, /api/auth/login+logout, gating por app_metadata.role==="admin" (`AUTH-01`, `AUTH-02`, `AUTH-03`)
+- [x] 02-02-PLAN.md — Auth middleware: @supabase/ssr (clientes server/browser), proxy.ts protegendo /dashboard e /api/* (exceto /api/auth/*), /login page com form, /api/auth/login+logout, gating por app_metadata.role==="admin" (`AUTH-01`, `AUTH-02`, `AUTH-03`) ✅ 2026-05-25
 - [ ] 02-03-PLAN.md — Upload + parse + mapping UI: lib/import/* (known-headers, sanitize, segment-mapper, types, excel-parser, zod-schemas), POST /api/import/preview, /dashboard/import page com 3 stages (upload/mapping/preview), erros PT-BR (`IMPORT-01`, `IMPORT-02`, `IMPORT-03`, `IMPORT-04`, `IMPORT-05`, `IMPORT-06`, `IMPORT-08`, `IMPORT-11`)
 - [ ] 02-04-PLAN.md — Commit route + audit: extrair preview-store compartilhado, POST /api/import/commit com chunking de 500 + RPC + import_jobs PROCESSING→COMPLETED/FAILED, wire UI para mostrar resultado (`IMPORT-07`, `IMPORT-09`, `IMPORT-10`)
 
@@ -139,7 +139,7 @@ Plans:
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Foundation | 3/3 | ✅ Complete | 2026-05-21 |
-| 2. Import Pipeline + Auth | 0/4 | Planned (ready to execute) | - |
+| 2. Import Pipeline + Auth | 2/4 | 🔄 In Progress | - |
 | 3. Dashboard Core | 0/5 | Not started | - |
 | 4. Analytics Depth | 0/4 | Not started | - |
 
@@ -165,9 +165,9 @@ Plans:
 | IMPORT-09 | Phase 2 (02-01, 02-04) | Planned |
 | IMPORT-10 | Phase 2 (02-04) | Planned |
 | IMPORT-11 | Phase 2 (02-03) | Planned |
-| AUTH-01 | Phase 2 (02-02) | Planned |
-| AUTH-02 | Phase 2 (02-02) | Planned |
-| AUTH-03 | Phase 2 (02-02) | Planned |
+| AUTH-01 | Phase 2 (02-02) | ✅ Done |
+| AUTH-02 | Phase 2 (02-02) | ✅ Done |
+| AUTH-03 | Phase 2 (02-02) | ✅ Done |
 | OV-01 | Phase 3 | Pending |
 | OV-02 | Phase 3 | Pending |
 | OV-03 | Phase 3 | Pending |
