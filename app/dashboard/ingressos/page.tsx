@@ -4,7 +4,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { TicketBadge } from '@/components/status-badge'
 import type { TicketMembership } from '@/lib/database.types'
 
-export const revalidate = 30
+export const dynamic = 'force-dynamic'
 
 export default async function IngressosPage() {
   let summary: { ticket_membership: TicketMembership; count: number }[] = []

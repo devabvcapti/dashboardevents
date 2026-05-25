@@ -2,7 +2,7 @@ import { getOverviewStats } from '@/lib/data'
 import { MOCK_STATS, MOCK_BY_COMPANY_TYPE_ENUM, MOCK_BY_TICKET_TYPE } from '@/lib/mock-data'
 import { PublicoCharts } from './publico-charts'
 
-export const revalidate = 60
+export const dynamic = 'force-dynamic'
 
 export default async function PublicoPage() {
   let total = 0

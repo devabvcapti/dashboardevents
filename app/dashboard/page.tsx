@@ -8,7 +8,7 @@ import {
   MOCK_REGISTRATIONS_BY_DAY,
 } from '@/lib/mock-data'
 
-export const revalidate = 60
+export const dynamic = 'force-dynamic'
 
 export default async function DashboardPage() {
   let stats

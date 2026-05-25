@@ -2,7 +2,7 @@ import { getParticipants } from '@/lib/data'
 import { MOCK_PARTICIPANTS } from '@/lib/mock-data'
 import { InscricoesClient } from './inscricoes-client'
 
-export const revalidate = 30
+export const dynamic = 'force-dynamic'
 
 export default async function InscricoesPage() {
   let participants: Awaited<ReturnType<typeof getParticipants>> = []
