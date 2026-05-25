@@ -6,36 +6,13 @@ import {
   parseExcelRows,
 } from '@/lib/import/excel-parser'
 import { ParticipantRowSchema } from '@/lib/import/zod-schemas'
+import { storePreview } from '@/lib/import/preview-store'
 import type { ColumnMapping, PreviewResponse, ValidationResult } from '@/lib/import/types'
 
 export const runtime = 'nodejs' // exceljs requires Node, não Edge
 export const dynamic = 'force-dynamic'
 
 const MAX_BYTES = 20 * 1024 * 1024 // 20 MB
-
-// In-memory store de previews pendentes; serverToken → { rows, filename, expires }.
-// É aceitável apenas porque o Plan 04 (commit) lê isso na MESMA instância dentro de minutos.
-// TODO v2: persistir em Redis ou import_jobs PENDING.
-type StoredPreview = {
-  rows: PreviewResponse['validation']['validRows']
-  filename: string
-  expiresAt: number
-}
-declare global {
-  // eslint-disable-next-line no-var
-  var __importPreviewStore: Map<string, StoredPreview> | undefined
-}
-globalThis.__importPreviewStore ??= new Map()
-const STORE = globalThis.__importPreviewStore
-
-const TTL_MS = 15 * 60 * 1000 // 15 min
-
-function cleanupExpired() {
-  const now = Date.now()
-  for (const [k, v] of STORE.entries()) {
-    if (v.expiresAt < now) STORE.delete(k)
-  }
-}
 
 export async function POST(req: Request) {
   // 1. Auth — middleware já garantiu admin, mas defense-in-depth
@@ -44,8 +21,6 @@ export async function POST(req: Request) {
   } catch {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
-
-  cleanupExpired()
 
   // 2. Parse multipart
   const contentType = req.headers.get('content-type') ?? ''
@@ -138,13 +113,9 @@ export async function POST(req: Request) {
     }
   }
 
-  // 8. Armazenar para o commit (Plan 04)
+  // 8. Armazenar para o commit via shared preview-store
   const serverToken = randomBytes(16).toString('hex')
-  STORE.set(serverToken, {
-    rows: validRows,
-    filename: file.name,
-    expiresAt: Date.now() + TTL_MS,
-  })
+  storePreview(serverToken, { rows: validRows, filename: file.name })
 
   const response: PreviewResponse = {
     parseResult,
@@ -152,13 +123,4 @@ export async function POST(req: Request) {
     serverToken,
   }
   return NextResponse.json(response, { status: 200 })
-}
-
-/** Exportado para Plan 04 consumir via import direto (mesmo processo). */
-export function consumePreview(serverToken: string): StoredPreview | null {
-  cleanupExpired()
-  const v = STORE.get(serverToken)
-  if (!v) return null
-  STORE.delete(serverToken)
-  return v
 }

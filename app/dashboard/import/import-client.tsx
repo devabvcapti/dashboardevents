@@ -6,7 +6,18 @@ import { ColumnMappingUI } from './column-mapping'
 import { PreviewTable } from './preview-table'
 import type { PreviewResponse, ColumnMapping as ColumnMappingType } from '@/lib/import/types'
 
-type Stage = 'idle' | 'uploading' | 'mapping' | 'preview' | 'error'
+type Stage = 'idle' | 'uploading' | 'mapping' | 'preview' | 'committing' | 'done' | 'error'
+
+interface CommitResult {
+  jobId: string
+  inserted: number
+  updated: number
+  errors: number
+  totalRows: number
+  formInserted: number
+  formUpdated: number
+  formErrors: number
+}
 
 export function ImportClient() {
   const [stage, setStage] = useState<Stage>('idle')
@@ -14,6 +25,7 @@ export function ImportClient() {
   const [preview, setPreview] = useState<PreviewResponse | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [mapping, setMapping] = useState<ColumnMappingType | null>(null)
+  const [result, setResult] = useState<CommitResult | null>(null)
 
   async function upload(f: File, overrideMapping?: ColumnMappingType) {
     setStage('uploading')
@@ -36,6 +48,38 @@ export function ImportClient() {
       setError('Erro de rede.')
       setStage('error')
     }
+  }
+
+  async function commit(serverToken: string) {
+    setStage('committing')
+    setError(null)
+    try {
+      const res = await fetch('/api/import/commit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ serverToken }),
+      })
+      const json = await res.json()
+      if (!res.ok) {
+        setError((json as { error?: string }).error ?? 'Falha ao importar.')
+        setStage('error')
+        return
+      }
+      setResult(json as CommitResult)
+      setStage('done')
+    } catch {
+      setError('Erro de rede durante importação.')
+      setStage('error')
+    }
+  }
+
+  function reset() {
+    setStage('idle')
+    setFile(null)
+    setPreview(null)
+    setError(null)
+    setMapping(null)
+    setResult(null)
   }
 
   function onFileChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -83,14 +127,66 @@ export function ImportClient() {
         <PreviewTable
           preview={preview}
           onBack={() => setStage('mapping')}
-          onConfirm={() => {
-            // Plan 04 will wire up POST /api/import/commit using preview.serverToken
-            alert(
-              `[Plan 04 pendente] Commit usará serverToken=${preview.serverToken} ` +
-              `com ${preview.validation.validRows.length} linhas válidas.`
-            )
-          }}
+          onConfirm={() => void commit(preview.serverToken)}
         />
+      )}
+
+      {stage === 'committing' && (
+        <div className="border border-border rounded-lg p-12 text-center space-y-2">
+          <p className="text-sm font-medium">Importando participantes…</p>
+          <p className="text-xs text-muted-foreground">
+            Isso pode levar alguns segundos dependendo do tamanho do arquivo.
+          </p>
+        </div>
+      )}
+
+      {stage === 'done' && result && (
+        <div className="space-y-6">
+          <div className="border border-border rounded-lg overflow-hidden">
+            <div className="bg-muted/40 px-4 py-3 border-b border-border">
+              <h3 className="text-sm font-semibold">Participantes</h3>
+            </div>
+            <div className="grid grid-cols-4 divide-x divide-border">
+              {[
+                { label: 'Total', value: result.totalRows },
+                { label: 'Inseridos', value: result.inserted },
+                { label: 'Atualizados', value: result.updated },
+                { label: 'Erros', value: result.errors },
+              ].map(({ label, value }) => (
+                <div key={label} className="px-4 py-3 text-center">
+                  <p className="text-2xl font-bold tabular-nums">{value}</p>
+                  <p className="text-xs text-muted-foreground mt-1">{label}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="border border-border rounded-lg overflow-hidden">
+            <div className="bg-muted/40 px-4 py-3 border-b border-border">
+              <h3 className="text-sm font-semibold">Respostas de formulário</h3>
+            </div>
+            <div className="grid grid-cols-3 divide-x divide-border">
+              {[
+                { label: 'Inseridas', value: result.formInserted },
+                { label: 'Atualizadas', value: result.formUpdated },
+                { label: 'Erros', value: result.formErrors },
+              ].map(({ label, value }) => (
+                <div key={label} className="px-4 py-3 text-center">
+                  <p className="text-2xl font-bold tabular-nums">{value}</p>
+                  <p className="text-xs text-muted-foreground mt-1">{label}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between text-xs text-muted-foreground">
+            <span>Job ID: <code className="font-mono">{result.jobId}</code></span>
+          </div>
+
+          <Button variant="outline" onClick={reset}>
+            Importar outro arquivo
+          </Button>
+        </div>
       )}
     </div>
   )
