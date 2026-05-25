@@ -10,7 +10,7 @@
 
 ## Phases
 
-- [ ] **Phase 1: Foundation** — Substituir schema, corrigir segurança, regenerar tipos, queries SQL
+- [x] **Phase 1: Foundation** — Substituir schema, corrigir segurança, regenerar tipos, queries SQL
 - [ ] **Phase 2: Import Pipeline + Auth** — Upload de Excel end-to-end com parse, validação, mapeamento e upsert; autenticação básica
 - [ ] **Phase 3: Dashboard Core** — KPI cards, análise de membros/receita, lista de participantes com paginação/busca/filtro/export
 - [ ] **Phase 4: Analytics Depth** — Análise de formulário, mapa geográfico, export operacional, histórico de imports
@@ -54,11 +54,13 @@
 
 **Requirements**: IMPORT-01, IMPORT-02, IMPORT-03, IMPORT-04, IMPORT-05, IMPORT-06, IMPORT-07, IMPORT-08, IMPORT-09, IMPORT-10, IMPORT-11, AUTH-01, AUTH-02, AUTH-03
 
-**Plans**:
-1. **Auth middleware** — Configurar Supabase Auth; adicionar middleware Next.js protegendo `/dashboard` e `/api/*`; criar página de login (`/login`) com form email/senha; verificar `app_metadata.role === "admin"` antes de conceder acesso; garantir que sessão persiste via cookie (`AUTH-01`, `AUTH-02`, `AUTH-03`)
-2. **Upload + parse route** — Criar Route Handler `POST /api/import/preview`; receber `multipart/form-data` com `.xlsx`; validar magic bytes e tamanho máximo; usar `exceljs` para ler o workbook; detectar linha de cabeçalho por scoring das 5 primeiras linhas vs `KNOWN_HEADERS`; achatar células mescladas antes do parse (`IMPORT-01`, `IMPORT-02`, `IMPORT-03`)
-3. **Column mapping UI + validation** — Renderizar UI de mapeamento de colunas para admin confirmar/corrigir mapeamento Excel → schema; aplicar normalização de dados no parse (`parseBRLCurrency`, `padStart CPF`, `cellDates:false`, sanitização formula injection); validar com Zod `safeParse` coletando todos os erros por linha; retornar preview com resumo (N válidas, N erros) e erros em PT-BR com número da linha (`IMPORT-04`, `IMPORT-05`, `IMPORT-06`, `IMPORT-08`, `IMPORT-11`)
-4. **Commit route + audit log** — Criar Route Handler `POST /api/import/commit`; executar upsert por `(email, edition_id)` em batches de 500 linhas via Postgres RPC para atomicidade; criar registro em `import_jobs` com status, contagens (inseridos/atualizados/ignorados/erros) e log de erros por linha (`IMPORT-07`, `IMPORT-09`, `IMPORT-10`)
+**Plans:** 4 plans (Wave 1: 02-01 + 02-02 em paralelo; Wave 2: 02-03; Wave 3: 02-04)
+
+Plans:
+- [ ] 02-01-PLAN.md — Schema migration: ALTER participants (+7 colunas), drop+recreate form_responses.interested_in_events como TEXT[], add content_interests/dietary_details, criar RPC `upsert_participants_batch`, regerar types (`IMPORT-07`, `IMPORT-08`, `IMPORT-09`)
+- [ ] 02-02-PLAN.md — Auth middleware: @supabase/ssr (clientes server/browser), middleware.ts protegendo /dashboard e /api/* (exceto /api/auth/*), /login page com form, /api/auth/login+logout, gating por app_metadata.role==="admin" (`AUTH-01`, `AUTH-02`, `AUTH-03`)
+- [ ] 02-03-PLAN.md — Upload + parse + mapping UI: lib/import/* (known-headers, sanitize, segment-mapper, types, excel-parser, zod-schemas), POST /api/import/preview, /dashboard/import page com 3 stages (upload/mapping/preview), erros PT-BR (`IMPORT-01`, `IMPORT-02`, `IMPORT-03`, `IMPORT-04`, `IMPORT-05`, `IMPORT-06`, `IMPORT-08`, `IMPORT-11`)
+- [ ] 02-04-PLAN.md — Commit route + audit: extrair preview-store compartilhado, POST /api/import/commit com chunking de 500 + RPC + import_jobs PROCESSING→COMPLETED/FAILED, wire UI para mostrar resultado (`IMPORT-07`, `IMPORT-09`, `IMPORT-10`)
 
 **Success Criteria** (what must be TRUE):
 
@@ -69,7 +71,7 @@
 5. Após confirmar o import, os participantes aparecem na tabela `participants` do Supabase e um registro de auditoria é criado em `import_jobs` com contagens corretas de inseridos/atualizados/erros
 6. Reimportar o mesmo arquivo não duplica registros — registros existentes são atualizados
 
-**Research needed before phase**: Sim — obter arquivo Excel real da plataforma ABVCAP para validar cabeçalhos, formato do campo de membro, formato dos multi-selects (vírgula-separados vs colunas separadas) e confirmar se dados de formulário estão na mesma worksheet ou em aba separada.
+**Research needed before phase**: ✅ Concluído — arquivo Excel real (`Congresso v2.xlsx`) analisado em CONTEXT.md (60 colunas, 2 linhas de cabeçalho, multi-selects como colunas booleanas com "x", ticket_value já é float, CPF como number precisa padStart).
 
 **UI hint**: yes
 
@@ -136,8 +138,8 @@
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Foundation | 0/3 | Not started | - |
-| 2. Import Pipeline + Auth | 0/4 | Not started | - |
+| 1. Foundation | 3/3 | ✅ Complete | 2026-05-21 |
+| 2. Import Pipeline + Auth | 0/4 | Planned (ready to execute) | - |
 | 3. Dashboard Core | 0/5 | Not started | - |
 | 4. Analytics Depth | 0/4 | Not started | - |
 
@@ -147,25 +149,25 @@
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| FOUND-01 | Phase 1 | Pending |
-| FOUND-02 | Phase 1 | Pending |
-| FOUND-03 | Phase 1 | Pending |
-| FOUND-04 | Phase 1 | Pending |
-| FOUND-05 | Phase 1 | Pending |
-| IMPORT-01 | Phase 2 | Pending |
-| IMPORT-02 | Phase 2 | Pending |
-| IMPORT-03 | Phase 2 | Pending |
-| IMPORT-04 | Phase 2 | Pending |
-| IMPORT-05 | Phase 2 | Pending |
-| IMPORT-06 | Phase 2 | Pending |
-| IMPORT-07 | Phase 2 | Pending |
-| IMPORT-08 | Phase 2 | Pending |
-| IMPORT-09 | Phase 2 | Pending |
-| IMPORT-10 | Phase 2 | Pending |
-| IMPORT-11 | Phase 2 | Pending |
-| AUTH-01 | Phase 2 | Pending |
-| AUTH-02 | Phase 2 | Pending |
-| AUTH-03 | Phase 2 | Pending |
+| FOUND-01 | Phase 1 | ✅ Done |
+| FOUND-02 | Phase 1 | ✅ Done |
+| FOUND-03 | Phase 1 | ✅ Done |
+| FOUND-04 | Phase 1 | ✅ Done |
+| FOUND-05 | Phase 1 | ✅ Done |
+| IMPORT-01 | Phase 2 (02-03) | Planned |
+| IMPORT-02 | Phase 2 (02-03) | Planned |
+| IMPORT-03 | Phase 2 (02-03) | Planned |
+| IMPORT-04 | Phase 2 (02-03) | Planned |
+| IMPORT-05 | Phase 2 (02-03) | Planned |
+| IMPORT-06 | Phase 2 (02-03) | Planned |
+| IMPORT-07 | Phase 2 (02-01, 02-04) | Planned |
+| IMPORT-08 | Phase 2 (02-01, 02-03) | Planned |
+| IMPORT-09 | Phase 2 (02-01, 02-04) | Planned |
+| IMPORT-10 | Phase 2 (02-04) | Planned |
+| IMPORT-11 | Phase 2 (02-03) | Planned |
+| AUTH-01 | Phase 2 (02-02) | Planned |
+| AUTH-02 | Phase 2 (02-02) | Planned |
+| AUTH-03 | Phase 2 (02-02) | Planned |
 | OV-01 | Phase 3 | Pending |
 | OV-02 | Phase 3 | Pending |
 | OV-03 | Phase 3 | Pending |
@@ -198,11 +200,11 @@
 ## Open Questions (Responder antes de cada fase)
 
 ### Antes da Phase 1 e 2
-1. Cabeçalhos exatos do Excel ABVCAP — o schema Zod e `KNOWN_HEADERS` dependem disso. Obter arquivo real.
-2. Formato do flag de membro no Excel — booleano (Sim/Não) numa coluna, ou derivado de lista de associados separada?
-3. Taxonomia de tipos de empresa — os enums propostos (`company_segment`) batem com o formulário real?
-4. Formato dos campos multi-select — vírgula-separados numa célula, ou colunas separadas?
-5. Dados de formulário estão na mesma worksheet ou aba separada?
+1. Cabeçalhos exatos do Excel ABVCAP — ✅ Resolvido em CONTEXT.md da Phase 2 (KNOWN_HEADERS finalizado, 14 headers).
+2. Formato do flag de membro no Excel — ✅ Resolvido: col 44 "Membro ativo" Sim/Não.
+3. Taxonomia de tipos de empresa — ✅ Resolvido: mapeamento livre→enum em segment-mapper (Plan 02-03).
+4. Formato dos campos multi-select — ✅ Resolvido: colunas booleanas separadas com marcador "x".
+5. Dados de formulário estão na mesma worksheet ou aba separada? — ✅ Resolvido: mesma worksheet `Evento_Lista de participantes`.
 
 ### Antes da Phase 4
 6. Biblioteca de mapa do Brasil — spike de 2h: `react-simple-maps` vs `d3-geo` vs Nivo antes de decidir.
@@ -211,3 +213,4 @@
 ---
 
 *Roadmap criado: 2026-05-21*
+*Phase 2 planejada: 2026-05-25*
