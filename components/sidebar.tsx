@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import Image from 'next/image'
 import { usePathname } from 'next/navigation'
 import { LayoutDashboard, Users, BarChart3, TicketIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -25,9 +26,14 @@ export function Sidebar() {
         <div className="flex items-start gap-3">
           <div className="mt-0.5 w-[3px] h-10 bg-sidebar-primary rounded-full shrink-0" />
           <div>
-            <p className="text-[11px] font-mono tracking-[0.30em] text-sidebar-primary uppercase leading-none mb-1.5">
-              ABVCAP
-            </p>
+            <Image
+              src="/logo-abvcap.png"
+              alt="ABVCAP"
+              width={96}
+              height={28}
+              className="mb-2 object-contain"
+              priority
+            />
             <p className="font-display text-[17px] leading-tight text-sidebar-foreground">
               Dashboard
             </p>
