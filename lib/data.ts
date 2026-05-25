@@ -64,15 +64,15 @@ export async function getCompanySegmentSummary(
 
   const { data, error } = await getSupabase()
     .from('participants')
-    .select('company_segment_normalized')
+    .select('company_segment_raw')
     .eq('edition_id', edition.id)
-    .not('company_segment_normalized', 'is', null)
+    .not('company_segment_raw', 'is', null)
   if (error) throw error
 
   const counts: Record<string, number> = {}
   for (const row of data ?? []) {
-    const seg = row.company_segment_normalized as string
-    counts[seg] = (counts[seg] ?? 0) + 1
+    const seg = (row.company_segment_raw as string).trim()
+    if (seg) counts[seg] = (counts[seg] ?? 0) + 1
   }
   return Object.entries(counts)
     .map(([type, count]) => ({ type, count }))
