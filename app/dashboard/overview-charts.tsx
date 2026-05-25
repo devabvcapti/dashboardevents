@@ -4,17 +4,25 @@ import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, LineChart, Line, CartesianGrid,
 } from 'recharts'
+import { useTheme } from 'next-themes'
 
-/* ABVCAP — teal âncora, depois navy, esmeralda, âmbar, coral */
-const CHART_COLORS = [
-  '#00a99d',   /* teal ABVCAP */
-  '#112468',   /* navy ABVCAP */
-  'oklch(0.62 0.14 162)',   /* esmeralda */
-  'oklch(0.72 0.14 68)',    /* âmbar */
-  'oklch(0.64 0.18 28)',    /* coral */
-  'oklch(0.60 0.15 295)',   /* violeta */
-  'oklch(0.68 0.12 130)',   /* lima */
-]
+const NAVY_LIGHT = '#112468'
+const NAVY_DARK  = '#6b9be8'  /* azul legível em fundo escuro */
+
+/* ABVCAP — teal âncora, depois navy adaptativo, esmeralda, âmbar, coral */
+function useChartColors() {
+  const { resolvedTheme } = useTheme()
+  const navy = resolvedTheme === 'dark' ? NAVY_DARK : NAVY_LIGHT
+  return [
+    '#00a99d',
+    navy,
+    'oklch(0.62 0.14 162)',
+    'oklch(0.72 0.14 68)',
+    'oklch(0.64 0.18 28)',
+    'oklch(0.60 0.15 295)',
+    'oklch(0.68 0.12 130)',
+  ]
+}
 
 const AXIS_STYLE = {
   fontSize: 11,
@@ -42,6 +50,7 @@ interface Props {
 }
 
 export function OverviewCharts({ byTicketType, byCompanyType, registrationsByDay, freeTickets }: Props) {
+  const CHART_COLORS = useChartColors()
   const freePct = freeTickets.total > 0 ? Math.round((freeTickets.free / freeTickets.total) * 100) : 0
   const freeChartData = freeTickets.total > 0
     ? [
@@ -115,8 +124,8 @@ export function OverviewCharts({ byTicketType, byCompanyType, registrationsByDay
                   <YAxis tick={AXIS_STYLE} axisLine={false} tickLine={false} allowDecimals={false} />
                   <Tooltip contentStyle={TOOLTIP_STYLE} cursor={{ fill: 'oklch(0.21 0.11 265 / 0.04)' }} />
                   <Bar dataKey="count" name="Inscritos" radius={[3, 3, 0, 0]} maxBarSize={48}>
-                    <Cell fill="#00a99d" />
-                    <Cell fill="#112468" />
+                    <Cell fill={CHART_COLORS[0]} />
+                    <Cell fill={CHART_COLORS[1]} />
                   </Bar>
                 </BarChart>
               </ResponsiveContainer>
