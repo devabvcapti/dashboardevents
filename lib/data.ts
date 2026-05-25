@@ -45,6 +45,73 @@ export async function getParticipants(filters?: {
   return data as Participant[]
 }
 
+// ─── Company Segment Summary ──────────────────────────────────────────────────
+
+export interface CompanySegmentSummary {
+  type: string
+  count: number
+}
+
+export async function getCompanySegmentSummary(
+  editionYear = 2025
+): Promise<CompanySegmentSummary[]> {
+  const { data: edition, error: editionError } = await getSupabase()
+    .from('editions')
+    .select('id')
+    .eq('year', editionYear)
+    .single()
+  if (editionError) throw editionError
+
+  const { data, error } = await getSupabase()
+    .from('participants')
+    .select('company_segment_normalized')
+    .eq('edition_id', edition.id)
+    .not('company_segment_normalized', 'is', null)
+  if (error) throw error
+
+  const counts: Record<string, number> = {}
+  for (const row of data ?? []) {
+    const seg = row.company_segment_normalized as string
+    counts[seg] = (counts[seg] ?? 0) + 1
+  }
+  return Object.entries(counts)
+    .map(([type, count]) => ({ type, count }))
+    .sort((a, b) => b.count - a.count)
+}
+
+// ─── Registrations by Day ─────────────────────────────────────────────────────
+
+export interface RegistrationsByDay {
+  date: string
+  count: number
+}
+
+export async function getRegistrationsByDay(
+  editionYear = 2025
+): Promise<RegistrationsByDay[]> {
+  const { data: edition, error: editionError } = await getSupabase()
+    .from('editions')
+    .select('id')
+    .eq('year', editionYear)
+    .single()
+  if (editionError) throw editionError
+
+  const { data, error } = await getSupabase()
+    .from('participants')
+    .select('created_at')
+    .eq('edition_id', edition.id)
+    .not('created_at', 'is', null)
+    .order('created_at', { ascending: true })
+  if (error) throw error
+
+  const counts: Record<string, number> = {}
+  for (const row of data ?? []) {
+    const date = (row.created_at as string).slice(0, 10)
+    counts[date] = (counts[date] ?? 0) + 1
+  }
+  return Object.entries(counts).map(([date, count]) => ({ date, count }))
+}
+
 // ─── Ticket Membership Summary (COUNT no banco via head:true) ─────────────────
 
 export interface TicketMembershipSummary {

@@ -1,4 +1,4 @@
-import { getOverviewStats } from '@/lib/data'
+import { getOverviewStats, getCompanySegmentSummary, getTicketMembershipSummary } from '@/lib/data'
 import { MOCK_STATS, MOCK_BY_COMPANY_TYPE_ENUM, MOCK_BY_TICKET_TYPE } from '@/lib/mock-data'
 import { PublicoCharts } from './publico-charts'
 
@@ -6,12 +6,23 @@ export const dynamic = 'force-dynamic'
 
 export default async function PublicoPage() {
   let total = 0
+  let byCompanyType: { type: string; count: number }[] = []
+  let byTicketType: { type: string; count: number }[] = []
   let isMock = false
+
   try {
-    const stats = await getOverviewStats()
+    const [stats, segment, ticket] = await Promise.all([
+      getOverviewStats(),
+      getCompanySegmentSummary(),
+      getTicketMembershipSummary(),
+    ])
     total = stats.total
+    byCompanyType = segment
+    byTicketType = ticket.map(r => ({ type: r.ticket_membership === 'MEMBRO' ? 'Membro' : 'Não Membro', count: r.count }))
   } catch {
     total = MOCK_STATS.total
+    byCompanyType = MOCK_BY_COMPANY_TYPE_ENUM
+    byTicketType = MOCK_BY_TICKET_TYPE
     isMock = true
   }
 
@@ -37,8 +48,8 @@ export default async function PublicoPage() {
       </div>
 
       <PublicoCharts
-        byCompanyType={isMock ? MOCK_BY_COMPANY_TYPE_ENUM : []}
-        byTicketType={isMock ? MOCK_BY_TICKET_TYPE : []}
+        byCompanyType={byCompanyType}
+        byTicketType={byTicketType}
         total={total}
       />
     </div>

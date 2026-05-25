@@ -1,25 +1,34 @@
-import { getOverviewStats } from '@/lib/data'
+import { getOverviewStats, getCompanySegmentSummary, getRegistrationsByDay, getTicketMembershipSummary } from '@/lib/data'
 import { StatCard } from '@/components/stat-card'
 import { OverviewCharts } from './overview-charts'
-import {
-  MOCK_STATS,
-  MOCK_BY_TICKET_TYPE,
-  MOCK_BY_COMPANY_TYPE_DISPLAY,
-  MOCK_REGISTRATIONS_BY_DAY,
-} from '@/lib/mock-data'
+import { MOCK_STATS } from '@/lib/mock-data'
 
 export const dynamic = 'force-dynamic'
 
 export default async function DashboardPage() {
   let stats
+  let byTicketType: { type: string; count: number }[] = []
+  let byCompanyType: { type: string; count: number }[] = []
+  let registrationsByDay: { date: string; count: number }[] = []
+  let isMock = false
+
   try {
-    stats = await getOverviewStats()
+    const [s, ticket, segment, regByDay] = await Promise.all([
+      getOverviewStats(),
+      getTicketMembershipSummary(),
+      getCompanySegmentSummary(),
+      getRegistrationsByDay(),
+    ])
+    stats = s
+    byTicketType = ticket.map(r => ({ type: r.ticket_membership === 'MEMBRO' ? 'Membro' : 'Não Membro', count: r.count }))
+    byCompanyType = segment
+    registrationsByDay = regByDay
   } catch {
     stats = null
+    isMock = true
   }
 
   const display = stats ?? MOCK_STATS
-  const isMock = !stats
 
   const memberPct = display.total > 0
     ? Math.round((display.membro / display.total) * 100)
@@ -73,9 +82,9 @@ export default async function DashboardPage() {
       </div>
 
       <OverviewCharts
-        byTicketType={MOCK_BY_TICKET_TYPE}
-        byCompanyType={MOCK_BY_COMPANY_TYPE_DISPLAY}
-        registrationsByDay={MOCK_REGISTRATIONS_BY_DAY}
+        byTicketType={byTicketType}
+        byCompanyType={byCompanyType}
+        registrationsByDay={registrationsByDay}
       />
     </div>
   )
