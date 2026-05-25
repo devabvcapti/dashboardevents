@@ -3,11 +3,11 @@ import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import type { Database } from './lib/database.types'
 
 /**
- * Middleware: refresca sessão Supabase e protege rotas.
+ * Proxy (formerly middleware): refresca sessão Supabase e protege rotas.
  * Rotas protegidas: /dashboard/**, /api/** EXCETO /api/auth/**.
  * Rotas públicas: /login, /api/auth/**, /, /_next/**.
  */
-export async function middleware(req: NextRequest) {
+export async function proxy(req: NextRequest) {
   let response = NextResponse.next({ request: req })
 
   const supabase = createServerClient<Database>(
