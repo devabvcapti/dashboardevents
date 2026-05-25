@@ -37,10 +37,12 @@ export type Database = {
         Row: {
           company_segment: Database["public"]["Enums"]["company_segment"] | null
           company_size: string | null
+          content_interests: string[] | null
           created_at: string | null
+          dietary_details: string | null
           dietary_restrictions: string | null
           id: string
-          interested_in_events: boolean | null
+          interested_in_events: string[] | null
           opt_in_communication: boolean | null
           origin_state: string | null
           participant_id: string
@@ -52,10 +54,12 @@ export type Database = {
         Insert: {
           company_segment?: Database["public"]["Enums"]["company_segment"] | null
           company_size?: string | null
+          content_interests?: string[] | null
           created_at?: string | null
+          dietary_details?: string | null
           dietary_restrictions?: string | null
           id?: string
-          interested_in_events?: boolean | null
+          interested_in_events?: string[] | null
           opt_in_communication?: boolean | null
           origin_state?: string | null
           participant_id: string
@@ -67,10 +71,12 @@ export type Database = {
         Update: {
           company_segment?: Database["public"]["Enums"]["company_segment"] | null
           company_size?: string | null
+          content_interests?: string[] | null
           created_at?: string | null
+          dietary_details?: string | null
           dietary_restrictions?: string | null
           id?: string
-          interested_in_events?: boolean | null
+          interested_in_events?: string[] | null
           opt_in_communication?: boolean | null
           origin_state?: string | null
           participant_id?: string
@@ -142,34 +148,55 @@ export type Database = {
       participants: {
         Row: {
           company: string | null
+          company_segment_normalized: Database["public"]["Enums"]["company_segment"] | null
+          company_segment_raw: string | null
+          cpf: string | null
           created_at: string | null
           edition_id: string
           email: string
           full_name: string
           id: string
           import_job_id: string | null
+          is_company_member: boolean | null
+          job_title: string | null
+          payment_status: string | null
+          phone: string | null
           ticket_membership: Database["public"]["Enums"]["ticket_membership"]
           ticket_value: number | null
         }
         Insert: {
           company?: string | null
+          company_segment_normalized?: Database["public"]["Enums"]["company_segment"] | null
+          company_segment_raw?: string | null
+          cpf?: string | null
           created_at?: string | null
           edition_id: string
           email: string
           full_name: string
           id?: string
           import_job_id?: string | null
+          is_company_member?: boolean | null
+          job_title?: string | null
+          payment_status?: string | null
+          phone?: string | null
           ticket_membership: Database["public"]["Enums"]["ticket_membership"]
           ticket_value?: number | null
         }
         Update: {
           company?: string | null
+          company_segment_normalized?: Database["public"]["Enums"]["company_segment"] | null
+          company_segment_raw?: string | null
+          cpf?: string | null
           created_at?: string | null
           edition_id?: string
           email?: string
           full_name?: string
           id?: string
           import_job_id?: string | null
+          is_company_member?: boolean | null
+          job_title?: string | null
+          payment_status?: string | null
+          phone?: string | null
           ticket_membership?: Database["public"]["Enums"]["ticket_membership"]
           ticket_value?: number | null
         }
@@ -196,6 +223,21 @@ export type Database = {
     }
     Functions: {
       get_overview_stats: { Args: { p_edition_year?: number }; Returns: Json }
+      upsert_form_responses_batch: {
+        Args: {
+          p_rows: Json
+          p_edition_id: string
+        }
+        Returns: Json
+      }
+      upsert_participants_batch: {
+        Args: {
+          p_rows: Json
+          p_edition_id: string
+          p_import_job_id: string
+        }
+        Returns: Json
+      }
     }
     Enums: {
       company_segment: "GP" | "LP" | "FUNDO" | "CORPORATIVO" | "GOVERNO" | "ACADEMIA" | "OUTRO"
