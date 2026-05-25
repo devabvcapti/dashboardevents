@@ -38,9 +38,17 @@ interface Props {
   byTicketType: { type: string; count: number }[]
   byCompanyType: { type: string; count: number }[]
   registrationsByDay: { date: string; count: number }[]
+  freeTickets: { free: number; paid: number; total: number }
 }
 
-export function OverviewCharts({ byTicketType, byCompanyType, registrationsByDay }: Props) {
+export function OverviewCharts({ byTicketType, byCompanyType, registrationsByDay, freeTickets }: Props) {
+  const freePct = freeTickets.total > 0 ? Math.round((freeTickets.free / freeTickets.total) * 100) : 0
+  const freeChartData = freeTickets.total > 0
+    ? [
+        { type: 'Grátis (R$0)', count: freeTickets.free },
+        { type: 'Pagos', count: freeTickets.paid },
+      ]
+    : []
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
       {/* Bar — ticket type */}
@@ -86,6 +94,34 @@ export function OverviewCharts({ byTicketType, byCompanyType, registrationsByDay
               <Tooltip contentStyle={TOOLTIP_STYLE} formatter={(v) => [`${v} inscritos`]} />
             </PieChart>
           </ResponsiveContainer>
+        )}
+      </div>
+
+      {/* Bar — free vs paid */}
+      <div className="bg-card border border-border rounded-lg p-5 shadow-sm lg:col-span-2">
+        <ChartLabel>Ingressos Grátis (R$0) vs Pagos</ChartLabel>
+        {freeChartData.length === 0 ? <EmptyChart height={120} /> : (
+          <div className="flex items-center gap-8">
+            <div className="shrink-0 text-center">
+              <p className="font-display tabular-nums text-5xl text-foreground leading-none">{freeTickets.free}</p>
+              <p className="mt-1 text-[10px] font-mono text-muted-foreground uppercase tracking-wider">grátis</p>
+              <p className="mt-0.5 text-[11px] font-mono text-muted-foreground/60">{freePct}% do total</p>
+            </div>
+            <div className="flex-1">
+              <ResponsiveContainer width="100%" height={120}>
+                <BarChart data={freeChartData} margin={{ top: 8, right: 0, left: -28, bottom: 0 }}>
+                  <CartesianGrid vertical={false} stroke={GRID_COLOR} strokeOpacity={0.6} />
+                  <XAxis dataKey="type" tick={AXIS_STYLE} axisLine={false} tickLine={false} />
+                  <YAxis tick={AXIS_STYLE} axisLine={false} tickLine={false} allowDecimals={false} />
+                  <Tooltip contentStyle={TOOLTIP_STYLE} cursor={{ fill: 'oklch(0.21 0.11 265 / 0.04)' }} />
+                  <Bar dataKey="count" name="Inscritos" radius={[3, 3, 0, 0]} maxBarSize={48}>
+                    <Cell fill="#00a99d" />
+                    <Cell fill="#112468" />
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
         )}
       </div>
 

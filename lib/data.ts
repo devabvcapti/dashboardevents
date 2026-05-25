@@ -144,3 +144,40 @@ export async function getTicketMembershipSummary(
 
   return results.sort((a, b) => b.count - a.count)
 }
+
+// ─── Free Tickets (ticket_value = 0) ─────────────────────────────────────────
+
+export interface FreeTicketStats {
+  free: number
+  paid: number
+  total: number
+}
+
+export async function getFreeTicketStats(
+  editionYear = 2025
+): Promise<FreeTicketStats> {
+  const { data: edition, error: editionError } = await getSupabase()
+    .from('editions')
+    .select('id')
+    .eq('year', editionYear)
+    .single()
+  if (editionError) throw editionError
+
+  const [{ count: free, error: e1 }, { count: total, error: e2 }] = await Promise.all([
+    getSupabase()
+      .from('participants')
+      .select('*', { count: 'exact', head: true })
+      .eq('edition_id', edition.id)
+      .eq('ticket_value', 0),
+    getSupabase()
+      .from('participants')
+      .select('*', { count: 'exact', head: true })
+      .eq('edition_id', edition.id),
+  ])
+  if (e1) throw e1
+  if (e2) throw e2
+
+  const f = free ?? 0
+  const t = total ?? 0
+  return { free: f, paid: t - f, total: t }
+}

@@ -1,4 +1,4 @@
-import { getOverviewStats, getCompanySegmentSummary, getRegistrationsByDay, getTicketMembershipSummary } from '@/lib/data'
+import { getOverviewStats, getCompanySegmentSummary, getRegistrationsByDay, getTicketMembershipSummary, getFreeTicketStats } from '@/lib/data'
 import { StatCard } from '@/components/stat-card'
 import { OverviewCharts } from './overview-charts'
 import { MOCK_STATS } from '@/lib/mock-data'
@@ -10,19 +10,22 @@ export default async function DashboardPage() {
   let byTicketType: { type: string; count: number }[] = []
   let byCompanyType: { type: string; count: number }[] = []
   let registrationsByDay: { date: string; count: number }[] = []
+  let freeTickets = { free: 0, paid: 0, total: 0 }
   let isMock = false
 
   try {
-    const [s, ticket, segment, regByDay] = await Promise.all([
+    const [s, ticket, segment, regByDay, free] = await Promise.all([
       getOverviewStats(),
       getTicketMembershipSummary(),
       getCompanySegmentSummary(),
       getRegistrationsByDay(),
+      getFreeTicketStats(),
     ])
     stats = s
     byTicketType = ticket.map(r => ({ type: r.ticket_membership === 'MEMBRO' ? 'Membro' : 'Não Membro', count: r.count }))
     byCompanyType = segment
     registrationsByDay = regByDay
+    freeTickets = free
   } catch {
     stats = null
     isMock = true
@@ -85,6 +88,7 @@ export default async function DashboardPage() {
         byTicketType={byTicketType}
         byCompanyType={byCompanyType}
         registrationsByDay={registrationsByDay}
+        freeTickets={freeTickets}
       />
     </div>
   )
