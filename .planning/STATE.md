@@ -2,9 +2,9 @@
 
 ## Current Status
 
-**Phase:** Phase 2 in progress — Plan 02-03 complete (awaiting human verification checkpoint)
-**Last action:** Phase 2 Plan 03 (Import pipeline: upload, parse, mapping UI, preview) built and pushed — `npm run build` passes, 11 files created, /dashboard/import live in build
-**Next step:** Human verifies Task 4 checkpoint (upload Congresso v2.xlsx, confirm mapping UI, preview), then execute Plan 02-04 (commit route + audit)
+**Phase:** Phase 2 in progress — Plan 02-04 complete (awaiting human end-to-end verification)
+**Last action:** Phase 2 Plan 04 (Commit route + audit log + result UI) built and pushed — `npm run build` passes, 4 files changed, /api/import/commit live
+**Next step:** Human verifies end-to-end import (upload file, confirm mapping, commit, check result grids, verify dedup, check form_responses and import_jobs in Supabase)
 **Last session:** 2026-05-25
 
 ## Roadmap Progress
@@ -23,7 +23,7 @@
 | 02-01 | Schema migration + batch RPCs | ✅ Complete | 8f736df |
 | 02-02 | Auth middleware + login + admin gating | ✅ Complete | 39370a6 |
 | 02-03 | Upload + parse + mapping UI | 🔄 Built — awaiting checkpoint | c6d722c, bbe9750, 7d6936c |
-| 02-04 | Commit route + audit | ⏳ Not started | — |
+| 02-04 | Commit route + audit | 🔄 Built — awaiting checkpoint | 0c07030 |
 
 ## Key Artifacts
 
@@ -34,6 +34,7 @@
 - `.planning/phases/02-import-pipeline-auth/02-01-SUMMARY.md` — Fase 2 Plan 01 completo
 - `.planning/phases/02-import-pipeline-auth/02-02-SUMMARY.md` — Fase 2 Plan 02 completo
 - `.planning/phases/02-import-pipeline-auth/02-03-SUMMARY.md` — Fase 2 Plan 03 completo
+- `.planning/phases/02-import-pipeline-auth/02-04-SUMMARY.md` — Fase 2 Plan 04 completo
 - `abvcap-congress/` — App Next.js com auth implementado e verificado
 
 ## Key Decisions
@@ -46,6 +47,8 @@
 - **In-memory store for import previews** — globalThis.__importPreviewStore with 15min TTL; acceptable because Plan 04 commit runs in same process within minutes; no Redis needed
 - **Always show column mapping UI** — Even when auto-detect scores 14/14; supports multi-event reuse where column layout may vary per event
 - **consumePreview() exported from route.ts** — Plan 04 imports it directly to retrieve validated rows by serverToken (one-time consume)
+- **Cast ParticipantRow[] to Json via unknown for RPC args** — Supabase types require Json; safer than ts-ignore
+- **Shared preview-store module** — preview and commit routes in different files; globalThis Map on shared module avoids duplication
 
 ## Phase 1 Deliverables (all verified ✓)
 
@@ -85,6 +88,13 @@
 - `app/dashboard/import/preview-table.tsx` → valid rows + expandable error list + BRL currency
 - `components/sidebar.tsx` → added /dashboard/import nav entry with Upload icon
 
+## Phase 2 Plan 04 Deliverables
+
+- `lib/import/preview-store.ts` → storePreview / consumePreview / peekPreview (shared module)
+- `app/api/import/preview/route.ts` → refactored to use shared preview-store
+- `app/api/import/commit/route.ts` → POST handler: auth, Zod body, edition resolve, import_job audit, chunked upsert RPCs, COMPLETED/FAILED status
+- `app/dashboard/import/import-client.tsx` → committing + done stages, result grids, reset button
+
 ## Requirements Satisfied
 
 - AUTH-01: /dashboard protected — ✅ Done (02-02)
@@ -98,8 +108,12 @@
 - IMPORT-06: Preview com N válidas / N erros — ✅ Done (02-03)
 - IMPORT-08: Normalização (CPF padStart, phone String, formula injection, HTML entities) — ✅ Done (02-03)
 - IMPORT-11: Erros PT-BR com número da linha Excel — ✅ Done (02-03)
+- IMPORT-07: Upsert participantes (ON CONFLICT email+edition) — ✅ Done (02-04)
+- IMPORT-09: form_responses populado no commit — ✅ Done (02-04)
+- IMPORT-10: import_jobs audit log (PROCESSING/COMPLETED/FAILED) — ✅ Done (02-04)
 
 ---
 *Phase 1 completed: 2026-05-21*
 *Phase 2 Plan 02 completed: 2026-05-25*
-*Phase 2 Plan 03 completed: 2026-05-25 (awaiting human checkpoint verification)*
+*Phase 2 Plan 03 completed: 2026-05-25*
+*Phase 2 Plan 04 completed: 2026-05-25 (awaiting human end-to-end verification)*
