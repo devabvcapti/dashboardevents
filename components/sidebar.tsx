@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { usePathname, useRouter } from 'next/navigation'
-import { LayoutDashboard, Users, BarChart3, TicketIcon, LogOut } from 'lucide-react'
+import { LayoutDashboard, Users, BarChart3, TicketIcon, LogOut, Upload } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { ThemeToggle } from '@/components/theme-toggle'
 
@@ -12,6 +12,7 @@ const nav = [
   { href: '/dashboard/inscricoes', label: 'Inscrições', icon: Users },
   { href: '/dashboard/ingressos', label: 'Ingressos', icon: TicketIcon },
   { href: '/dashboard/publico', label: 'Análise de Público', icon: BarChart3 },
+  { href: '/dashboard/import', label: 'Importar', icon: Upload },
 ]
 
 export function Sidebar() {
