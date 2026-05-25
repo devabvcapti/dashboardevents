@@ -2,8 +2,8 @@
 
 import Link from 'next/link'
 import Image from 'next/image'
-import { usePathname } from 'next/navigation'
-import { LayoutDashboard, Users, BarChart3, TicketIcon } from 'lucide-react'
+import { usePathname, useRouter } from 'next/navigation'
+import { LayoutDashboard, Users, BarChart3, TicketIcon, LogOut } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { ThemeToggle } from '@/components/theme-toggle'
 
@@ -16,6 +16,12 @@ const nav = [
 
 export function Sidebar() {
   const pathname = usePathname()
+  const router = useRouter()
+
+  async function handleLogout() {
+    await fetch('/api/auth/logout', { method: 'POST' })
+    router.push('/login')
+  }
 
   return (
     <aside className="flex flex-col w-64 min-h-screen bg-sidebar text-sidebar-foreground shrink-0">
@@ -86,7 +92,14 @@ export function Sidebar() {
       </nav>
 
       {/* Footer */}
-      <div className="px-4 py-4 mt-4 border-t border-sidebar-border">
+      <div className="px-4 py-4 mt-4 border-t border-sidebar-border space-y-3">
+        <button
+          onClick={handleLogout}
+          className="group flex w-full items-center gap-3 px-3 py-2.5 rounded-md text-[13px] text-sidebar-foreground/45 hover:bg-sidebar-accent/70 hover:text-sidebar-foreground/80 transition-all duration-150"
+        >
+          <LogOut className="w-4 h-4 shrink-0 text-sidebar-foreground/25 group-hover:text-sidebar-foreground/50 transition-colors" />
+          <span className="tracking-wide">Sair</span>
+        </button>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <div className="w-1.5 h-1.5 rounded-full bg-sidebar-primary/60" />
