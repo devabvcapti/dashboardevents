@@ -1,13 +1,47 @@
-import { getOverviewStats, getCompanySegmentSummary, getRegistrationsByDay, getTicketMembershipSummary, getFreeTicketStats } from '@/lib/data'
+import { requireAdmin } from '@/lib/auth'
+import {
+  getOverviewStats, getCompanySegmentSummary, getRegistrationsByDay,
+  getTicketMembershipSummary, getFreeTicketStats,
+} from '@/lib/data'
 import { getActiveEditionId } from '@/lib/edition-cookie'
-import { StatCard } from '@/components/stat-card'
+import Link from 'next/link'
+import { OverviewKpis } from './overview-kpis'
 import { OverviewCharts } from './overview-charts'
 import { MOCK_STATS } from '@/lib/mock-data'
 
 export const dynamic = 'force-dynamic'
 
 export default async function DashboardPage() {
-  let stats
+  await requireAdmin()
+
+  // Resolver editionId — sem editions, renderiza CTA
+  let editionId: string | null = null
+  try {
+    editionId = await getActiveEditionId()
+  } catch {
+    editionId = null
+  }
+
+  if (!editionId) {
+    return (
+      <div className="p-8 space-y-6">
+        <div className="border-b border-border pb-6">
+          <h1 className="font-display text-3xl text-foreground leading-none">Visão Geral</h1>
+        </div>
+        <div className="border border-dashed border-border rounded-lg p-12 text-center space-y-3">
+          <p className="text-sm font-medium text-foreground">Nenhum evento cadastrado.</p>
+          <p className="text-sm text-muted-foreground">
+            Crie uma edição para começar a visualizar dados.
+          </p>
+          <Link href="/dashboard/eventos" className="inline-block text-sm text-primary hover:underline">
+            Ir para Eventos →
+          </Link>
+        </div>
+      </div>
+    )
+  }
+
+  let stats: Awaited<ReturnType<typeof getOverviewStats>> | null = null
   let byTicketType: { type: string; count: number }[] = []
   let byCompanyType: { type: string; count: number }[] = []
   let registrationsByDay: { date: string; count: number }[] = []
@@ -15,7 +49,6 @@ export default async function DashboardPage() {
   let isMock = false
 
   try {
-    const editionId = await getActiveEditionId()
     const [s, ticket, segment, regByDay, free] = await Promise.all([
       getOverviewStats(editionId),
       getTicketMembershipSummary(editionId),
@@ -24,7 +57,10 @@ export default async function DashboardPage() {
       getFreeTicketStats(editionId),
     ])
     stats = s
-    byTicketType = ticket.map(r => ({ type: r.ticket_membership === 'MEMBRO' ? 'Membro' : 'Não Membro', count: r.count }))
+    byTicketType = ticket.map(r => ({
+      type: r.ticket_membership === 'MEMBRO' ? 'Membros' : 'Não Membros',
+      count: r.count,
+    }))
     byCompanyType = segment
     registrationsByDay = regByDay
     freeTickets = free
@@ -34,10 +70,6 @@ export default async function DashboardPage() {
   }
 
   const display = stats ?? MOCK_STATS
-
-  const memberPct = display.total > 0
-    ? Math.round((display.membro / display.total) * 100)
-    : 0
 
   return (
     <div className="p-8 space-y-8">
@@ -62,35 +94,14 @@ export default async function DashboardPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <StatCard
-          title="Total Inscritos"
-          value={display.total}
-          accent="blue"
-        />
-        <StatCard
-          title="Membros"
-          value={display.membro}
-          subtitle={`${memberPct}% do total`}
-          accent="green"
-        />
-        <StatCard
-          title="Não Membros"
-          value={display.nao_membro}
-          accent="amber"
-        />
-        <StatCard
-          title="Receita Total"
-          value={`R$ ${Number(display.total_revenue).toLocaleString('pt-BR', { minimumFractionDigits: 0 })}`}
-          accent="teal"
-        />
-      </div>
+      <OverviewKpis stats={display} />
 
       <OverviewCharts
         byTicketType={byTicketType}
         byCompanyType={byCompanyType}
         registrationsByDay={registrationsByDay}
         freeTickets={freeTickets}
+        totalInscritos={display.total}
       />
     </div>
   )
