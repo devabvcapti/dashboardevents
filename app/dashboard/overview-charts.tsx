@@ -2,14 +2,13 @@
 
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
-  PieChart, Pie, Cell, LineChart, Line, CartesianGrid,
+  PieChart, Pie, Cell, LineChart, Line, CartesianGrid, LabelList,
 } from 'recharts'
 import { useTheme } from 'next-themes'
 
 const NAVY_LIGHT = '#112468'
-const NAVY_DARK  = '#6b9be8'  /* azul legível em fundo escuro */
+const NAVY_DARK  = '#6b9be8'
 
-/* ABVCAP — teal âncora, depois navy adaptativo, esmeralda, âmbar, coral */
 function useChartColors() {
   const { resolvedTheme } = useTheme()
   const navy = resolvedTheme === 'dark' ? NAVY_DARK : NAVY_LIGHT
@@ -47,10 +46,28 @@ interface Props {
   byCompanyType: { type: string; count: number }[]
   registrationsByDay: { date: string; count: number }[]
   freeTickets: { free: number; paid: number; total: number }
+  totalInscritos: number
 }
 
-export function OverviewCharts({ byTicketType, byCompanyType, registrationsByDay, freeTickets }: Props) {
+export function OverviewCharts({
+  byTicketType,
+  byCompanyType,
+  registrationsByDay,
+  freeTickets,
+  totalInscritos,
+}: Props) {
   const CHART_COLORS = useChartColors()
+
+  // OV-04: ordenar desc + computar % sobre total
+  const sumCompany = byCompanyType.reduce((acc, r) => acc + r.count, 0)
+  const companyData = [...byCompanyType]
+    .sort((a, b) => b.count - a.count)
+    .map(r => ({
+      ...r,
+      pct: sumCompany > 0 ? Math.round((r.count / sumCompany) * 1000) / 10 : 0,
+      label: `${r.count} (${sumCompany > 0 ? Math.round((r.count / sumCompany) * 100) : 0}%)`,
+    }))
+
   const freePct = freeTickets.total > 0 ? Math.round((freeTickets.free / freeTickets.total) * 100) : 0
   const freeChartData = freeTickets.total > 0
     ? [
@@ -58,55 +75,77 @@ export function OverviewCharts({ byTicketType, byCompanyType, registrationsByDay
         { type: 'Pagos', count: freeTickets.paid },
       ]
     : []
+
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-      {/* Bar — ticket type */}
+      {/* OV-03 — Donut Membros vs Não-Membros com label central */}
       <div className="bg-card border border-border rounded-lg p-5 shadow-sm">
-        <ChartLabel>Inscritos por Tipo de Ingresso</ChartLabel>
+        <ChartLabel>Membros vs Não-Membros</ChartLabel>
         {byTicketType.length === 0 ? <EmptyChart /> : (
-          <ResponsiveContainer width="100%" height={220}>
-            <BarChart data={byTicketType} margin={{ top: 8, right: 0, left: -28, bottom: 0 }}>
-              <CartesianGrid vertical={false} stroke={GRID_COLOR} strokeOpacity={0.6} />
-              <XAxis dataKey="type" tick={AXIS_STYLE} axisLine={false} tickLine={false} />
-              <YAxis tick={AXIS_STYLE} axisLine={false} tickLine={false} allowDecimals={false} />
-              <Tooltip contentStyle={TOOLTIP_STYLE} cursor={{ fill: 'oklch(0.21 0.11 265 / 0.04)' }} />
-              <Bar dataKey="count" name="Inscritos" radius={[3, 3, 0, 0]} maxBarSize={48}>
-                {byTicketType.map((_, i) => (
+          <div className="relative">
+            <ResponsiveContainer width="100%" height={260}>
+              <PieChart>
+                <Pie
+                  data={byTicketType}
+                  dataKey="count"
+                  nameKey="type"
+                  cx="50%" cy="50%"
+                  innerRadius={70}
+                  outerRadius={105}
+                  paddingAngle={2}
+                  stroke="transparent"
+                >
+                  {byTicketType.map((_, i) => (
+                    <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
+                  ))}
+                </Pie>
+                <Tooltip
+                  contentStyle={TOOLTIP_STYLE}
+                  formatter={(v, name) => [`${v} inscritos`, name as string]}
+                />
+              </PieChart>
+            </ResponsiveContainer>
+            <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+              <p className="font-display tabular-nums text-3xl text-foreground leading-none">{totalInscritos}</p>
+              <p className="text-[9px] font-mono text-muted-foreground uppercase tracking-wider mt-1">total</p>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* OV-04 — Barras HORIZONTAIS por tipo de empresa (sorted desc) */}
+      <div className="bg-card border border-border rounded-lg p-5 shadow-sm">
+        <ChartLabel>Perfil por Tipo de Empresa</ChartLabel>
+        {companyData.length === 0 ? <EmptyChart /> : (
+          <ResponsiveContainer width="100%" height={Math.max(220, companyData.length * 36)}>
+            <BarChart data={companyData} layout="vertical" margin={{ top: 8, right: 80, left: 8, bottom: 0 }}>
+              <CartesianGrid horizontal={false} stroke={GRID_COLOR} strokeOpacity={0.5} />
+              <XAxis type="number" tick={AXIS_STYLE} axisLine={false} tickLine={false} allowDecimals={false} />
+              <YAxis dataKey="type" type="category" tick={AXIS_STYLE} axisLine={false} tickLine={false} width={120} />
+              <Tooltip
+                contentStyle={TOOLTIP_STYLE}
+                cursor={{ fill: 'oklch(0.21 0.11 265 / 0.04)' }}
+                formatter={(v, _name, ctx) => [
+                  `${v} (${(ctx as { payload?: { pct?: number } })?.payload?.pct ?? 0}%)`,
+                  'Inscritos',
+                ]}
+              />
+              <Bar dataKey="count" name="Inscritos" radius={[0, 3, 3, 0]} maxBarSize={22}>
+                {companyData.map((_, i) => (
                   <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
                 ))}
+                <LabelList
+                  dataKey="label"
+                  position="right"
+                  style={{ fontSize: 11, fontFamily: 'var(--font-ibm-mono)', fill: 'oklch(0.52 0.04 254)' }}
+                />
               </Bar>
             </BarChart>
           </ResponsiveContainer>
         )}
       </div>
 
-      {/* Pie — company type */}
-      <div className="bg-card border border-border rounded-lg p-5 shadow-sm">
-        <ChartLabel>Perfil por Tipo de Empresa</ChartLabel>
-        {byCompanyType.length === 0 ? <EmptyChart /> : (
-          <ResponsiveContainer width="100%" height={220}>
-            <PieChart>
-              <Pie
-                data={byCompanyType}
-                dataKey="count"
-                nameKey="type"
-                cx="50%" cy="50%"
-                innerRadius={55} outerRadius={88}
-                paddingAngle={2}
-                label={({ name, percent }) => `${name} ${((percent ?? 0) * 100).toFixed(0)}%`}
-                labelLine={{ stroke: 'oklch(0.52 0.04 254)', strokeWidth: 1 }}
-              >
-                {byCompanyType.map((_, i) => (
-                  <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} stroke="transparent" />
-                ))}
-              </Pie>
-              <Tooltip contentStyle={TOOLTIP_STYLE} formatter={(v) => [`${v} inscritos`]} />
-            </PieChart>
-          </ResponsiveContainer>
-        )}
-      </div>
-
-      {/* Bar — free vs paid */}
+      {/* Free vs Pagos (mantido — informativo) */}
       <div className="bg-card border border-border rounded-lg p-5 shadow-sm lg:col-span-2">
         <ChartLabel>Ingressos Grátis (R$0) vs Pagos</ChartLabel>
         {freeChartData.length === 0 ? <EmptyChart height={120} /> : (
@@ -134,7 +173,7 @@ export function OverviewCharts({ byTicketType, byCompanyType, registrationsByDay
         )}
       </div>
 
-      {/* Line — over time */}
+      {/* Linha — inscrições ao longo do tempo (mantido) */}
       <div className="bg-card border border-border rounded-lg p-5 shadow-sm lg:col-span-2">
         <ChartLabel>Inscrições ao Longo do Tempo</ChartLabel>
         {registrationsByDay.length === 0 ? <EmptyChart height={180} /> : (
