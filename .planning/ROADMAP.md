@@ -85,12 +85,14 @@ Plans:
 
 **Requirements**: OV-01, OV-02, OV-03, OV-04, LIST-01, LIST-02, LIST-03, LIST-04, LIST-05, MBR-01, MBR-02, MBR-03, REV-01, REV-02, REV-03
 
-**Plans**:
-1. **Overview KPI cards + charts** — Substituir os KPI cards existentes pelos corretos: total inscritos, membros (count + %), não-membros (count + %), receita total, ticket médio, empresas únicas, estados representados; adicionar donut chart Membros vs Não-Membros com label central mostrando total; adicionar gráfico de barras horizontais por tipo de empresa (sorted desc) (`OV-01`, `OV-02`, `OV-03`, `OV-04`)
-2. **Participant list — server-side pagination + search + filter** — Refatorar página de inscrições para paginação server-side (25/50/100 por página via URL params); busca debounced por nome, email ou empresa; filtros por tipo de ingresso, tipo de empresa, estado e faixa de valor; ordenação por qualquer coluna; total de resultados visível (`LIST-01`, `LIST-02`, `LIST-03`, `LIST-04`)
-3. **Participant list — export** — Implementar export da visão filtrada atual para CSV e Excel com UTF-8 BOM para compatibilidade Windows (`LIST-05`)
-4. **Member analysis page** — Criar página de análise de membros: breakdown detalhado membros vs não-membros por tipo de empresa; breakdown por segmento dentro de cada grupo; percentual de adesão por tipo de empresa (`MBR-01`, `MBR-02`, `MBR-03`)
-5. **Revenue analysis page** — Criar página de análise de receita: receita total e ticket médio geral; receita e ticket médio por tipo de ingresso (MEMBRO/NAO_MEMBRO); histograma de distribuição de valores de ingresso (`REV-01`, `REV-02`, `REV-03`)
+**Plans:** 5 plans (Wave 1: 03-01 multi-event infra; Wave 2: 03-02 + 03-03 + 03-04 + 03-05 em paralelo)
+
+Plans:
+- [ ] 03-01-PLAN.md — Multi-event infrastructure: migrations 007 (remove UNIQUE editions.year), 008 (RPC get_overview_stats com p_edition_id + unique_companies + states_represented), 009 (RPCs get_member_analysis + get_revenue_analysis), 010 (índices); lib/data.ts refatorado em editionId-only + 6 funções novas (getEditions, getParticipantsPaginated, getParticipantsForExport, getMemberAnalysis, getRevenueAnalysis); lib/edition-cookie.ts; /api/edition/select + /api/edition/create; EditionSelector no sidebar; /dashboard/eventos; import flow migrado para editionId; exceljs movido para dependencies (`OV-01`, `OV-02` parcial via RPC)
+- [ ] 03-02-PLAN.md — Overview KPIs + charts: 7 StatCards (total, membros %, não-membros %, receita, ticket médio, empresas únicas, estados); donut Membros vs Não-Membros com label central de total; barras horizontais por tipo de empresa ordenadas desc com count + % (`OV-01`, `OV-02`, `OV-03`, `OV-04`)
+- [ ] 03-03-PLAN.md — Lista de participantes server-side + export: page.tsx async searchParams + getParticipantsPaginated com whitelists; inscricoes-client.tsx com router.push, debounce 400ms, sort por 5 colunas, paginação 25/50/100; /api/export/participants gera .xlsx via ExcelJS com 11 colunas e respeita filtros (`LIST-01`, `LIST-02`, `LIST-03`, `LIST-04`, `LIST-05`)
+- [ ] 03-04-PLAN.md — Análise de membros: page.tsx + membros-charts.tsx com stacked bars Membros vs Não-Membros por segmento, ranking de adesão % (filtro ruído ≥3 inscritos), tabela detalhada com 5 colunas (`MBR-01`, `MBR-02`, `MBR-03`)
+- [ ] 03-05-PLAN.md — Análise de receita: page.tsx + receita-charts.tsx com KPIs (receita total + ticket médio geral via média ponderada), comparativo MEMBRO vs NAO_MEMBRO (2 bars + tabela), histograma de 6 faixas (Gratuito → Acima de R$3000) (`REV-01`, `REV-02`, `REV-03`)
 
 **Success Criteria** (what must be TRUE):
 
@@ -140,7 +142,7 @@ Plans:
 |-------|----------------|--------|-----------|
 | 1. Foundation | 3/3 | ✅ Complete | 2026-05-21 |
 | 2. Import Pipeline + Auth | 2/4 | 🔄 In Progress | - |
-| 3. Dashboard Core | 0/5 | Not started | - |
+| 3. Dashboard Core | 0/5 | Planned | - |
 | 4. Analytics Depth | 0/4 | Not started | - |
 
 ---
