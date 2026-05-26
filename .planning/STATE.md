@@ -3,23 +3,23 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: Executing Phase 03
-last_updated: "2026-05-26T17:10:21.501Z"
+last_updated: "2026-05-26T17:41:45.167Z"
 progress:
   total_phases: 4
   completed_phases: 1
   total_plans: 9
-  completed_plans: 7
-  percent: 78
+  completed_plans: 8
+  percent: 89
 ---
 
 # Project State
 
 ## Current Status
 
-**Phase:** Phase 3 in progress — Plan 03-03 complete
-**Last action:** Phase 3 Plan 03 (Lista de Inscrições paginada) built — `npm run build` passes, 3 files changed (page.tsx + inscricoes-client.tsx refatorados, /api/export/participants criado)
-**Next step:** Execute Plan 03-04 (Análise de Receita) ou 03-05 (se renumerado)
-**Last session:** 2026-05-26T17:10:21.000Z
+**Phase:** Phase 3 in progress — Plan 03-04 complete
+**Last action:** Phase 3 Plan 04 (Análise de Membros) built — `npm run build` passes, 2 files created (page.tsx + membros-charts.tsx), MBR-01/02/03 satisfeitos
+**Next step:** Execute Plan 03-05 (Análise de Receita)
+**Last session:** 2026-05-26T17:41:45.161Z
 
 ## Roadmap Progress
 
@@ -37,7 +37,7 @@ progress:
 | 03-01 | Multi-event infra + RPCs + edition-cookie | ✅ Complete | (checkpoint aprovado) |
 | 03-02 | Overview KPIs + Charts | ✅ Complete | cdedd70, 9aae5ce, 6e1a8e1 |
 | 03-03 | Lista de Inscrições paginada | ✅ Complete | 8467961, 29ef8be |
-| 03-04 | Análise de Membros | ⏳ Pending | — |
+| 03-04 | Análise de Membros | ✅ Complete | 44cdd0f, 9d295d7 |
 | 03-05 | Análise de Receita | ⏳ Pending | — |
 
 ## Phase 2 Progress
@@ -78,6 +78,8 @@ progress:
 - **searchParams como Promise<SearchParams> (Next.js 16)** — await searchParams obrigatório em Server Components; omitir causa erro de runtime (03-03)
 - **1 useState para searchLocal em inscricoes-client** — único estado local necessário para feedback imediato pré-debounce; todos os demais controles leem de props e empurram URL (03-03)
 - **runtime nodejs obrigatório para ExcelJS** — ExcelJS usa APIs Node.js (fs, Buffer) incompatíveis com Edge runtime; route handler de export exige runtime = 'nodejs' (03-03)
+- **MBR-02 via stacked bars + tabela numérica** — stacked bars mostram proporção visual; tabela fornece valores exatos por segmento (03-04)
+- **Filtro total>=3 no ranking de adesão** — evita que segmentos com 1-2 inscritos distorçam ranking com 0% ou 100% espúrios (03-04)
 
 ## Phase 1 Deliverables (all verified ✓)
 
@@ -149,6 +151,9 @@ progress:
 - LIST-03: Filtros membership + segment + state + min/max value combinados — ✅ Done (03-03)
 - LIST-04: Ordenação por 5 colunas whitelisted via sort + dir params — ✅ Done (03-03)
 - LIST-05: Export .xlsx com filtros respeitados, UTF-8 nativo, 11 colunas, formatação BRL — ✅ Done (03-03)
+- MBR-01: Breakdown visual membros vs não-membros por tipo de empresa — ✅ Done (03-04)
+- MBR-02: Detalhamento por segmento dentro de cada grupo via stacked bars + tabela — ✅ Done (03-04)
+- MBR-03: Ranking de adesão % por segmento, ordenado desc, filtro de ruído — ✅ Done (03-04)
 
 ---
 *Phase 1 completed: 2026-05-21*
@@ -158,3 +163,4 @@ progress:
 *Phase 3 Plan 01 completed: 2026-05-26*
 *Phase 3 Plan 02 completed: 2026-05-26*
 *Phase 3 Plan 03 completed: 2026-05-26*
+*Phase 3 Plan 04 completed: 2026-05-26*

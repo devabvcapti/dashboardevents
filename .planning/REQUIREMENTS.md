@@ -46,9 +46,9 @@
 
 ### Análise de Membros
 
-- [ ] **MBR-01**: Breakdown detalhado: membros vs não-membros por tipo de empresa
-- [ ] **MBR-02**: Breakdown por segmento de empresa dentro de cada grupo (membro/não-membro)
-- [ ] **MBR-03**: Percentual de adesão por tipo de empresa (quais segmentos têm maior taxa de associação)
+- [x] **MBR-01**: Breakdown detalhado: membros vs não-membros por tipo de empresa
+- [x] **MBR-02**: Breakdown por segmento de empresa dentro de cada grupo (membro/não-membro)
+- [x] **MBR-03**: Percentual de adesão por tipo de empresa (quais segmentos têm maior taxa de associação)
 
 ### Análise de Receita
 
