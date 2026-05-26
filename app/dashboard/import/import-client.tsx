@@ -2,9 +2,11 @@
 
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { ColumnMappingUI } from './column-mapping'
 import { PreviewTable } from './preview-table'
 import type { PreviewResponse, ColumnMapping as ColumnMappingType } from '@/lib/import/types'
+import type { Edition } from '@/lib/database.types'
 
 type Stage = 'idle' | 'uploading' | 'mapping' | 'preview' | 'committing' | 'done' | 'error'
 
@@ -19,13 +21,20 @@ interface CommitResult {
   formErrors: number
 }
 
-export function ImportClient() {
+export function ImportClient({
+  editions,
+  initialEditionId,
+}: {
+  editions: Edition[]
+  initialEditionId: string
+}) {
   const [stage, setStage] = useState<Stage>('idle')
   const [file, setFile] = useState<File | null>(null)
   const [preview, setPreview] = useState<PreviewResponse | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [mapping, setMapping] = useState<ColumnMappingType | null>(null)
   const [result, setResult] = useState<CommitResult | null>(null)
+  const [selectedEditionId, setSelectedEditionId] = useState(initialEditionId || editions[0]?.id || '')
 
   async function upload(f: File, overrideMapping?: ColumnMappingType) {
     setStage('uploading')
@@ -57,7 +66,7 @@ export function ImportClient() {
       const res = await fetch('/api/import/commit', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ serverToken }),
+        body: JSON.stringify({ serverToken, editionId: selectedEditionId }),
       })
       const json = await res.json()
       if (!res.ok) {
@@ -90,6 +99,30 @@ export function ImportClient() {
 
   return (
     <div className="space-y-6">
+      {/* Picker de evento de destino */}
+      <div className="flex items-center gap-3 border border-border rounded-lg bg-card px-4 py-3">
+        <div className="flex-1">
+          <p className="text-[10px] font-mono tracking-wider text-muted-foreground uppercase mb-1">
+            Evento de destino
+          </p>
+          <Select
+            value={selectedEditionId}
+            onValueChange={(v) => { if (v) setSelectedEditionId(v) }}
+            disabled={stage === 'committing' || stage === 'uploading'}
+          >
+            <SelectTrigger className="w-full max-w-sm"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              {editions.map(e => (
+                <SelectItem key={e.id} value={e.id}>{e.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <p className="text-[10px] font-mono text-muted-foreground/60 max-w-xs">
+          Os dados serão associados a este evento. Verifique antes de confirmar.
+        </p>
+      </div>
+
       {(stage === 'idle' || stage === 'error') && (
         <div className="border border-dashed border-border rounded-lg p-12 text-center space-y-4">
           <p className="text-sm text-muted-foreground">

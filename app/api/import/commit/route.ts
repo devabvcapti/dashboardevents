@@ -11,7 +11,7 @@ const CHUNK_SIZE = 500
 
 const BodySchema = z.object({
   serverToken: z.string().min(32).max(64),
-  editionYear: z.number().int().optional().default(2025),
+  editionId: z.string().uuid(),
 })
 
 export async function POST(req: Request) {
@@ -50,16 +50,16 @@ export async function POST(req: Request) {
 
   const supabase = getSupabase()
 
-  // 4. Resolve edition by year
+  // 4. Resolve edition by id
   const { data: edition, error: editionErr } = await supabase
     .from('editions')
     .select('id, year, name')
-    .eq('year', body.editionYear)
+    .eq('id', body.editionId)
     .single()
 
   if (editionErr || !edition) {
     return NextResponse.json(
-      { error: `Edição ${body.editionYear} não encontrada.` },
+      { error: 'Edição não encontrada.' },
       { status: 404 }
     )
   }
