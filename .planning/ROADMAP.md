@@ -12,7 +12,7 @@
 
 - [x] **Phase 1: Foundation** — Substituir schema, corrigir segurança, regenerar tipos, queries SQL
 - [ ] **Phase 2: Import Pipeline + Auth** — Upload de Excel end-to-end com parse, validação, mapeamento e upsert; autenticação básica
-- [ ] **Phase 3: Dashboard Core** — KPI cards, análise de membros/receita, lista de participantes com paginação/busca/filtro/export
+- [x] **Phase 3: Dashboard Core** — KPI cards, análise de membros/receita, lista de participantes com paginação/busca/filtro/export (completed 2026-05-26)
 - [ ] **Phase 4: Analytics Depth** — Análise de formulário, mapa geográfico, export operacional, histórico de imports
 
 ---
@@ -85,14 +85,14 @@ Plans:
 
 **Requirements**: OV-01, OV-02, OV-03, OV-04, LIST-01, LIST-02, LIST-03, LIST-04, LIST-05, MBR-01, MBR-02, MBR-03, REV-01, REV-02, REV-03
 
-**Plans:** 4/5 plans executed
+**Plans:** 5/5 plans complete
 
 Plans:
 - [x] 03-01-PLAN.md — Multi-event infrastructure: migrations 007 (remove UNIQUE editions.year), 008 (RPC get_overview_stats com p_edition_id + unique_companies + states_represented), 009 (RPCs get_member_analysis + get_revenue_analysis), 010 (índices); lib/data.ts refatorado em editionId-only + 6 funções novas (getEditions, getParticipantsPaginated, getParticipantsForExport, getMemberAnalysis, getRevenueAnalysis); lib/edition-cookie.ts; /api/edition/select + /api/edition/create; EditionSelector no sidebar; /dashboard/eventos; import flow migrado para editionId; exceljs movido para dependencies (`OV-01`, `OV-02` parcial via RPC)
 - [x] 03-02-PLAN.md — Overview KPIs + charts: 7 StatCards (total, membros %, não-membros %, receita, ticket médio, empresas únicas, estados); donut Membros vs Não-Membros com label central de total; barras horizontais por tipo de empresa ordenadas desc com count + % (`OV-01`, `OV-02`, `OV-03`, `OV-04`)
 - [x] 03-03-PLAN.md — Lista de participantes server-side + export: page.tsx async searchParams + getParticipantsPaginated com whitelists; inscricoes-client.tsx com router.push, debounce 400ms, sort por 5 colunas, paginação 25/50/100; /api/export/participants gera .xlsx via ExcelJS com 11 colunas e respeita filtros (`LIST-01`, `LIST-02`, `LIST-03`, `LIST-04`, `LIST-05`)
 - [x] 03-04-PLAN.md — Análise de membros: page.tsx + membros-charts.tsx com stacked bars Membros vs Não-Membros por segmento, ranking de adesão % (filtro ruído ≥3 inscritos), tabela detalhada com 5 colunas (`MBR-01`, `MBR-02`, `MBR-03`)
-- [ ] 03-05-PLAN.md — Análise de receita: page.tsx + receita-charts.tsx com KPIs (receita total + ticket médio geral via média ponderada), comparativo MEMBRO vs NAO_MEMBRO (2 bars + tabela), histograma de 6 faixas (Gratuito → Acima de R$3000) (`REV-01`, `REV-02`, `REV-03`)
+- [x] 03-05-PLAN.md — Análise de receita: page.tsx + receita-charts.tsx com KPIs (receita total + ticket médio geral via média ponderada), comparativo MEMBRO vs NAO_MEMBRO (2 bars + tabela), histograma de 6 faixas (Gratuito → Acima de R$3000) (`REV-01`, `REV-02`, `REV-03`)
 
 **Success Criteria** (what must be TRUE):
 
@@ -142,7 +142,7 @@ Plans:
 |-------|----------------|--------|-----------|
 | 1. Foundation | 3/3 | ✅ Complete | 2026-05-21 |
 | 2. Import Pipeline + Auth | 2/4 | 🔄 In Progress | - |
-| 3. Dashboard Core | 4/5 | In Progress|  |
+| 3. Dashboard Core | 5/5 | Complete   | 2026-05-26 |
 | 4. Analytics Depth | 0/4 | Not started | - |
 
 ---

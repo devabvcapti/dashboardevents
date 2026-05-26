@@ -52,9 +52,9 @@
 
 ### Análise de Receita
 
-- [ ] **REV-01**: Receita total e ticket médio geral
-- [ ] **REV-02**: Receita e ticket médio por tipo de ingresso (MEMBRO/NAO_MEMBRO)
-- [ ] **REV-03**: Distribuição de valores de ingresso (histograma)
+- [x] **REV-01**: Receita total e ticket médio geral
+- [x] **REV-02**: Receita e ticket médio por tipo de ingresso (MEMBRO/NAO_MEMBRO)
+- [x] **REV-03**: Distribuição de valores de ingresso (histograma)
 
 ### Análise de Formulário
 

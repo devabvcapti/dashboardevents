@@ -3,23 +3,23 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: Executing Phase 03
-last_updated: "2026-05-26T17:41:45.167Z"
+last_updated: "2026-05-26T18:14:08.431Z"
 progress:
   total_phases: 4
-  completed_phases: 1
+  completed_phases: 2
   total_plans: 9
-  completed_plans: 8
-  percent: 89
+  completed_plans: 9
+  percent: 100
 ---
 
 # Project State
 
 ## Current Status
 
-**Phase:** Phase 3 in progress — Plan 03-04 complete
-**Last action:** Phase 3 Plan 04 (Análise de Membros) built — `npm run build` passes, 2 files created (page.tsx + membros-charts.tsx), MBR-01/02/03 satisfeitos
-**Next step:** Execute Plan 03-05 (Análise de Receita)
-**Last session:** 2026-05-26T17:41:45.161Z
+**Phase:** Phase 3 complete — all 5 plans done
+**Last action:** Phase 3 Plan 05 (Análise de Receita) built — `npm run build` passes, 2 files created (page.tsx + receita-charts.tsx), REV-01/02/03 satisfeitos
+**Next step:** Execute Phase 04 (Analytics Depth)
+**Last session:** 2026-05-26T18:14:08.427Z
 
 ## Roadmap Progress
 
@@ -27,7 +27,7 @@ progress:
 |-------|-------|--------|
 | 1 | Foundation (schema, segurança, tipos, queries SQL) | ✅ Complete |
 | 2 | Import Pipeline + Autenticação | ✅ Complete (4/4 plans done) |
-| 3 | Dashboard Core (KPIs, membros, receita, lista) | 🔄 In Progress (3/5 plans done) |
+| 3 | Dashboard Core (KPIs, membros, receita, lista) | ✅ Complete (5/5 plans done) |
 | 4 | Analytics Depth (formulário, mapa, export) | ⏳ Not started |
 
 ## Phase 3 Progress
@@ -38,7 +38,7 @@ progress:
 | 03-02 | Overview KPIs + Charts | ✅ Complete | cdedd70, 9aae5ce, 6e1a8e1 |
 | 03-03 | Lista de Inscrições paginada | ✅ Complete | 8467961, 29ef8be |
 | 03-04 | Análise de Membros | ✅ Complete | 44cdd0f, 9d295d7 |
-| 03-05 | Análise de Receita | ⏳ Pending | — |
+| 03-05 | Análise de Receita | ✅ Complete | 2f5caa2, de94cac |
 
 ## Phase 2 Progress
 
@@ -80,6 +80,8 @@ progress:
 - **runtime nodejs obrigatório para ExcelJS** — ExcelJS usa APIs Node.js (fs, Buffer) incompatíveis com Edge runtime; route handler de export exige runtime = 'nodejs' (03-03)
 - **MBR-02 via stacked bars + tabela numérica** — stacked bars mostram proporção visual; tabela fornece valores exatos por segmento (03-04)
 - **Filtro total>=3 no ranking de adesão** — evita que segmentos com 1-2 inscritos distorçam ranking com 0% ou 100% espúrios (03-04)
+- **avgTicketGlobal via média ponderada** — sum(avg_ticket*count)/sum(count) apenas para rows com avg_ticket>0; consistente com RPC que usa FILTER WHERE ticket_value>0 (03-05)
+- **LabelList formatter (v: unknown)** — Recharts tipifica v como RenderableText (não number); cast via Number(v) evita TS2322 sem comprometer runtime (03-05)
 
 ## Phase 1 Deliverables (all verified ✓)
 
@@ -154,6 +156,9 @@ progress:
 - MBR-01: Breakdown visual membros vs não-membros por tipo de empresa — ✅ Done (03-04)
 - MBR-02: Detalhamento por segmento dentro de cada grupo via stacked bars + tabela — ✅ Done (03-04)
 - MBR-03: Ranking de adesão % por segmento, ordenado desc, filtro de ruído — ✅ Done (03-04)
+- REV-01: Receita total e ticket médio geral (KPI cards) — ✅ Done (03-05)
+- REV-02: Receita e ticket médio por tipo de ingresso MEMBRO vs NAO_MEMBRO — ✅ Done (03-05)
+- REV-03: Histograma de distribuição de valores com 6 faixas — ✅ Done (03-05)
 
 ---
 *Phase 1 completed: 2026-05-21*
@@ -164,3 +169,5 @@ progress:
 *Phase 3 Plan 02 completed: 2026-05-26*
 *Phase 3 Plan 03 completed: 2026-05-26*
 *Phase 3 Plan 04 completed: 2026-05-26*
+*Phase 3 Plan 05 completed: 2026-05-26*
+*Phase 3 complete: 2026-05-26*
