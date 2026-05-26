@@ -46,7 +46,9 @@ export function EditionSelector({
   return (
     <Select value={value} onValueChange={handleChange}>
       <SelectTrigger className="w-full text-[12px] bg-sidebar-accent/40 border-sidebar-border text-sidebar-foreground/80">
-        <SelectValue />
+        <SelectValue>
+          {editions.find(e => e.id === value)?.name ?? value}
+        </SelectValue>
       </SelectTrigger>
       <SelectContent>
         {editions.map(e => (
