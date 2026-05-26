@@ -9,6 +9,8 @@ export const MOCK_STATS: OverviewStats = {
   nao_membro: 144,
   total_revenue: 892500,
   avg_ticket: 2609,
+  unique_companies: 180,
+  states_represented: 15,
 }
 
 // ─── Gráfico: inscrições por dia (maio 2025) ─────────────────────────────────

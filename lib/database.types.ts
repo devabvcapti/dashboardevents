@@ -222,7 +222,9 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      get_overview_stats: { Args: { p_edition_year?: number }; Returns: Json }
+      get_overview_stats: { Args: { p_edition_id: string }; Returns: Json }
+      get_member_analysis: { Args: { p_edition_id: string }; Returns: Json }
+      get_revenue_analysis: { Args: { p_edition_id: string }; Returns: Json }
       upsert_form_responses_batch: {
         Args: {
           p_rows: Json
@@ -267,4 +269,42 @@ export interface OverviewStats {
   nao_membro: number
   total_revenue: number
   avg_ticket: number
+  unique_companies: number
+  states_represented: number
+}
+
+export interface MemberAnalysisRow {
+  segment: string
+  membro_count: number
+  nao_membro_count: number
+  total: number
+  membership_pct: number
+}
+
+export interface RevenueByMembership {
+  ticket_membership: TicketMembership
+  count: number
+  total_revenue: number
+  avg_ticket: number
+}
+
+export interface RevenueHistogramBucket {
+  faixa: string
+  count: number
+  min_val: number | null
+  max_val: number | null
+}
+
+export interface RevenueAnalysis {
+  by_membership: RevenueByMembership[]
+  histogram: RevenueHistogramBucket[]
+}
+
+export interface PaginatedParticipants {
+  data: Participant[]
+  count: number
+}
+
+export interface ParticipantWithState extends Participant {
+  origin_state: string | null
 }
