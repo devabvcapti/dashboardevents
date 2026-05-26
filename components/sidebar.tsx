@@ -3,19 +3,29 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { usePathname, useRouter } from 'next/navigation'
-import { LayoutDashboard, Users, BarChart3, TicketIcon, LogOut, Upload } from 'lucide-react'
+import { LayoutDashboard, Users, BarChart3, TicketIcon, LogOut, Upload, Calendar, Wallet, UserCheck } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { ThemeToggle } from '@/components/theme-toggle'
+import { EditionSelector } from '@/components/edition-selector'
 
 const nav = [
   { href: '/dashboard', label: 'Visão Geral', icon: LayoutDashboard },
   { href: '/dashboard/inscricoes', label: 'Inscrições', icon: Users },
   { href: '/dashboard/ingressos', label: 'Ingressos', icon: TicketIcon },
   { href: '/dashboard/publico', label: 'Análise de Público', icon: BarChart3 },
+  { href: '/dashboard/membros', label: 'Análise de Membros', icon: UserCheck },
+  { href: '/dashboard/receita', label: 'Análise de Receita', icon: Wallet },
+  { href: '/dashboard/eventos', label: 'Eventos', icon: Calendar },
   { href: '/dashboard/import', label: 'Importar', icon: Upload },
 ]
 
-export function Sidebar() {
+export function Sidebar({
+  editions,
+  activeEditionId,
+}: {
+  editions: { id: string; name: string; year: number }[]
+  activeEditionId: string
+}) {
   const pathname = usePathname()
   const router = useRouter()
 
@@ -52,6 +62,14 @@ export function Sidebar() {
 
         {/* Divider */}
         <div className="mt-6 h-px bg-sidebar-border" />
+      </div>
+
+      {/* Edition selector (D-01/D-03) */}
+      <div className="px-6 pb-5 -mt-2">
+        <p className="text-[9px] font-mono tracking-[0.25em] text-sidebar-foreground/30 uppercase mb-2">
+          Evento Ativo
+        </p>
+        <EditionSelector editions={editions} activeEditionId={activeEditionId} />
       </div>
 
       {/* Nav label */}
