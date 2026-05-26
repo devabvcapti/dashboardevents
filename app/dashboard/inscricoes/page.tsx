@@ -1,17 +1,14 @@
-import { getParticipants } from '@/lib/data'
-import { MOCK_PARTICIPANTS } from '@/lib/mock-data'
+import { getActiveEditionId } from '@/lib/edition-cookie'
 import { InscricoesClient } from './inscricoes-client'
 
 export const dynamic = 'force-dynamic'
 
 export default async function InscricoesPage() {
-  let participants: Awaited<ReturnType<typeof getParticipants>> = []
-  let isMock = false
+  let activeEditionId = ''
   try {
-    participants = await getParticipants()
+    activeEditionId = await getActiveEditionId()
   } catch {
-    participants = MOCK_PARTICIPANTS
-    isMock = true
+    // sem edição — InscricoesClient lida com estado vazio
   }
 
   return (
@@ -24,17 +21,12 @@ export default async function InscricoesPage() {
           <h1 className="font-display text-3xl text-foreground leading-none">Inscrições</h1>
         </div>
         <div className="flex items-center gap-3 pb-0.5">
-          {isMock && (
-            <span className="text-[9px] font-mono tracking-widest text-amber-500/70 uppercase border border-amber-500/20 bg-amber-500/5 px-2 py-0.5 rounded">
-              dados demo
-            </span>
-          )}
           <p className="text-[11px] font-mono text-muted-foreground/50">
-            {participants.length} participante{participants.length !== 1 ? 's' : ''}
+            Lista de participantes
           </p>
         </div>
       </div>
-      <InscricoesClient initialData={participants} />
+      <InscricoesClient activeEditionId={activeEditionId} />
     </div>
   )
 }

@@ -1,4 +1,5 @@
 import { getOverviewStats, getCompanySegmentSummary, getTicketMembershipSummary } from '@/lib/data'
+import { getActiveEditionId } from '@/lib/edition-cookie'
 import { MOCK_STATS, MOCK_BY_COMPANY_TYPE_ENUM, MOCK_BY_TICKET_TYPE } from '@/lib/mock-data'
 import { PublicoCharts } from './publico-charts'
 
@@ -11,10 +12,11 @@ export default async function PublicoPage() {
   let isMock = false
 
   try {
+    const editionId = await getActiveEditionId()
     const [stats, segment, ticket] = await Promise.all([
-      getOverviewStats(),
-      getCompanySegmentSummary(),
-      getTicketMembershipSummary(),
+      getOverviewStats(editionId),
+      getCompanySegmentSummary(editionId),
+      getTicketMembershipSummary(editionId),
     ])
     total = stats.total
     byCompanyType = segment

@@ -1,4 +1,5 @@
 import { getOverviewStats, getCompanySegmentSummary, getRegistrationsByDay, getTicketMembershipSummary, getFreeTicketStats } from '@/lib/data'
+import { getActiveEditionId } from '@/lib/edition-cookie'
 import { StatCard } from '@/components/stat-card'
 import { OverviewCharts } from './overview-charts'
 import { MOCK_STATS } from '@/lib/mock-data'
@@ -14,12 +15,13 @@ export default async function DashboardPage() {
   let isMock = false
 
   try {
+    const editionId = await getActiveEditionId()
     const [s, ticket, segment, regByDay, free] = await Promise.all([
-      getOverviewStats(),
-      getTicketMembershipSummary(),
-      getCompanySegmentSummary(),
-      getRegistrationsByDay(),
-      getFreeTicketStats(),
+      getOverviewStats(editionId),
+      getTicketMembershipSummary(editionId),
+      getCompanySegmentSummary(editionId),
+      getRegistrationsByDay(editionId),
+      getFreeTicketStats(editionId),
     ])
     stats = s
     byTicketType = ticket.map(r => ({ type: r.ticket_membership === 'MEMBRO' ? 'Membro' : 'Não Membro', count: r.count }))

@@ -1,4 +1,5 @@
 import { getTicketMembershipSummary } from '@/lib/data'
+import { getActiveEditionId } from '@/lib/edition-cookie'
 import { MOCK_TICKET_SUMMARY } from '@/lib/mock-data'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { TicketBadge } from '@/components/status-badge'
@@ -10,7 +11,8 @@ export default async function IngressosPage() {
   let summary: { ticket_membership: TicketMembership; count: number }[] = []
   let isMock = false
   try {
-    summary = await getTicketMembershipSummary()
+    const editionId = await getActiveEditionId()
+    summary = await getTicketMembershipSummary(editionId)
   } catch {
     summary = MOCK_TICKET_SUMMARY
     isMock = true

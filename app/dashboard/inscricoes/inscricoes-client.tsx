@@ -15,7 +15,8 @@ const MEMBERSHIP_TYPES: Array<{ value: TicketMembership | 'ALL'; label: string }
   { value: 'NAO_MEMBRO', label: 'Não Membro' },
 ]
 
-export function InscricoesClient({ initialData }: { initialData: Participant[] }) {
+// activeEditionId: usado pelos Plans 03+ para paginação server-side (stub temporário)
+export function InscricoesClient({ initialData = [], activeEditionId: _activeEditionId }: { initialData?: Participant[]; activeEditionId?: string }) {
   const [search, setSearch] = useState('')
   const [membershipFilter, setMembershipFilter] = useState<TicketMembership | 'ALL'>('ALL')
 
