@@ -3,32 +3,42 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: Executing Phase 03
-last_updated: "2026-05-26T13:53:38.455Z"
+last_updated: "2026-05-26T16:48:44.225Z"
 progress:
   total_phases: 4
   completed_phases: 1
   total_plans: 9
-  completed_plans: 4
-  percent: 44
+  completed_plans: 6
+  percent: 67
 ---
 
 # Project State
 
 ## Current Status
 
-**Phase:** Phase 2 in progress — Plan 02-04 complete (awaiting human end-to-end verification)
-**Last action:** Phase 2 Plan 04 (Commit route + audit log + result UI) built and pushed — `npm run build` passes, 4 files changed, /api/import/commit live
-**Next step:** Human verifies end-to-end import (upload file, confirm mapping, commit, check result grids, verify dedup, check form_responses and import_jobs in Supabase)
-**Last session:** 2026-05-26T11:42:10.355Z
+**Phase:** Phase 3 in progress — Plan 03-02 complete
+**Last action:** Phase 3 Plan 02 (Overview KPIs + Charts) built — `npm run build` passes, 3 files changed (overview-kpis.tsx criado, overview-charts.tsx + page.tsx refatorados)
+**Next step:** Execute Plan 03-03 (Análise de Membros) ou 03-04 (Análise de Receita)
+**Last session:** 2026-05-26T16:48:44.220Z
 
 ## Roadmap Progress
 
 | Phase | Title | Status |
 |-------|-------|--------|
 | 1 | Foundation (schema, segurança, tipos, queries SQL) | ✅ Complete |
-| 2 | Import Pipeline + Autenticação | 🔄 In Progress (3/4 plans done) |
-| 3 | Dashboard Core (KPIs, membros, receita, lista) | ⏳ Not started |
+| 2 | Import Pipeline + Autenticação | ✅ Complete (4/4 plans done) |
+| 3 | Dashboard Core (KPIs, membros, receita, lista) | 🔄 In Progress (2/5 plans done) |
 | 4 | Analytics Depth (formulário, mapa, export) | ⏳ Not started |
+
+## Phase 3 Progress
+
+| Plan | Name | Status | Commit |
+|------|------|--------|--------|
+| 03-01 | Multi-event infra + RPCs + edition-cookie | ✅ Complete | (checkpoint aprovado) |
+| 03-02 | Overview KPIs + Charts | ✅ Complete | cdedd70, 9aae5ce, 6e1a8e1 |
+| 03-03 | Análise de Membros | ⏳ Pending | — |
+| 03-04 | Análise de Receita | ⏳ Pending | — |
+| 03-05 | Lista de Inscrições paginada | ⏳ Pending | — |
 
 ## Phase 2 Progress
 
@@ -63,6 +73,8 @@ progress:
 - **consumePreview() exported from route.ts** — Plan 04 imports it directly to retrieve validated rows by serverToken (one-time consume)
 - **Cast ParticipantRow[] to Json via unknown for RPC args** — Supabase types require Json; safer than ts-ignore
 - **Shared preview-store module** — preview and commit routes in different files; globalThis Map on shared module avoids duplication
+- **Recharts Tooltip formatter usa ValueType implícito** — casts explícitos para `number` causam TS2322; deixar TypeScript inferir evita o erro (03-02)
+- **CTA de sem evento ao invés de erro 500** — quando `getActiveEditionId()` lança (nenhuma edição), page.tsx renderiza CTA com Link para /dashboard/eventos (03-02)
 
 ## Phase 1 Deliverables (all verified ✓)
 
@@ -125,9 +137,15 @@ progress:
 - IMPORT-07: Upsert participantes (ON CONFLICT email+edition) — ✅ Done (02-04)
 - IMPORT-09: form_responses populado no commit — ✅ Done (02-04)
 - IMPORT-10: import_jobs audit log (PROCESSING/COMPLETED/FAILED) — ✅ Done (02-04)
+- OV-01: 7 KPI cards (Total, Membros %, Não-Membros %, Receita, Ticket Médio) — ✅ Done (03-02)
+- OV-02: Empresas Únicas + Estados Representados nos KPIs — ✅ Done (03-02)
+- OV-03: Donut Membros vs Não-Membros com label central de total — ✅ Done (03-02)
+- OV-04: Barras horizontais por tipo de empresa, sorted desc, count + % — ✅ Done (03-02)
 
 ---
 *Phase 1 completed: 2026-05-21*
 *Phase 2 Plan 02 completed: 2026-05-25*
 *Phase 2 Plan 03 completed: 2026-05-25*
 *Phase 2 Plan 04 completed: 2026-05-25 (awaiting human end-to-end verification)*
+*Phase 3 Plan 01 completed: 2026-05-26*
+*Phase 3 Plan 02 completed: 2026-05-26*

@@ -31,10 +31,10 @@
 
 ### Visão Geral (Overview)
 
-- [ ] **OV-01**: KPI cards: total inscritos, membros (count + %), não-membros (count + %), receita total, ticket médio
-- [ ] **OV-02**: KPI cards adicionais: empresas únicas, estados representados
-- [ ] **OV-03**: Donut chart Membros vs Não-Membros com label central mostrando total
-- [ ] **OV-04**: Gráfico de barras horizontais por tipo de empresa (sorted desc, count + %)
+- [x] **OV-01**: KPI cards: total inscritos, membros (count + %), não-membros (count + %), receita total, ticket médio
+- [x] **OV-02**: KPI cards adicionais: empresas únicas, estados representados
+- [x] **OV-03**: Donut chart Membros vs Não-Membros com label central mostrando total
+- [x] **OV-04**: Gráfico de barras horizontais por tipo de empresa (sorted desc, count + %)
 
 ### Lista de Participantes
 
