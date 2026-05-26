@@ -46,6 +46,7 @@ export async function getCompanySegmentSummary(editionId: string): Promise<Compa
     .select('company_segment_raw')
     .eq('edition_id', editionId)
     .not('company_segment_raw', 'is', null)
+    .limit(5000)
   if (error) throw error
   const counts: Record<string, number> = {}
   for (const row of data ?? []) {
@@ -65,6 +66,7 @@ export async function getRegistrationsByDay(editionId: string): Promise<Registra
     .eq('edition_id', editionId)
     .not('created_at', 'is', null)
     .order('created_at', { ascending: true })
+    .limit(5000)
   if (error) throw error
   const counts: Record<string, number> = {}
   for (const row of data ?? []) {
@@ -79,16 +81,17 @@ export async function getRegistrationsByDay(editionId: string): Promise<Registra
 export interface TicketMembershipSummary { ticket_membership: TicketMembership; count: number }
 export async function getTicketMembershipSummary(editionId: string): Promise<TicketMembershipSummary[]> {
   const membershipTypes: TicketMembership[] = ['MEMBRO', 'NAO_MEMBRO']
-  const results: TicketMembershipSummary[] = []
-  for (const tm of membershipTypes) {
-    const { count, error } = await getSupabase()
-      .from('participants')
-      .select('*', { count: 'exact', head: true })
-      .eq('edition_id', editionId)
-      .eq('ticket_membership', tm)
-    if (error) throw error
-    results.push({ ticket_membership: tm, count: count ?? 0 })
-  }
+  const results = await Promise.all(
+    membershipTypes.map(async tm => {
+      const { count, error } = await getSupabase()
+        .from('participants')
+        .select('*', { count: 'exact', head: true })
+        .eq('edition_id', editionId)
+        .eq('ticket_membership', tm)
+      if (error) throw error
+      return { ticket_membership: tm, count: count ?? 0 }
+    })
+  )
   return results.sort((a, b) => b.count - a.count)
 }
 

@@ -12,11 +12,16 @@ export const ACTIVE_EDITION_COOKIE = 'active_edition_id'
 export async function getActiveEditionId(): Promise<string> {
   const cookieStore = await cookies()
   const stored = cookieStore.get(ACTIVE_EDITION_COOKIE)?.value
-  if (stored) return stored
 
   const editions = await getEditions()
   if (editions.length === 0) {
     throw new Error('Nenhuma edição cadastrada')
   }
+
+  // Valida cookie contra o banco — edição pode ter sido deletada
+  if (stored && editions.some(e => e.id === stored)) {
+    return stored
+  }
+
   return editions[0].id
 }

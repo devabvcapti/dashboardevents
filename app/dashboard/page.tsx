@@ -7,7 +7,12 @@ import { getActiveEditionId } from '@/lib/edition-cookie'
 import Link from 'next/link'
 import { OverviewKpis } from './overview-kpis'
 import { OverviewCharts } from './overview-charts'
-import { MOCK_STATS } from '@/lib/mock-data'
+import type { OverviewStats } from '@/lib/data'
+
+const EMPTY_STATS: OverviewStats = {
+  total: 0, membro: 0, nao_membro: 0, total_revenue: 0, avg_ticket: 0,
+  unique_companies: 0, states_represented: 0,
+}
 
 export const dynamic = 'force-dynamic'
 
@@ -69,7 +74,7 @@ export default async function DashboardPage() {
     isMock = true
   }
 
-  const display = stats ?? MOCK_STATS
+  const display = stats ?? EMPTY_STATS
 
   return (
     <div className="p-8 space-y-8">
@@ -84,8 +89,8 @@ export default async function DashboardPage() {
         </div>
         <div className="flex items-center gap-3 pb-0.5">
           {isMock && (
-            <span className="text-[9px] font-mono tracking-widest text-amber-500/70 uppercase border border-amber-500/20 bg-amber-500/5 px-2 py-0.5 rounded">
-              dados demo
+            <span className="text-[9px] font-mono tracking-widest text-red-500/70 uppercase border border-red-500/20 bg-red-500/5 px-2 py-0.5 rounded">
+              erro ao carregar dados
             </span>
           )}
           <p className="text-[11px] font-mono text-muted-foreground/50">
