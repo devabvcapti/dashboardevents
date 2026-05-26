@@ -110,7 +110,11 @@ export function ImportClient({
             onValueChange={(v) => { if (v) setSelectedEditionId(v) }}
             disabled={stage === 'committing' || stage === 'uploading'}
           >
-            <SelectTrigger className="w-full max-w-sm"><SelectValue /></SelectTrigger>
+            <SelectTrigger className="w-full max-w-sm">
+              <SelectValue>
+                {editions.find(e => e.id === selectedEditionId)?.name ?? selectedEditionId}
+              </SelectValue>
+            </SelectTrigger>
             <SelectContent>
               {editions.map(e => (
                 <SelectItem key={e.id} value={e.id}>{e.name}</SelectItem>
