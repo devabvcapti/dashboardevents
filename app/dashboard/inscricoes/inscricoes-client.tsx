@@ -1,82 +1,209 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useCallback, useRef, useState, useTransition } from 'react'
+import { useRouter, useSearchParams, usePathname } from 'next/navigation'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { Button } from '@/components/ui/button'
 import { TicketBadge } from '@/components/status-badge'
-import type { Participant, TicketMembership } from '@/lib/database.types'
+import { ChevronLeft, ChevronRight, Download, ArrowUpDown } from 'lucide-react'
+import type { Participant, TicketMembership, CompanySegment } from '@/lib/database.types'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 
-const MEMBERSHIP_TYPES: Array<{ value: TicketMembership | 'ALL'; label: string }> = [
-  { value: 'ALL', label: 'Todos os ingressos' },
-  { value: 'MEMBRO', label: 'Membro' },
-  { value: 'NAO_MEMBRO', label: 'Não Membro' },
+interface Filters {
+  search: string
+  membership: TicketMembership | '' | string
+  segment: CompanySegment | '' | string
+  state: string
+  minValue: string
+  maxValue: string
+  sort: string
+  dir: 'asc' | 'desc'
+}
+
+interface Props {
+  participants: Participant[]
+  totalCount: number
+  currentPage: number
+  pageSize: 25 | 50 | 100
+  filters: Filters
+}
+
+const SEGMENT_LABELS: Record<string, string> = {
+  GP: 'Gestora de PE/VC',
+  LP: 'Investidor (LP)',
+  FUNDO: 'Fundo de Pensão',
+  CORPORATIVO: 'Corporativo',
+  GOVERNO: 'Governo',
+  ACADEMIA: 'Academia',
+  OUTRO: 'Outro',
+}
+
+const SORTABLE_COLUMNS: Array<{ key: string; label: string }> = [
+  { key: 'full_name', label: 'Nome' },
+  { key: 'company', label: 'Empresa' },
+  { key: 'ticket_membership', label: 'Tipo' },
+  { key: 'ticket_value', label: 'Valor' },
+  { key: 'created_at', label: 'Inscrição' },
 ]
 
-// activeEditionId: usado pelos Plans 03+ para paginação server-side (stub temporário)
-export function InscricoesClient({ initialData = [], activeEditionId: _activeEditionId }: { initialData?: Participant[]; activeEditionId?: string }) {
-  const [search, setSearch] = useState('')
-  const [membershipFilter, setMembershipFilter] = useState<TicketMembership | 'ALL'>('ALL')
+export function InscricoesClient({ participants, totalCount, currentPage, pageSize, filters }: Props) {
+  const router = useRouter()
+  const pathname = usePathname()
+  const searchParams = useSearchParams()
+  const [, startTransition] = useTransition()
+  const [searchLocal, setSearchLocal] = useState(filters.search)
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  const filtered = useMemo(() => {
-    return initialData.filter(p => {
-      if (membershipFilter !== 'ALL' && p.ticket_membership !== membershipFilter) return false
-      if (search) {
-        const q = search.toLowerCase()
-        if (
-          !p.full_name.toLowerCase().includes(q) &&
-          !p.email.toLowerCase().includes(q) &&
-          !(p.company ?? '').toLowerCase().includes(q)
-        ) return false
-      }
-      return true
-    })
-  }, [initialData, search, membershipFilter])
+  const totalPages = Math.max(1, Math.ceil(totalCount / pageSize))
+
+  const pushParams = useCallback((updates: Record<string, string | null>, resetPage = true) => {
+    const next = new URLSearchParams(searchParams.toString())
+    for (const [k, v] of Object.entries(updates)) {
+      if (v === null || v === '') next.delete(k)
+      else next.set(k, v)
+    }
+    if (resetPage) next.delete('page')
+    startTransition(() => router.push(`${pathname}?${next.toString()}`))
+  }, [router, pathname, searchParams])
+
+  function onSearchChange(value: string) {
+    setSearchLocal(value)
+    if (debounceRef.current) clearTimeout(debounceRef.current)
+    debounceRef.current = setTimeout(() => {
+      pushParams({ search: value || null })
+    }, 400)
+  }
+
+  function toggleSort(col: string) {
+    const isCurrent = filters.sort === col
+    const nextDir: 'asc' | 'desc' = isCurrent && filters.dir === 'desc' ? 'asc' : 'desc'
+    pushParams({ sort: col, dir: nextDir }, false)
+  }
+
+  function buildExportUrl(): string {
+    const next = new URLSearchParams(searchParams.toString())
+    next.delete('page')
+    next.delete('page_size')
+    return `/api/export/participants?${next.toString()}`
+  }
+
+  function goToPage(n: number) {
+    const target = Math.min(Math.max(1, n), totalPages)
+    const next = new URLSearchParams(searchParams.toString())
+    if (target === 1) next.delete('page')
+    else next.set('page', String(target))
+    startTransition(() => router.push(`${pathname}?${next.toString()}`))
+  }
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap gap-3">
+      {/* Linha de controles */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
         <Input
-          placeholder="Buscar por nome, e-mail ou empresa..."
-          value={search}
-          onChange={e => setSearch(e.target.value)}
-          className="max-w-xs"
+          placeholder="Buscar por nome, e-mail ou empresa…"
+          value={searchLocal}
+          onChange={e => onSearchChange(e.target.value)}
+          className="lg:col-span-2"
         />
-        <Select value={membershipFilter} onValueChange={v => setMembershipFilter(v as TicketMembership | 'ALL')}>
-          <SelectTrigger className="w-48"><SelectValue /></SelectTrigger>
+        <Select value={filters.membership || 'ALL'} onValueChange={v => pushParams({ membership: v === 'ALL' ? null : v })}>
+          <SelectTrigger><SelectValue placeholder="Tipo de ingresso" /></SelectTrigger>
           <SelectContent>
-            {MEMBERSHIP_TYPES.map(t => (
-              <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
+            <SelectItem value="ALL">Todos os ingressos</SelectItem>
+            <SelectItem value="MEMBRO">Membro</SelectItem>
+            <SelectItem value="NAO_MEMBRO">Não Membro</SelectItem>
+          </SelectContent>
+        </Select>
+        <Select value={filters.segment || 'ALL'} onValueChange={v => pushParams({ segment: v === 'ALL' ? null : v })}>
+          <SelectTrigger><SelectValue placeholder="Tipo de empresa" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="ALL">Todos os tipos</SelectItem>
+            {Object.entries(SEGMENT_LABELS).map(([k, label]) => (
+              <SelectItem key={k} value={k}>{label}</SelectItem>
             ))}
           </SelectContent>
         </Select>
-        <span className="self-center text-sm text-muted-foreground">
-          {filtered.length} resultado{filtered.length !== 1 ? 's' : ''}
-        </span>
+      </div>
+
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <Input
+          placeholder="Estado (UF, ex: SP)"
+          value={filters.state}
+          maxLength={2}
+          onChange={e => {
+            const s = e.target.value.toUpperCase()
+            pushParams({ state: /^[A-Z]{0,2}$/.test(s) ? (s.length === 2 ? s : null) : null })
+          }}
+        />
+        <Input
+          placeholder="Valor mínimo (R$)"
+          type="number"
+          inputMode="decimal"
+          value={filters.minValue}
+          onChange={e => pushParams({ min_value: e.target.value || null })}
+        />
+        <Input
+          placeholder="Valor máximo (R$)"
+          type="number"
+          inputMode="decimal"
+          value={filters.maxValue}
+          onChange={e => pushParams({ max_value: e.target.value || null })}
+        />
+        <Select value={String(pageSize)} onValueChange={v => pushParams({ page_size: v })}>
+          <SelectTrigger><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="25">25 por página</SelectItem>
+            <SelectItem value="50">50 por página</SelectItem>
+            <SelectItem value="100">100 por página</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      <div className="flex items-center justify-between">
+        <p className="text-xs font-mono text-muted-foreground">
+          {totalCount.toLocaleString('pt-BR')} resultado{totalCount !== 1 ? 's' : ''} · página {currentPage} de {totalPages}
+        </p>
+        <a href={buildExportUrl()} download>
+          <Button variant="outline" size="sm" type="button">
+            <Download className="w-4 h-4 mr-2" />
+            Exportar (.xlsx)
+          </Button>
+        </a>
       </div>
 
       <div className="rounded-lg border bg-card overflow-hidden">
         <Table>
           <TableHeader>
             <TableRow className="bg-muted/40 hover:bg-muted/40">
-              <TableHead className="font-semibold">Nome</TableHead>
-              <TableHead className="font-semibold">Empresa</TableHead>
-              <TableHead className="font-semibold">Tipo</TableHead>
-              <TableHead className="font-semibold text-right">Valor</TableHead>
-              <TableHead className="font-semibold">Inscrição</TableHead>
+              {SORTABLE_COLUMNS.map(col => {
+                const isActive = filters.sort === col.key
+                return (
+                  <TableHead key={col.key} className="font-semibold">
+                    <button
+                      type="button"
+                      onClick={() => toggleSort(col.key)}
+                      className="flex items-center gap-1 hover:text-foreground"
+                    >
+                      {col.label}
+                      <ArrowUpDown className={`w-3 h-3 ${isActive ? 'text-primary' : 'text-muted-foreground/40'}`} />
+                      {isActive && <span className="text-[9px] font-mono text-primary">{filters.dir}</span>}
+                    </button>
+                  </TableHead>
+                )
+              })}
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filtered.length === 0 && (
+            {participants.length === 0 && (
               <TableRow>
-                <TableCell colSpan={5} className="text-center text-muted-foreground py-12">
+                <TableCell colSpan={SORTABLE_COLUMNS.length} className="text-center text-muted-foreground py-12">
                   Nenhum participante encontrado.
                 </TableCell>
               </TableRow>
             )}
-            {filtered.map(p => (
+            {participants.map(p => (
               <TableRow key={p.id} className="hover:bg-muted/30">
                 <TableCell>
                   <div>
@@ -93,13 +220,40 @@ export function InscricoesClient({ initialData = [], activeEditionId: _activeEdi
                 </TableCell>
                 <TableCell className="text-xs text-muted-foreground">
                   {p.created_at
-                    ? format(new Date(p.created_at), "dd/MM/yy HH:mm", { locale: ptBR })
+                    ? format(new Date(p.created_at), 'dd/MM/yy HH:mm', { locale: ptBR })
                     : '—'}
                 </TableCell>
               </TableRow>
             ))}
           </TableBody>
         </Table>
+      </div>
+
+      {/* Paginação */}
+      <div className="flex items-center justify-between">
+        <Button
+          variant="outline"
+          size="sm"
+          type="button"
+          disabled={currentPage <= 1}
+          onClick={() => goToPage(currentPage - 1)}
+        >
+          <ChevronLeft className="w-4 h-4 mr-1" />
+          Anterior
+        </Button>
+        <p className="text-xs font-mono text-muted-foreground">
+          {currentPage} / {totalPages}
+        </p>
+        <Button
+          variant="outline"
+          size="sm"
+          type="button"
+          disabled={currentPage >= totalPages}
+          onClick={() => goToPage(currentPage + 1)}
+        >
+          Próxima
+          <ChevronRight className="w-4 h-4 ml-1" />
+        </Button>
       </div>
     </div>
   )
