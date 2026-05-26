@@ -38,11 +38,11 @@
 
 ### Lista de Participantes
 
-- [ ] **LIST-01**: Tabela paginada server-side (25/50/100 por página) com total de resultados visível
-- [ ] **LIST-02**: Busca por nome, e-mail ou empresa (debounced, atualiza contagem)
-- [ ] **LIST-03**: Filtros: tipo de ingresso (MEMBRO/NAO_MEMBRO), tipo de empresa, estado, faixa de valor
-- [ ] **LIST-04**: Ordenação por qualquer coluna
-- [ ] **LIST-05**: Export da visão filtrada atual para CSV/Excel (UTF-8 BOM para compatibilidade Windows)
+- [x] **LIST-01**: Tabela paginada server-side (25/50/100 por página) com total de resultados visível
+- [x] **LIST-02**: Busca por nome, e-mail ou empresa (debounced, atualiza contagem)
+- [x] **LIST-03**: Filtros: tipo de ingresso (MEMBRO/NAO_MEMBRO), tipo de empresa, estado, faixa de valor
+- [x] **LIST-04**: Ordenação por qualquer coluna
+- [x] **LIST-05**: Export da visão filtrada atual para CSV/Excel (UTF-8 BOM para compatibilidade Windows)
 
 ### Análise de Membros
 

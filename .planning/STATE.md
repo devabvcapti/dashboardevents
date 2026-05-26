@@ -3,23 +3,23 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: Executing Phase 03
-last_updated: "2026-05-26T16:48:44.225Z"
+last_updated: "2026-05-26T17:10:21.501Z"
 progress:
   total_phases: 4
   completed_phases: 1
   total_plans: 9
-  completed_plans: 6
-  percent: 67
+  completed_plans: 7
+  percent: 78
 ---
 
 # Project State
 
 ## Current Status
 
-**Phase:** Phase 3 in progress — Plan 03-02 complete
-**Last action:** Phase 3 Plan 02 (Overview KPIs + Charts) built — `npm run build` passes, 3 files changed (overview-kpis.tsx criado, overview-charts.tsx + page.tsx refatorados)
-**Next step:** Execute Plan 03-03 (Análise de Membros) ou 03-04 (Análise de Receita)
-**Last session:** 2026-05-26T16:48:44.220Z
+**Phase:** Phase 3 in progress — Plan 03-03 complete
+**Last action:** Phase 3 Plan 03 (Lista de Inscrições paginada) built — `npm run build` passes, 3 files changed (page.tsx + inscricoes-client.tsx refatorados, /api/export/participants criado)
+**Next step:** Execute Plan 03-04 (Análise de Receita) ou 03-05 (se renumerado)
+**Last session:** 2026-05-26T17:10:21.000Z
 
 ## Roadmap Progress
 
@@ -27,7 +27,7 @@ progress:
 |-------|-------|--------|
 | 1 | Foundation (schema, segurança, tipos, queries SQL) | ✅ Complete |
 | 2 | Import Pipeline + Autenticação | ✅ Complete (4/4 plans done) |
-| 3 | Dashboard Core (KPIs, membros, receita, lista) | 🔄 In Progress (2/5 plans done) |
+| 3 | Dashboard Core (KPIs, membros, receita, lista) | 🔄 In Progress (3/5 plans done) |
 | 4 | Analytics Depth (formulário, mapa, export) | ⏳ Not started |
 
 ## Phase 3 Progress
@@ -36,9 +36,9 @@ progress:
 |------|------|--------|--------|
 | 03-01 | Multi-event infra + RPCs + edition-cookie | ✅ Complete | (checkpoint aprovado) |
 | 03-02 | Overview KPIs + Charts | ✅ Complete | cdedd70, 9aae5ce, 6e1a8e1 |
-| 03-03 | Análise de Membros | ⏳ Pending | — |
-| 03-04 | Análise de Receita | ⏳ Pending | — |
-| 03-05 | Lista de Inscrições paginada | ⏳ Pending | — |
+| 03-03 | Lista de Inscrições paginada | ✅ Complete | 8467961, 29ef8be |
+| 03-04 | Análise de Membros | ⏳ Pending | — |
+| 03-05 | Análise de Receita | ⏳ Pending | — |
 
 ## Phase 2 Progress
 
@@ -75,6 +75,9 @@ progress:
 - **Shared preview-store module** — preview and commit routes in different files; globalThis Map on shared module avoids duplication
 - **Recharts Tooltip formatter usa ValueType implícito** — casts explícitos para `number` causam TS2322; deixar TypeScript inferir evita o erro (03-02)
 - **CTA de sem evento ao invés de erro 500** — quando `getActiveEditionId()` lança (nenhuma edição), page.tsx renderiza CTA com Link para /dashboard/eventos (03-02)
+- **searchParams como Promise<SearchParams> (Next.js 16)** — await searchParams obrigatório em Server Components; omitir causa erro de runtime (03-03)
+- **1 useState para searchLocal em inscricoes-client** — único estado local necessário para feedback imediato pré-debounce; todos os demais controles leem de props e empurram URL (03-03)
+- **runtime nodejs obrigatório para ExcelJS** — ExcelJS usa APIs Node.js (fs, Buffer) incompatíveis com Edge runtime; route handler de export exige runtime = 'nodejs' (03-03)
 
 ## Phase 1 Deliverables (all verified ✓)
 
@@ -141,6 +144,11 @@ progress:
 - OV-02: Empresas Únicas + Estados Representados nos KPIs — ✅ Done (03-02)
 - OV-03: Donut Membros vs Não-Membros com label central de total — ✅ Done (03-02)
 - OV-04: Barras horizontais por tipo de empresa, sorted desc, count + % — ✅ Done (03-02)
+- LIST-01: Paginação server-side via URL params (page + page_size 25/50/100) — ✅ Done (03-03)
+- LIST-02: Busca debounced 400ms por nome/email/empresa, atualiza URL — ✅ Done (03-03)
+- LIST-03: Filtros membership + segment + state + min/max value combinados — ✅ Done (03-03)
+- LIST-04: Ordenação por 5 colunas whitelisted via sort + dir params — ✅ Done (03-03)
+- LIST-05: Export .xlsx com filtros respeitados, UTF-8 nativo, 11 colunas, formatação BRL — ✅ Done (03-03)
 
 ---
 *Phase 1 completed: 2026-05-21*
@@ -149,3 +157,4 @@ progress:
 *Phase 2 Plan 04 completed: 2026-05-25 (awaiting human end-to-end verification)*
 *Phase 3 Plan 01 completed: 2026-05-26*
 *Phase 3 Plan 02 completed: 2026-05-26*
+*Phase 3 Plan 03 completed: 2026-05-26*
