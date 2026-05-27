@@ -146,7 +146,7 @@ export function OverviewCharts({
       </div>
 
       {/* Free vs Pagos (mantido — informativo) */}
-      <div className="bg-card border border-border rounded-lg p-5 shadow-sm lg:col-span-2">
+      <div className="bg-card border border-border rounded-lg p-5 shadow-sm">
         <ChartLabel>Ingressos Grátis (R$0) vs Pagos</ChartLabel>
         {freeChartData.length === 0 ? <EmptyChart height={120} /> : (
           <div className="flex items-center gap-8">
@@ -174,7 +174,7 @@ export function OverviewCharts({
       </div>
 
       {/* Linha — inscrições ao longo do tempo (mantido) */}
-      <div className="bg-card border border-border rounded-lg p-5 shadow-sm lg:col-span-2">
+      <div className="bg-card border border-border rounded-lg p-5 shadow-sm">
         <ChartLabel>Inscrições ao Longo do Tempo</ChartLabel>
         {registrationsByDay.length === 0 ? <EmptyChart height={180} /> : (
           <ResponsiveContainer width="100%" height={180}>
