@@ -120,9 +120,7 @@ export async function getParticipantsPaginated(filters: {
   search?: string
   membership?: TicketMembership
   segment?: CompanySegment
-  state?: string
-  minValue?: number
-  maxValue?: number
+  company?: string
   sort?: string
   dir?: 'asc' | 'desc'
   limit: number
@@ -133,24 +131,19 @@ export async function getParticipantsPaginated(filters: {
     : 'created_at'
   const dir = filters.dir === 'asc' ? 'asc' : 'desc'
 
-  // Quando há filtro de state, precisamos JOIN com form_responses (inner)
-  const needsFormJoin = !!filters.state
-  const selectExpr = needsFormJoin
-    ? '*, form_responses!inner(origin_state)'
-    : '*'
-
   let query = getSupabase()
     .from('participants')
-    .select(selectExpr, { count: 'exact' })
+    .select('*', { count: 'exact' })
     .eq('edition_id', filters.editionId)
     .order(sort, { ascending: dir === 'asc' })
     .range(filters.offset, filters.offset + filters.limit - 1)
 
   if (filters.membership) query = query.eq('ticket_membership', filters.membership)
   if (filters.segment) query = query.eq('company_segment_normalized', filters.segment)
-  if (filters.minValue !== undefined) query = query.gte('ticket_value', filters.minValue)
-  if (filters.maxValue !== undefined) query = query.lte('ticket_value', filters.maxValue)
-  if (filters.state) query = query.eq('form_responses.origin_state', filters.state)
+  if (filters.company) {
+    const c = filters.company.replace(/[%,]/g, '')
+    query = query.ilike('company', `%${c}%`)
+  }
   if (filters.search) {
     const s = filters.search.replace(/[%,]/g, '')
     query = query.or(`full_name.ilike.%${s}%,email.ilike.%${s}%,company.ilike.%${s}%`)

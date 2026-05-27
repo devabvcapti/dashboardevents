@@ -19,8 +19,7 @@ export function OverviewKpis({ stats }: Props) {
     `R$ ${Number(v).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
 
   return (
-    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-      {/* Row 1 — OV-01: total, membros %, não-membros %, receita */}
+    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
       <StatCard
         title="Total Inscritos"
         value={stats.total}
@@ -43,25 +42,11 @@ export function OverviewKpis({ stats }: Props) {
         value={formatBRL(stats.total_revenue)}
         accent="teal"
       />
-
-      {/* Row 2 — OV-01 (ticket médio) + OV-02 (empresas + estados) */}
       <StatCard
         title="Ticket Médio"
         value={formatBRLDecimal(stats.avg_ticket)}
         accent="teal"
       />
-      <StatCard
-        title="Empresas Únicas"
-        value={stats.unique_companies}
-        accent="blue"
-      />
-      <StatCard
-        title="Estados Representados"
-        value={stats.states_represented}
-        accent="default"
-      />
-      {/* Placeholder vazio para manter grade 4-col equilibrada em desktop */}
-      <div className="hidden lg:block" />
     </div>
   )
 }

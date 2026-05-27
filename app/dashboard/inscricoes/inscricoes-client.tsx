@@ -16,9 +16,7 @@ interface Filters {
   search: string
   membership: TicketMembership | '' | string
   segment: CompanySegment | '' | string
-  state: string
-  minValue: string
-  maxValue: string
+  company: string
   sort: string
   dir: 'asc' | 'desc'
 }
@@ -127,32 +125,16 @@ export function InscricoesClient({ participants, totalCount, currentPage, pageSi
         </Select>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         <Input
-          placeholder="Estado (UF, ex: SP)"
-          value={filters.state}
-          maxLength={2}
-          onChange={e => {
-            const s = e.target.value.toUpperCase()
-            pushParams({ state: /^[A-Z]{0,2}$/.test(s) ? (s.length === 2 ? s : null) : null })
-          }}
-        />
-        <Input
-          placeholder="Valor mínimo (R$)"
-          type="number"
-          inputMode="decimal"
-          value={filters.minValue}
-          onChange={e => pushParams({ min_value: e.target.value || null })}
-        />
-        <Input
-          placeholder="Valor máximo (R$)"
-          type="number"
-          inputMode="decimal"
-          value={filters.maxValue}
-          onChange={e => pushParams({ max_value: e.target.value || null })}
+          placeholder="Filtrar por empresa…"
+          value={filters.company}
+          onChange={e => pushParams({ company: e.target.value || null })}
         />
         <Select value={String(pageSize)} onValueChange={v => pushParams({ page_size: v })}>
-          <SelectTrigger><SelectValue /></SelectTrigger>
+          <SelectTrigger><SelectValue>
+            {pageSize} por página
+          </SelectValue></SelectTrigger>
           <SelectContent>
             <SelectItem value="25">25 por página</SelectItem>
             <SelectItem value="50">50 por página</SelectItem>
@@ -165,12 +147,10 @@ export function InscricoesClient({ participants, totalCount, currentPage, pageSi
         <p className="text-xs font-mono text-muted-foreground">
           {totalCount.toLocaleString('pt-BR')} resultado{totalCount !== 1 ? 's' : ''} · página {currentPage} de {totalPages}
         </p>
-        <a href={buildExportUrl()} download>
-          <Button variant="outline" size="sm" type="button">
-            <Download className="w-4 h-4 mr-2" />
-            Exportar (.xlsx)
-          </Button>
-        </a>
+        <Button variant="outline" size="sm" type="button" disabled>
+          <Download className="w-4 h-4 mr-2" />
+          Exportar (.xlsx)
+        </Button>
       </div>
 
       <div className="rounded-lg border bg-card overflow-hidden">

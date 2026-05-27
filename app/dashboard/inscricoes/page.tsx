@@ -13,9 +13,7 @@ interface SearchParams {
   search?: string
   membership?: string
   segment?: string
-  state?: string
-  min_value?: string
-  max_value?: string
+  company?: string
   sort?: string
   dir?: string
 }
@@ -46,16 +44,10 @@ function parseDir(raw: string | undefined): 'asc' | 'desc' {
   return raw === 'asc' ? 'asc' : 'desc'
 }
 
-function parseNumber(raw: string | undefined): number | undefined {
+function parseCompany(raw: string | undefined): string | undefined {
   if (!raw) return undefined
-  const n = Number(raw)
-  return Number.isFinite(n) ? n : undefined
-}
-
-function parseState(raw: string | undefined): string | undefined {
-  if (!raw) return undefined
-  const s = raw.trim().toUpperCase()
-  return /^[A-Z]{2}$/.test(s) ? s : undefined
+  const s = raw.trim()
+  return s.length > 0 ? s.slice(0, 200) : undefined
 }
 
 export default async function InscricoesPage({
@@ -94,9 +86,7 @@ export default async function InscricoesPage({
     search: params.search?.trim() || undefined,
     membership: parseMembership(params.membership),
     segment: parseSegment(params.segment),
-    state: parseState(params.state),
-    minValue: parseNumber(params.min_value),
-    maxValue: parseNumber(params.max_value),
+    company: parseCompany(params.company),
     sort: parseSort(params.sort),
     dir: parseDir(params.dir),
     limit: pageSize,
@@ -142,9 +132,7 @@ export default async function InscricoesPage({
             search: params.search ?? '',
             membership: filters.membership ?? '',
             segment: filters.segment ?? '',
-            state: filters.state ?? '',
-            minValue: params.min_value ?? '',
-            maxValue: params.max_value ?? '',
+            company: filters.company ?? '',
             sort: filters.sort,
             dir: filters.dir,
           }}
