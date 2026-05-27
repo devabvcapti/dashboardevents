@@ -1,26 +1,34 @@
-import { getOverviewStats, getCompanySegmentSummary, getTicketMembershipSummary } from '@/lib/data'
+import { getOverviewStats, getCompanySegmentSummary, getTicketMembershipSummary, getPublicoAnalysis } from '@/lib/data'
 import { getActiveEditionId } from '@/lib/edition-cookie'
 import { MOCK_STATS, MOCK_BY_COMPANY_TYPE_ENUM, MOCK_BY_TICKET_TYPE } from '@/lib/mock-data'
 import { PublicoCharts } from './publico-charts'
+import type { PublicoAnalysis } from '@/lib/data'
 
 export const dynamic = 'force-dynamic'
+
+const EMPTY_ANALISE: PublicoAnalysis = {
+  jobTitles: [], topics: [], events: [], contents: [], channels: [],
+}
 
 export default async function PublicoPage() {
   let total = 0
   let byCompanyType: { type: string; count: number }[] = []
   let byTicketType: { type: string; count: number }[] = []
+  let analise: PublicoAnalysis = EMPTY_ANALISE
   let isMock = false
 
   try {
     const editionId = await getActiveEditionId()
-    const [stats, segment, ticket] = await Promise.all([
+    const [stats, segment, ticket, pub] = await Promise.all([
       getOverviewStats(editionId),
       getCompanySegmentSummary(editionId),
       getTicketMembershipSummary(editionId),
+      getPublicoAnalysis(editionId),
     ])
     total = stats.total
     byCompanyType = segment
     byTicketType = ticket.map(r => ({ type: r.ticket_membership === 'MEMBRO' ? 'Membro' : 'Não Membro', count: r.count }))
+    analise = pub
   } catch {
     total = MOCK_STATS.total
     byCompanyType = MOCK_BY_COMPANY_TYPE_ENUM
@@ -53,6 +61,7 @@ export default async function PublicoPage() {
         byCompanyType={byCompanyType}
         byTicketType={byTicketType}
         total={total}
+        analise={analise}
       />
     </div>
   )

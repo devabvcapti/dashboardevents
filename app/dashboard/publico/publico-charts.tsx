@@ -4,8 +4,8 @@ import {
   PieChart, Pie, Cell, Tooltip, ResponsiveContainer,
   BarChart, Bar, XAxis, YAxis, LabelList,
 } from 'recharts'
+import type { PublicoAnalysis, RankingItem } from '@/lib/data'
 
-/* ABVCAP — teal âncora */
 const CHART_COLORS = [
   '#00a99d',
   '#112468',
@@ -48,9 +48,10 @@ interface Props {
   byCompanyType: { type: string; count: number }[]
   byTicketType: { type: string; count: number }[]
   total: number
+  analise: PublicoAnalysis
 }
 
-export function PublicoCharts({ byCompanyType, total }: Props) {
+export function PublicoCharts({ byCompanyType, total, analise }: Props) {
   const companyData = byCompanyType.map(d => ({
     ...d,
     name: COMPANY_LABELS[d.type] ?? d.type,
@@ -58,22 +59,17 @@ export function PublicoCharts({ byCompanyType, total }: Props) {
   }))
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
+
+      {/* ── Tipo de Empresa ── */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {/* Donut */}
         <div className="bg-card border border-border rounded-lg p-5 shadow-sm">
           <ChartLabel>Distribuição por Tipo de Empresa</ChartLabel>
           {companyData.length === 0 ? <EmptyChart /> : (
             <ResponsiveContainer width="100%" height={260}>
               <PieChart>
-                <Pie
-                  data={companyData}
-                  dataKey="count"
-                  nameKey="name"
-                  cx="50%" cy="50%"
-                  outerRadius={100} innerRadius={52}
-                  paddingAngle={2}
-                >
+                <Pie data={companyData} dataKey="count" nameKey="name"
+                  cx="50%" cy="50%" outerRadius={100} innerRadius={52} paddingAngle={2}>
                   {companyData.map((_, i) => (
                     <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} stroke="transparent" />
                   ))}
@@ -84,33 +80,22 @@ export function PublicoCharts({ byCompanyType, total }: Props) {
           )}
         </div>
 
-        {/* Horizontal bars */}
         <div className="bg-card border border-border rounded-lg p-5 shadow-sm">
           <ChartLabel>Percentual por Categoria</ChartLabel>
           {companyData.length === 0 ? <EmptyChart /> : (
             <ResponsiveContainer width="100%" height={260}>
-              <BarChart
-                layout="vertical"
-                data={companyData}
-                margin={{ top: 4, right: 44, left: 80, bottom: 4 }}
-              >
+              <BarChart layout="vertical" data={companyData}
+                margin={{ top: 4, right: 44, left: 80, bottom: 4 }}>
                 <XAxis type="number" hide />
-                <YAxis
-                  type="category" dataKey="name" width={80}
-                  tick={AXIS_TICK}
-                  axisLine={false} tickLine={false}
-                />
+                <YAxis type="category" dataKey="name" width={80}
+                  tick={AXIS_TICK} axisLine={false} tickLine={false} />
                 <Tooltip contentStyle={TOOLTIP_STYLE} formatter={(v) => [`${v}%`, 'Participação']} />
                 <Bar dataKey="pct" name="%" radius={[0, 3, 3, 0]} maxBarSize={20}>
                   {companyData.map((_, i) => (
                     <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
                   ))}
-                  <LabelList
-                    dataKey="pct"
-                    position="right"
-                    formatter={(v: unknown) => `${v}%`}
-                    style={{ ...AXIS_TICK }}
-                  />
+                  <LabelList dataKey="pct" position="right"
+                    formatter={(v: unknown) => `${v}%`} style={AXIS_TICK} />
                 </Bar>
               </BarChart>
             </ResponsiveContainer>
@@ -118,9 +103,16 @@ export function PublicoCharts({ byCompanyType, total }: Props) {
         </div>
       </div>
 
-      {/* Ranking bars */}
+      {/* ── Cargo / Posição ── */}
+      <RankingSection
+        title="Cargo / Posição"
+        items={analise.jobTitles}
+        color="#112468"
+      />
+
+      {/* ── Segmento de Atuação (ranking) ── */}
       <div className="bg-card border border-border rounded-lg p-5 shadow-sm">
-        <ChartLabel>Ranking de Tipos de Empresa</ChartLabel>
+        <ChartLabel>Segmento de Atuação</ChartLabel>
         {companyData.length === 0 ? <EmptyChart height={120} /> : (
           <div className="space-y-3 mt-2">
             {[...companyData].sort((a, b) => b.count - a.count).map((d, i) => (
@@ -134,10 +126,8 @@ export function PublicoCharts({ byCompanyType, total }: Props) {
                     </span>
                   </div>
                   <div className="h-1 bg-border rounded-full overflow-hidden">
-                    <div
-                      className="h-full rounded-full transition-all duration-500"
-                      style={{ width: `${d.pct}%`, backgroundColor: CHART_COLORS[i % CHART_COLORS.length] }}
-                    />
+                    <div className="h-full rounded-full transition-all duration-500"
+                      style={{ width: `${d.pct}%`, backgroundColor: CHART_COLORS[i % CHART_COLORS.length] }} />
                   </div>
                 </div>
               </div>
@@ -145,6 +135,61 @@ export function PublicoCharts({ byCompanyType, total }: Props) {
           </div>
         )}
       </div>
+
+      {/* ── Form responses: 2 colunas ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <RankingSection
+          title="Temas de Maior Interesse no Congresso"
+          items={analise.topics}
+          color="#00a99d"
+        />
+        <RankingSection
+          title="Interesse em Eventos do Ecossistema"
+          items={analise.events}
+          color="oklch(0.62 0.14 162)"
+        />
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <RankingSection
+          title="Conteúdos de Interesse"
+          items={analise.contents}
+          color="oklch(0.72 0.14 68)"
+        />
+        <RankingSection
+          title="Canais Preferidos"
+          items={analise.channels}
+          color="oklch(0.64 0.18 28)"
+        />
+      </div>
+    </div>
+  )
+}
+
+function RankingSection({ title, items, color }: { title: string; items: RankingItem[]; color: string }) {
+  const max = items[0]?.count ?? 1
+  return (
+    <div className="bg-card border border-border rounded-lg p-5 shadow-sm">
+      <ChartLabel>{title}</ChartLabel>
+      {items.length === 0 ? <EmptyChart height={120} /> : (
+        <div className="space-y-3 mt-2">
+          {items.map((d, i) => (
+            <div key={i} className="flex items-center gap-4">
+              <span className="text-[10px] font-mono text-muted-foreground/40 w-4 shrink-0 tabular-nums">{i + 1}</span>
+              <div className="flex-1 min-w-0">
+                <div className="flex justify-between items-baseline mb-1.5">
+                  <span className="text-sm text-foreground/80 truncate">{d.label}</span>
+                  <span className="text-[11px] font-mono text-muted-foreground ml-3 shrink-0">{d.count}</span>
+                </div>
+                <div className="h-1 bg-border rounded-full overflow-hidden">
+                  <div className="h-full rounded-full transition-all duration-500"
+                    style={{ width: `${Math.round((d.count / max) * 100)}%`, backgroundColor: color }} />
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   )
 }
