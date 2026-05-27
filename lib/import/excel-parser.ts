@@ -84,10 +84,10 @@ export function buildDefaultMapping(headerRow1: string[]): ColumnMapping {
   map[52] = 'payment_status'          // col 53
   for (let i = 53; i <= 59; i++) map[i] = 'ignore'
 
-  // Header-based detection para ticket_name ("Nome do ingresso") — posição varia por export
+  // Header-based detection para ticket_name — tem precedência sobre qualquer mapeamento fixo
   for (let i = 0; i < headerRow1.length; i++) {
     const h = headerRow1[i]?.toLowerCase().trim() ?? ''
-    if (h === 'nome do ingresso' && !(i in map)) {
+    if (h === 'nome do ingresso') {
       map[i] = 'ticket_name'
       break
     }
