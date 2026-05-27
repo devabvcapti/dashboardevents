@@ -14,6 +14,11 @@ export function EventosClient({ editions }: { editions: Edition[] }) {
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
+  // Delete state: id pendente de confirmação + id em processo
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
+  const [deletingId, setDeletingId] = useState<string | null>(null)
+  const [deleteError, setDeleteError] = useState<string | null>(null)
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setSubmitting(true)
@@ -36,6 +41,29 @@ export function EventosClient({ editions }: { editions: Edition[] }) {
       setError('Erro de rede.')
     } finally {
       setSubmitting(false)
+    }
+  }
+
+  async function handleDelete(id: string) {
+    setDeletingId(id)
+    setDeleteError(null)
+    try {
+      const res = await fetch('/api/edition/delete', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id }),
+      })
+      const json = await res.json()
+      if (!res.ok) {
+        setDeleteError((json as { error?: string }).error ?? 'Falha ao deletar evento.')
+        return
+      }
+      setConfirmDeleteId(null)
+      router.refresh()
+    } catch {
+      setDeleteError('Erro de rede.')
+    } finally {
+      setDeletingId(null)
     }
   }
 
@@ -72,6 +100,10 @@ export function EventosClient({ editions }: { editions: Edition[] }) {
         </form>
       )}
 
+      {deleteError && (
+        <p role="alert" className="text-sm text-red-600 bg-red-50 border border-red-200 rounded px-3 py-2">{deleteError}</p>
+      )}
+
       {editions.length === 0 ? (
         <div className="border border-dashed border-border rounded-lg p-12 text-center">
           <p className="text-sm text-muted-foreground">Nenhuma edição cadastrada ainda. Use o formulário acima para criar a primeira.</p>
@@ -87,6 +119,43 @@ export function EventosClient({ editions }: { editions: Edition[] }) {
                   criada {new Date(e.created_at).toLocaleDateString('pt-BR')}
                 </p>
               )}
+
+              <div className="mt-4 pt-3 border-t border-border">
+                {confirmDeleteId === e.id ? (
+                  <div className="space-y-2">
+                    <p className="text-[11px] font-mono text-red-600">
+                      Deletar apaga todos os participantes e dados do evento. Confirmar?
+                    </p>
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        disabled={deletingId === e.id}
+                        onClick={() => handleDelete(e.id)}
+                      >
+                        {deletingId === e.id ? 'Deletando…' : 'Confirmar'}
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        disabled={deletingId === e.id}
+                        onClick={() => { setConfirmDeleteId(null); setDeleteError(null) }}
+                      >
+                        Cancelar
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="text-red-500 hover:text-red-600 hover:bg-red-50 text-[11px]"
+                    onClick={() => { setConfirmDeleteId(e.id); setDeleteError(null) }}
+                  >
+                    Deletar evento
+                  </Button>
+                )}
+              </div>
             </div>
           ))}
         </div>
