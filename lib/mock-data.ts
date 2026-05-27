@@ -89,6 +89,7 @@ const PHASE2_NULLS = {
   is_company_member: null,
   company_segment_raw: null,
   company_segment_normalized: null,
+  ticket_name: null,
 } as const
 
 export const MOCK_PARTICIPANTS: Participant[] = [

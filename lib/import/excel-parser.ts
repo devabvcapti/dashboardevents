@@ -83,6 +83,16 @@ export function buildDefaultMapping(headerRow1: string[]): ColumnMapping {
   map[51] = 'ticket_value'            // col 52
   map[52] = 'payment_status'          // col 53
   for (let i = 53; i <= 59; i++) map[i] = 'ignore'
+
+  // Header-based detection para ticket_name ("Nome do ingresso") — posição varia por export
+  for (let i = 0; i < headerRow1.length; i++) {
+    const h = headerRow1[i]?.toLowerCase().trim() ?? ''
+    if (h === 'nome do ingresso' && !(i in map)) {
+      map[i] = 'ticket_name'
+      break
+    }
+  }
+
   return map
 }
 
@@ -191,6 +201,15 @@ function buildRow(
   const dietary_restrictions: 'Sim' | 'Não' | null =
     dietRaw === 'sim' ? 'Sim' : (dietRaw === 'não' || dietRaw === 'nao') ? 'Não' : null
 
+  // ticket_name: coluna detectada dinamicamente por header
+  let ticket_name: string | null = null
+  for (const [k, v] of Object.entries(mapping)) {
+    if (v === 'ticket_name') {
+      ticket_name = str(cell(Number(k))) || null
+      break
+    }
+  }
+
   return {
     excel_row: excelRow,
     ticket_id: str(cell(0)) || null,
@@ -204,6 +223,7 @@ function buildRow(
     company_segment_normalized,
     is_company_member,
     ticket_membership,
+    ticket_name,
     ticket_value,
     payment_status: str(cell(52)) || null,
     topics_of_interest: collectMulti([], 'topics_of_interest'),

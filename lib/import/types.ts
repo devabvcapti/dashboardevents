@@ -17,6 +17,7 @@ export type TargetField =
   | 'dietary_details'         // col 38
   | 'ticket_membership'       // col 44
   | 'is_company_member'       // col 45
+  | 'ticket_name'             // Nome do ingresso
   | 'ticket_value'            // col 52
   | 'payment_status'          // col 53
 
@@ -33,6 +34,7 @@ export interface ParticipantRow {
   company_segment_normalized: CompanySegment | null
   is_company_member: boolean | null
   ticket_membership: 'MEMBRO' | 'NAO_MEMBRO'
+  ticket_name: string | null
   ticket_value: number | null
   payment_status: string | null
   // form-related (vão para form_responses no commit)

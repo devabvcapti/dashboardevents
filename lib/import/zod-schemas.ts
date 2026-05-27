@@ -13,6 +13,7 @@ export const ParticipantRowSchema = z.object({
   company_segment_normalized: z.enum(['GP', 'LP', 'FUNDO', 'CORPORATIVO', 'GOVERNO', 'ACADEMIA', 'OUTRO']).nullable(),
   is_company_member: z.boolean().nullable(),
   ticket_membership: z.enum(['MEMBRO', 'NAO_MEMBRO']),
+  ticket_name: z.string().nullable(),
   ticket_value: z.number().nonnegative('Valor do ingresso não pode ser negativo').nullable(),
   payment_status: z.string().nullable(),
   topics_of_interest: z.array(z.string()),

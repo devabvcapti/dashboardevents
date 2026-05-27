@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Button } from '@/components/ui/button'
 import { TicketBadge } from '@/components/status-badge'
-import { ChevronLeft, ChevronRight, Download, ArrowUpDown } from 'lucide-react'
+import { ChevronLeft, ChevronRight, ArrowUpDown } from 'lucide-react'
 import type { Participant, TicketMembership, CompanySegment } from '@/lib/database.types'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
@@ -81,13 +81,6 @@ export function InscricoesClient({ participants, totalCount, currentPage, pageSi
     pushParams({ sort: col, dir: nextDir }, false)
   }
 
-  function buildExportUrl(): string {
-    const next = new URLSearchParams(searchParams.toString())
-    next.delete('page')
-    next.delete('page_size')
-    return `/api/export/participants?${next.toString()}`
-  }
-
   function goToPage(n: number) {
     const target = Math.min(Math.max(1, n), totalPages)
     const next = new URLSearchParams(searchParams.toString())
@@ -143,14 +136,10 @@ export function InscricoesClient({ participants, totalCount, currentPage, pageSi
         </Select>
       </div>
 
-      <div className="flex items-center justify-between">
+      <div className="flex items-center">
         <p className="text-xs font-mono text-muted-foreground">
           {totalCount.toLocaleString('pt-BR')} resultado{totalCount !== 1 ? 's' : ''} · página {currentPage} de {totalPages}
         </p>
-        <Button variant="outline" size="sm" type="button" disabled>
-          <Download className="w-4 h-4 mr-2" />
-          Exportar (.xlsx)
-        </Button>
       </div>
 
       <div className="rounded-lg border bg-card overflow-hidden">

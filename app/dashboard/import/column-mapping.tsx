@@ -21,6 +21,7 @@ const TARGET_OPTIONS: Array<{ value: TargetField | 'ignore'; label: string }> = 
   { value: 'dietary_details', label: 'Detalhe da restrição' },
   { value: 'ticket_membership', label: 'Membro ativo (MEMBRO/NAO_MEMBRO)' },
   { value: 'is_company_member', label: 'Empresa é membro' },
+  { value: 'ticket_name', label: 'Nome do ingresso' },
   { value: 'ticket_value', label: 'Preço do ingresso' },
   { value: 'payment_status', label: 'Status do pagamento' },
 ]

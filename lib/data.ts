@@ -193,6 +193,35 @@ export async function getParticipantsForExport(filters: {
   return flattened
 }
 
+export interface TicketNameSummaryRow {
+  ticket_name: string | null
+  ticket_membership: TicketMembership
+  count: number
+}
+
+export async function getTicketNameSummary(editionId: string): Promise<TicketNameSummaryRow[]> {
+  const { data, error } = await getSupabase()
+    .from('participants')
+    .select('ticket_name, ticket_membership')
+    .eq('edition_id', editionId)
+    .limit(5000)
+  if (error) throw error
+  const counts: Record<string, TicketNameSummaryRow> = {}
+  for (const row of data ?? []) {
+    const key = `${row.ticket_name ?? ''}|||${row.ticket_membership}`
+    if (counts[key]) {
+      counts[key].count++
+    } else {
+      counts[key] = {
+        ticket_name: row.ticket_name ?? null,
+        ticket_membership: row.ticket_membership as TicketMembership,
+        count: 1,
+      }
+    }
+  }
+  return Object.values(counts).sort((a, b) => b.count - a.count)
+}
+
 export async function getMemberAnalysis(editionId: string): Promise<MemberAnalysisRow[]> {
   const { data, error } = await getSupabase()
     .rpc('get_member_analysis', { p_edition_id: editionId })
