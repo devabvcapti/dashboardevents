@@ -1,6 +1,6 @@
 'use client'
 
-import { useRouter } from 'next/navigation'
+import { useRouter, usePathname } from 'next/navigation'
 import { useState, useTransition } from 'react'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 
@@ -12,6 +12,7 @@ export function EditionSelector({
   activeEditionId: string
 }) {
   const router = useRouter()
+  const pathname = usePathname()
   const [, startTransition] = useTransition()
   const [value, setValue] = useState(activeEditionId)
 
@@ -25,11 +26,12 @@ export function EditionSelector({
         body: JSON.stringify({ editionId }),
       })
       if (!res.ok) {
-        // revert visual
         setValue(activeEditionId)
         return
       }
-      startTransition(() => router.refresh())
+      // push para o pathname atual força re-render completo do Server Component
+      // com o novo cookie active_edition_id já gravado
+      startTransition(() => router.push(pathname))
     } catch {
       setValue(activeEditionId)
     }
