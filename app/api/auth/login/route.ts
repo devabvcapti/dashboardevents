@@ -1,6 +1,9 @@
 import { NextResponse } from 'next/server'
 import { createSupabaseServerClient } from '@/lib/supabase-server'
+import { createClient } from '@supabase/supabase-js'
 import { z } from 'zod'
+
+const ALLOWED_DOMAIN = '@abvcap.com.br'
 
 const Body = z.object({
   email: z.string().email('Email inválido'),
@@ -30,13 +33,26 @@ export async function POST(req: Request) {
     )
   }
 
-  const role = (data.user.app_metadata as { role?: string } | null)?.role
-  if (role !== 'admin' && role !== 'viewer') {
+  const email = data.user.email ?? ''
+  if (!email.toLowerCase().endsWith(ALLOWED_DOMAIN)) {
     await supabase.auth.signOut()
     return NextResponse.json(
-      { error: 'Acesso não autorizado. Solicite acesso ao administrador.' },
+      { error: 'Acesso restrito a colaboradores ABVCAP.' },
       { status: 403 }
     )
+  }
+
+  // Auto-concede viewer a usuários @abvcap.com.br sem role definido
+  const role = (data.user.app_metadata as { role?: string } | null)?.role
+  if (!role) {
+    const adminClient = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+      { auth: { autoRefreshToken: false, persistSession: false } }
+    )
+    await adminClient.auth.admin.updateUserById(data.user.id, {
+      app_metadata: { role: 'viewer' },
+    })
   }
 
   return NextResponse.json({ ok: true, redirect: '/dashboard' })
