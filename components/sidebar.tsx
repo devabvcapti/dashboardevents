@@ -12,8 +12,8 @@ const commonNav = [
   { href: '/dashboard', label: 'Visão Geral', icon: LayoutDashboard },
   { href: '/dashboard/inscricoes', label: 'Inscrições', icon: Users },
   { href: '/dashboard/ingressos', label: 'Ingressos', icon: TicketIcon },
-  { href: '/dashboard/publico', label: 'Análise de Público', icon: BarChart3 },
   { href: '/dashboard/cupons', label: 'Cupons', icon: Tag },
+  { href: '/dashboard/publico', label: 'Análise de Público', icon: BarChart3 },
   { href: '/dashboard/ritmo', label: 'Ritmo de Inscrições', icon: Activity },
   { href: '/dashboard/receita', label: 'Análise de Receita', icon: Wallet },
 ]
