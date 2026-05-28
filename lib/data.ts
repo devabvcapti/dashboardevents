@@ -297,6 +297,7 @@ export interface CuponsStats {
   total_participants: number
   unique_coupons: number
   avg_ticket_no_coupon: number | null
+  total_discount_estimate: number | null
   by_coupon: CuponSummaryRow[]
   top_companies: { company: string; count: number }[]
 }
@@ -351,14 +352,82 @@ export async function getCuponsSummary(editionId: string): Promise<CuponsStats> 
     .sort((a, b) => b.count - a.count)
     .slice(0, 10)
 
+  let total_discount_estimate: number | null = null
+  if (avgNoCopon !== null) {
+    total_discount_estimate = Math.round(
+      withCoupon.reduce((sum, r) => {
+        if (r.ticket_value === null) return sum
+        return sum + Math.max(0, avgNoCopon - r.ticket_value)
+      }, 0) * 100
+    ) / 100
+  }
+
   return {
     total_with_coupon: withCoupon.length,
     total_participants: rows.length,
     unique_coupons: Object.keys(byCode).length,
     avg_ticket_no_coupon: avgNoCopon !== null ? Math.round(avgNoCopon * 100) / 100 : null,
+    total_discount_estimate,
     by_coupon,
     top_companies,
   }
+}
+
+// ─── Registration Rhythm ──────────────────────────────────────────────────────
+
+export interface RegistrationRhythmDay {
+  date: string
+  count: number
+  cumulative: number
+}
+
+export interface RegistrationRhythm {
+  byDay: RegistrationRhythmDay[]
+  total: number
+  peakDay: { date: string; count: number } | null
+  avgPerDay: number
+  milestones: { pct: number; date: string; dayNumber: number }[]
+}
+
+export async function getRegistrationRhythm(editionId: string): Promise<RegistrationRhythm> {
+  const { data, error } = await getSupabase()
+    .from('participants')
+    .select('created_at')
+    .eq('edition_id', editionId)
+    .not('created_at', 'is', null)
+    .order('created_at', { ascending: true })
+    .limit(5000)
+  if (error) throw error
+
+  const counts: Record<string, number> = {}
+  for (const row of data ?? []) {
+    const date = (row.created_at as string).slice(0, 10)
+    counts[date] = (counts[date] ?? 0) + 1
+  }
+
+  const sortedDates = Object.keys(counts).sort()
+  let cumulative = 0
+  const byDay: RegistrationRhythmDay[] = sortedDates.map(date => {
+    cumulative += counts[date]
+    return { date, count: counts[date], cumulative }
+  })
+
+  const total = cumulative
+  const peakDay = byDay.length > 0
+    ? byDay.reduce((best, d) => d.count > best.count ? d : best)
+    : null
+
+  const avgPerDay = byDay.length > 0 ? Math.round(total / byDay.length) : 0
+
+  const milestoneTargets = [25, 50, 75, 100]
+  const milestones = milestoneTargets.flatMap(pct => {
+    const target = Math.ceil(total * pct / 100)
+    const idx = byDay.findIndex(d => d.cumulative >= target)
+    if (idx === -1) return []
+    return [{ pct, date: byDay[idx].date, dayNumber: idx + 1 }]
+  })
+
+  return { byDay, total, peakDay, avgPerDay, milestones }
 }
 
 export async function getMemberAnalysis(editionId: string): Promise<MemberAnalysisRow[]> {

@@ -59,10 +59,15 @@ export default async function CuponsPage() {
       {!loadError && stats && stats.total_participants > 0 && (
         <>
           {/* KPIs */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
             <KpiCard title="Usaram Cupom" value={stats.total_with_coupon.toLocaleString('pt-BR')} />
             <KpiCard title="Cupons Únicos" value={stats.unique_coupons.toLocaleString('pt-BR')} />
             <KpiCard title="% com Cupom" value={`${pct}%`} />
+            <KpiCard
+              title="Desconto Total Concedido"
+              value={stats.total_discount_estimate !== null ? formatBRL(stats.total_discount_estimate) : '—'}
+              sub="estimativa vs. preço sem cupom"
+            />
           </div>
 
           {stats.total_with_coupon === 0 ? (
@@ -168,12 +173,13 @@ export default async function CuponsPage() {
   )
 }
 
-function KpiCard({ title, value }: { title: string; value: string }) {
+function KpiCard({ title, value, sub }: { title: string; value: string; sub?: string }) {
   return (
     <div className="border border-border rounded-lg bg-card p-5 relative overflow-hidden">
       <div className="absolute top-0 left-0 right-0 h-[2px] bg-primary" />
       <p className="text-[10px] font-mono tracking-[0.20em] text-muted-foreground uppercase mb-3">{title}</p>
       <p className="font-display tabular-nums text-4xl text-foreground leading-none">{value}</p>
+      {sub && <p className="text-[10px] font-mono text-muted-foreground/50 mt-2">{sub}</p>}
     </div>
   )
 }

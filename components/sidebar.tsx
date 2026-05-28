@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { usePathname, useRouter } from 'next/navigation'
-import { LayoutDashboard, Users, BarChart3, TicketIcon, LogOut, Upload, Calendar, Wallet, Tag, UserCog } from 'lucide-react'
+import { LayoutDashboard, Users, BarChart3, TicketIcon, LogOut, Upload, Calendar, Wallet, Tag, UserCog, Activity } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { ThemeToggle } from '@/components/theme-toggle'
 import { EditionSelector } from '@/components/edition-selector'
@@ -14,6 +14,7 @@ const commonNav = [
   { href: '/dashboard/ingressos', label: 'Ingressos', icon: TicketIcon },
   { href: '/dashboard/publico', label: 'Análise de Público', icon: BarChart3 },
   { href: '/dashboard/cupons', label: 'Cupons', icon: Tag },
+  { href: '/dashboard/ritmo', label: 'Ritmo de Inscrições', icon: Activity },
   { href: '/dashboard/receita', label: 'Análise de Receita', icon: Wallet },
 ]
 
