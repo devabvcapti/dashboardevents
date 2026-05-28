@@ -31,10 +31,10 @@ export async function POST(req: Request) {
   }
 
   const role = (data.user.app_metadata as { role?: string } | null)?.role
-  if (role !== 'admin') {
+  if (role !== 'admin' && role !== 'viewer') {
     await supabase.auth.signOut()
     return NextResponse.json(
-      { error: 'Acesso restrito a administradores.' },
+      { error: 'Acesso não autorizado. Solicite acesso ao administrador.' },
       { status: 403 }
     )
   }

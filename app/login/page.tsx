@@ -25,14 +25,14 @@ export default async function LoginPage({
           </div>
           <h1 className="font-display text-2xl">Dashboard Eventos</h1>
           <p className="text-sm text-muted-foreground">
-            Acesso restrito a administradores.
+            Acesso restrito a colaboradores ABVCAP.
           </p>
         </div>
         <LoginForm
           redirectTo={redirect ?? '/dashboard'}
           initialError={
             error === 'forbidden'
-              ? 'Acesso restrito a administradores.'
+              ? 'Acesso não autorizado. Solicite acesso ao administrador.'
               : null
           }
         />
