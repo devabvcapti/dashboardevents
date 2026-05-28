@@ -284,6 +284,83 @@ export async function getPublicoAnalysis(editionId: string): Promise<PublicoAnal
   }
 }
 
+export interface CuponSummaryRow {
+  coupon_code: string
+  count: number
+  avg_ticket: number | null
+  discount_pct_estimate: number | null
+  companies: string[]
+}
+
+export interface CuponsStats {
+  total_with_coupon: number
+  total_participants: number
+  unique_coupons: number
+  avg_ticket_no_coupon: number | null
+  by_coupon: CuponSummaryRow[]
+  top_companies: { company: string; count: number }[]
+}
+
+export async function getCuponsSummary(editionId: string): Promise<CuponsStats> {
+  const { data, error } = await getSupabase()
+    .from('participants')
+    .select('coupon_code, ticket_value, company')
+    .eq('edition_id', editionId)
+    .limit(5000)
+  if (error) throw error
+
+  const rows = (data ?? []) as { coupon_code: string | null; ticket_value: number | null; company: string | null }[]
+  const withCoupon = rows.filter(r => r.coupon_code)
+  const noCouponValues = rows.filter(r => !r.coupon_code && r.ticket_value !== null).map(r => r.ticket_value as number)
+  const avgNoCopon = noCouponValues.length > 0
+    ? noCouponValues.reduce((s, v) => s + v, 0) / noCouponValues.length
+    : null
+
+  const byCode: Record<string, { count: number; values: number[]; companies: Set<string> }> = {}
+  const companyCounts: Record<string, number> = {}
+
+  for (const row of withCoupon) {
+    const code = row.coupon_code!
+    if (!byCode[code]) byCode[code] = { count: 0, values: [], companies: new Set() }
+    byCode[code].count++
+    if (row.ticket_value !== null) byCode[code].values.push(row.ticket_value)
+    if (row.company) {
+      byCode[code].companies.add(row.company)
+      companyCounts[row.company] = (companyCounts[row.company] ?? 0) + 1
+    }
+  }
+
+  const by_coupon: CuponSummaryRow[] = Object.entries(byCode)
+    .map(([code, d]) => {
+      const avg = d.values.length > 0 ? d.values.reduce((s, v) => s + v, 0) / d.values.length : null
+      const discount = avg !== null && avgNoCopon !== null && avgNoCopon > 0
+        ? Math.round(((avgNoCopon - avg) / avgNoCopon) * 100)
+        : null
+      return {
+        coupon_code: code,
+        count: d.count,
+        avg_ticket: avg !== null ? Math.round(avg * 100) / 100 : null,
+        discount_pct_estimate: discount,
+        companies: Array.from(d.companies).sort(),
+      }
+    })
+    .sort((a, b) => b.count - a.count)
+
+  const top_companies = Object.entries(companyCounts)
+    .map(([company, count]) => ({ company, count }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 10)
+
+  return {
+    total_with_coupon: withCoupon.length,
+    total_participants: rows.length,
+    unique_coupons: Object.keys(byCode).length,
+    avg_ticket_no_coupon: avgNoCopon !== null ? Math.round(avgNoCopon * 100) / 100 : null,
+    by_coupon,
+    top_companies,
+  }
+}
+
 export async function getMemberAnalysis(editionId: string): Promise<MemberAnalysisRow[]> {
   const { data, error } = await getSupabase()
     .rpc('get_member_analysis', { p_edition_id: editionId })

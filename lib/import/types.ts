@@ -18,6 +18,7 @@ export type TargetField =
   | 'ticket_membership'       // col 44
   | 'is_company_member'       // col 45
   | 'ticket_name'             // Nome do ingresso
+  | 'coupon_code'             // Código do cupom
   | 'ticket_value'            // col 52
   | 'payment_status'          // col 53
 
@@ -35,6 +36,7 @@ export interface ParticipantRow {
   is_company_member: boolean | null
   ticket_membership: 'MEMBRO' | 'NAO_MEMBRO'
   ticket_name: string | null
+  coupon_code: string | null
   ticket_value: number | null
   payment_status: string | null
   // form-related (vão para form_responses no commit)

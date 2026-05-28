@@ -150,6 +150,7 @@ export type Database = {
           company: string | null
           company_segment_normalized: Database["public"]["Enums"]["company_segment"] | null
           company_segment_raw: string | null
+          coupon_code: string | null
           cpf: string | null
           created_at: string | null
           edition_id: string
@@ -169,6 +170,7 @@ export type Database = {
           company?: string | null
           company_segment_normalized?: Database["public"]["Enums"]["company_segment"] | null
           company_segment_raw?: string | null
+          coupon_code?: string | null
           cpf?: string | null
           created_at?: string | null
           edition_id: string
@@ -188,6 +190,7 @@ export type Database = {
           company?: string | null
           company_segment_normalized?: Database["public"]["Enums"]["company_segment"] | null
           company_segment_raw?: string | null
+          coupon_code?: string | null
           cpf?: string | null
           created_at?: string | null
           edition_id?: string

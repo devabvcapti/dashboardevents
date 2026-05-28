@@ -22,6 +22,7 @@ const TARGET_OPTIONS: Array<{ value: TargetField | 'ignore'; label: string }> = 
   { value: 'ticket_membership', label: 'Membro ativo (MEMBRO/NAO_MEMBRO)' },
   { value: 'is_company_member', label: 'Empresa é membro' },
   { value: 'ticket_name', label: 'Nome do ingresso' },
+  { value: 'coupon_code', label: 'Código do cupom' },
   { value: 'ticket_value', label: 'Preço do ingresso' },
   { value: 'payment_status', label: 'Status do pagamento' },
 ]

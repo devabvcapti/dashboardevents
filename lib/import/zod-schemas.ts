@@ -14,6 +14,7 @@ export const ParticipantRowSchema = z.object({
   is_company_member: z.boolean().nullable(),
   ticket_membership: z.enum(['MEMBRO', 'NAO_MEMBRO']),
   ticket_name: z.string().nullable(),
+  coupon_code: z.string().nullable(),
   ticket_value: z.number().nonnegative('Valor do ingresso não pode ser negativo').nullable(),
   payment_status: z.string().nullable(),
   topics_of_interest: z.array(z.string()),

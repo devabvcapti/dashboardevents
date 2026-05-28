@@ -84,12 +84,17 @@ export function buildDefaultMapping(headerRow1: string[]): ColumnMapping {
   map[52] = 'payment_status'          // col 53
   for (let i = 53; i <= 59; i++) map[i] = 'ignore'
 
-  // Header-based detection para ticket_name — tem precedência sobre qualquer mapeamento fixo
+  // Header-based detection para ticket_name e coupon_code — têm precedência sobre mapeamento fixo
   for (let i = 0; i < headerRow1.length; i++) {
     const h = headerRow1[i]?.toLowerCase().trim() ?? ''
     if (h === 'nome do ingresso') {
       map[i] = 'ticket_name'
-      break
+    } else if (
+      h === 'cupom' || h === 'código do cupom' || h === 'codigo do cupom' ||
+      h === 'coupon' || h === 'coupon code' || h === 'código de desconto' ||
+      h === 'promo code' || h === 'código promocional'
+    ) {
+      map[i] = 'coupon_code'
     }
   }
 
@@ -201,13 +206,12 @@ function buildRow(
   const dietary_restrictions: 'Sim' | 'Não' | null =
     dietRaw === 'sim' ? 'Sim' : (dietRaw === 'não' || dietRaw === 'nao') ? 'Não' : null
 
-  // ticket_name: coluna detectada dinamicamente por header
+  // ticket_name e coupon_code: colunas detectadas dinamicamente por header
   let ticket_name: string | null = null
+  let coupon_code: string | null = null
   for (const [k, v] of Object.entries(mapping)) {
-    if (v === 'ticket_name') {
-      ticket_name = str(cell(Number(k))) || null
-      break
-    }
+    if (v === 'ticket_name') ticket_name = str(cell(Number(k))) || null
+    if (v === 'coupon_code') coupon_code = str(cell(Number(k))) || null
   }
 
   return {
@@ -224,6 +228,7 @@ function buildRow(
     is_company_member,
     ticket_membership,
     ticket_name,
+    coupon_code,
     ticket_value,
     payment_status: str(cell(52)) || null,
     topics_of_interest: collectMulti([], 'topics_of_interest'),
