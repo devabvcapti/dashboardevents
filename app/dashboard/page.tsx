@@ -1,4 +1,4 @@
-import { requireAdmin } from '@/lib/auth'
+import { requireAuth } from '@/lib/auth'
 import {
   getOverviewStats, getCompanySegmentSummary, getRegistrationsByDay,
   getTicketMembershipSummary, getFreeTicketStats,
@@ -17,7 +17,7 @@ const EMPTY_STATS: OverviewStats = {
 export const dynamic = 'force-dynamic'
 
 export default async function DashboardPage() {
-  await requireAdmin()
+  await requireAuth()
 
   // Resolver editionId — sem editions, renderiza CTA
   let editionId: string | null = null

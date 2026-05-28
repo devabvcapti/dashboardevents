@@ -1,4 +1,4 @@
-import { requireAdmin } from '@/lib/auth'
+import { requireAuth } from '@/lib/auth'
 import { getParticipantsPaginated } from '@/lib/data'
 import { getActiveEditionId } from '@/lib/edition-cookie'
 import Link from 'next/link'
@@ -55,7 +55,7 @@ export default async function InscricoesPage({
 }: {
   searchParams: Promise<SearchParams>
 }) {
-  await requireAdmin()
+  await requireAuth()
 
   let editionId: string | null = null
   try { editionId = await getActiveEditionId() } catch { editionId = null }

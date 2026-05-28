@@ -26,15 +26,18 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(`${origin}/login?error=forbidden`)
   }
 
-  // Auto-grant admin role to @abvcap.com.br accounts via service role
+  // Novos usuários recebem role 'viewer'. Usuários com role existente mantêm o role atual.
   const adminClient = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!,
     { auth: { autoRefreshToken: false, persistSession: false } }
   )
-  await adminClient.auth.admin.updateUserById(data.user.id, {
-    app_metadata: { role: 'admin' },
-  })
+  const existingRole = (data.user.app_metadata as { role?: string } | null)?.role
+  if (!existingRole) {
+    await adminClient.auth.admin.updateUserById(data.user.id, {
+      app_metadata: { role: 'viewer' },
+    })
+  }
 
   const safeRedirect = redirect.startsWith('/') ? redirect : '/dashboard'
   return NextResponse.redirect(`${origin}${safeRedirect}`)

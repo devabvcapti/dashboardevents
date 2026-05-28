@@ -3,28 +3,34 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { usePathname, useRouter } from 'next/navigation'
-import { LayoutDashboard, Users, BarChart3, TicketIcon, LogOut, Upload, Calendar, Wallet, UserCheck } from 'lucide-react'
+import { LayoutDashboard, Users, BarChart3, TicketIcon, LogOut, Upload, Calendar, Wallet, UserCheck, UserCog } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { ThemeToggle } from '@/components/theme-toggle'
 import { EditionSelector } from '@/components/edition-selector'
 
-const nav = [
+const commonNav = [
   { href: '/dashboard', label: 'Visão Geral', icon: LayoutDashboard },
   { href: '/dashboard/inscricoes', label: 'Inscrições', icon: Users },
   { href: '/dashboard/ingressos', label: 'Ingressos', icon: TicketIcon },
   { href: '/dashboard/publico', label: 'Análise de Público', icon: BarChart3 },
   { href: '/dashboard/membros', label: 'Análise de Membros', icon: UserCheck },
   { href: '/dashboard/receita', label: 'Análise de Receita', icon: Wallet },
+]
+
+const adminNav = [
   { href: '/dashboard/eventos', label: 'Eventos', icon: Calendar },
   { href: '/dashboard/import', label: 'Importar', icon: Upload },
+  { href: '/dashboard/usuarios', label: 'Usuários', icon: UserCog },
 ]
 
 export function Sidebar({
   editions,
   activeEditionId,
+  isAdmin,
 }: {
   editions: { id: string; name: string; year: number }[]
   activeEditionId: string
+  isAdmin: boolean
 }) {
   const pathname = usePathname()
   const router = useRouter()
@@ -33,6 +39,8 @@ export function Sidebar({
     await fetch('/api/auth/logout', { method: 'POST' })
     router.push('/login')
   }
+
+  const nav = isAdmin ? [...commonNav, ...adminNav] : commonNav
 
   return (
     <aside className="flex flex-col w-64 min-h-screen bg-sidebar text-sidebar-foreground shrink-0">
@@ -64,7 +72,7 @@ export function Sidebar({
         <div className="mt-6 h-px bg-sidebar-border" />
       </div>
 
-      {/* Edition selector (D-01/D-03) */}
+      {/* Edition selector */}
       <div className="px-6 pb-5 -mt-2">
         <p className="text-[9px] font-mono tracking-[0.25em] text-sidebar-foreground/30 uppercase mb-2">
           Evento Ativo
@@ -81,7 +89,7 @@ export function Sidebar({
 
       {/* Nav */}
       <nav className="flex-1 px-3 space-y-0.5">
-        {nav.map(({ href, label, icon: Icon }) => {
+        {commonNav.map(({ href, label, icon: Icon }) => {
           const active = pathname === href
           return (
             <Link
@@ -94,7 +102,6 @@ export function Sidebar({
                   : 'text-sidebar-foreground/45 hover:bg-sidebar-accent/70 hover:text-sidebar-foreground/80'
               )}
             >
-              {/* Active left indicator */}
               {active && (
                 <span className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 bg-sidebar-primary rounded-r-full" />
               )}
@@ -108,6 +115,42 @@ export function Sidebar({
             </Link>
           )
         })}
+
+        {isAdmin && (
+          <>
+            <div className="pt-3 pb-1 px-3">
+              <p className="text-[9px] font-mono tracking-[0.25em] text-sidebar-foreground/25 uppercase">
+                Admin
+              </p>
+            </div>
+            {adminNav.map(({ href, label, icon: Icon }) => {
+              const active = pathname === href
+              return (
+                <Link
+                  key={href}
+                  href={href}
+                  className={cn(
+                    'group relative flex items-center gap-3 px-3 py-2.5 rounded-md text-[13px] transition-all duration-150',
+                    active
+                      ? 'bg-sidebar-accent text-sidebar-foreground font-medium'
+                      : 'text-sidebar-foreground/45 hover:bg-sidebar-accent/70 hover:text-sidebar-foreground/80'
+                  )}
+                >
+                  {active && (
+                    <span className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 bg-sidebar-primary rounded-r-full" />
+                  )}
+                  <Icon
+                    className={cn(
+                      'w-4 h-4 shrink-0 transition-colors',
+                      active ? 'text-sidebar-primary' : 'text-sidebar-foreground/25 group-hover:text-sidebar-foreground/50'
+                    )}
+                  />
+                  <span className="tracking-wide">{label}</span>
+                </Link>
+              )
+            })}
+          </>
+        )}
       </nav>
 
       {/* Footer */}

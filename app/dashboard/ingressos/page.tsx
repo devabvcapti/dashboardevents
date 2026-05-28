@@ -1,3 +1,4 @@
+import { requireAuth } from '@/lib/auth'
 import { getTicketMembershipSummary, getTicketNameSummary } from '@/lib/data'
 import { getActiveEditionId } from '@/lib/edition-cookie'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
@@ -7,6 +8,7 @@ import type { TicketMembership } from '@/lib/database.types'
 export const dynamic = 'force-dynamic'
 
 export default async function IngressosPage() {
+  await requireAuth()
   let summary: { ticket_membership: TicketMembership; count: number }[] = []
   let nameSummary: Awaited<ReturnType<typeof getTicketNameSummary>> = []
   let isMock = false

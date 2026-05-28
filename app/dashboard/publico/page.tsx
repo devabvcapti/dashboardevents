@@ -1,3 +1,4 @@
+import { requireAuth } from '@/lib/auth'
 import { getOverviewStats, getCompanySegmentSummary, getTicketMembershipSummary, getPublicoAnalysis } from '@/lib/data'
 import { getActiveEditionId } from '@/lib/edition-cookie'
 import { MOCK_STATS, MOCK_BY_COMPANY_TYPE_ENUM, MOCK_BY_TICKET_TYPE } from '@/lib/mock-data'
@@ -11,6 +12,7 @@ const EMPTY_ANALISE: PublicoAnalysis = {
 }
 
 export default async function PublicoPage() {
+  await requireAuth()
   let total = 0
   let byCompanyType: { type: string; count: number }[] = []
   let byTicketType: { type: string; count: number }[] = []

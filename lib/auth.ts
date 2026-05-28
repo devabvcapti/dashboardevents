@@ -19,10 +19,14 @@ export async function getCurrentUser(): Promise<SessionUser | null> {
   }
 }
 
-/**
- * Para uso em Server Components e Route Handlers.
- * Redireciona para /login se não autenticado, ou throw 403 se não admin.
- */
+/** Redireciona para /login se não autenticado. Aceita qualquer role. */
+export async function requireAuth(): Promise<SessionUser> {
+  const user = await getCurrentUser()
+  if (!user) redirect('/login')
+  return user
+}
+
+/** Redireciona para /login se não autenticado, ou throw 403 se não admin. */
 export async function requireAdmin(): Promise<SessionUser> {
   const user = await getCurrentUser()
   if (!user) redirect('/login')
