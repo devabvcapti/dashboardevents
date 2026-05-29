@@ -100,17 +100,21 @@ export function InscricoesClient({ participants, totalCount, currentPage, pageSi
           className="lg:col-span-2"
         />
         <Select value={filters.membership || 'ALL'} onValueChange={v => pushParams({ membership: v === 'ALL' ? null : v })}>
-          <SelectTrigger><SelectValue placeholder="Tipo de ingresso" /></SelectTrigger>
+          <SelectTrigger>
+            <SelectValue>{filters.membership === 'MEMBRO' ? 'Membro' : filters.membership === 'NAO_MEMBRO' ? 'Não Membro' : 'Todos'}</SelectValue>
+          </SelectTrigger>
           <SelectContent>
-            <SelectItem value="ALL">Todos os ingressos</SelectItem>
+            <SelectItem value="ALL">Todos</SelectItem>
             <SelectItem value="MEMBRO">Membro</SelectItem>
             <SelectItem value="NAO_MEMBRO">Não Membro</SelectItem>
           </SelectContent>
         </Select>
         <Select value={filters.segment || 'ALL'} onValueChange={v => pushParams({ segment: v === 'ALL' ? null : v })}>
-          <SelectTrigger><SelectValue placeholder="Tipo de empresa" /></SelectTrigger>
+          <SelectTrigger>
+            <SelectValue>{filters.segment ? (SEGMENT_LABELS[filters.segment] ?? filters.segment) : 'Todos'}</SelectValue>
+          </SelectTrigger>
           <SelectContent>
-            <SelectItem value="ALL">Todos os tipos</SelectItem>
+            <SelectItem value="ALL">Todos</SelectItem>
             {Object.entries(SEGMENT_LABELS).map(([k, label]) => (
               <SelectItem key={k} value={k}>{label}</SelectItem>
             ))}
@@ -118,16 +122,9 @@ export function InscricoesClient({ participants, totalCount, currentPage, pageSi
         </Select>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-        <Input
-          placeholder="Filtrar por empresa…"
-          value={filters.company}
-          onChange={e => pushParams({ company: e.target.value || null })}
-        />
+      <div className="flex justify-end">
         <Select value={String(pageSize)} onValueChange={v => pushParams({ page_size: v })}>
-          <SelectTrigger><SelectValue>
-            {pageSize} por página
-          </SelectValue></SelectTrigger>
+          <SelectTrigger className="w-36"><SelectValue>{pageSize} por página</SelectValue></SelectTrigger>
           <SelectContent>
             <SelectItem value="25">25 por página</SelectItem>
             <SelectItem value="50">50 por página</SelectItem>
