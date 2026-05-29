@@ -92,7 +92,7 @@ export function InscricoesClient({ participants, totalCount, currentPage, pageSi
   return (
     <div className="space-y-4">
       {/* Linha de controles */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+      <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-3">
         <Input
           placeholder="Buscar por nome, e-mail ou empresa…"
           value={searchLocal}
@@ -120,11 +120,8 @@ export function InscricoesClient({ participants, totalCount, currentPage, pageSi
             ))}
           </SelectContent>
         </Select>
-      </div>
-
-      <div className="flex justify-end">
         <Select value={String(pageSize)} onValueChange={v => pushParams({ page_size: v })}>
-          <SelectTrigger className="w-36"><SelectValue>{pageSize} por página</SelectValue></SelectTrigger>
+          <SelectTrigger><SelectValue>{pageSize} por página</SelectValue></SelectTrigger>
           <SelectContent>
             <SelectItem value="25">25 por página</SelectItem>
             <SelectItem value="50">50 por página</SelectItem>
