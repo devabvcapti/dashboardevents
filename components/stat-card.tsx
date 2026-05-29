@@ -44,7 +44,7 @@ export function StatCard({ title, value, subtitle, accent = 'default' }: StatCar
       </p>
 
       <p className={cn(
-        'font-display tabular-nums leading-none',
+        'font-display font-bold tabular-nums leading-none',
         typeof value === 'string' && value === '—'
           ? 'text-3xl text-muted-foreground/30'
           : 'text-4xl text-foreground'
