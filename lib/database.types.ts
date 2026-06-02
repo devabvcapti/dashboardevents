@@ -12,6 +12,47 @@ export type Database = {
   }
   public: {
     Tables: {
+      budget_items: {
+        Row: {
+          id: string
+          edition_id: string
+          category: string
+          subcategory: string | null
+          budgeted: number
+          realized: number
+          sort_order: number
+          created_at: string | null
+        }
+        Insert: {
+          id?: string
+          edition_id: string
+          category: string
+          subcategory?: string | null
+          budgeted: number
+          realized: number
+          sort_order?: number
+          created_at?: string | null
+        }
+        Update: {
+          id?: string
+          edition_id?: string
+          category?: string
+          subcategory?: string | null
+          budgeted?: number
+          realized?: number
+          sort_order?: number
+          created_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "budget_items_edition_id_fkey"
+            columns: ["edition_id"]
+            isOneToOne: false
+            referencedRelation: "editions"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
       editions: {
         Row: {
           created_at: string | null
