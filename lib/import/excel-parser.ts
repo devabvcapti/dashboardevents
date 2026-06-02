@@ -76,23 +76,26 @@ export function buildDefaultMapping(headerRow1: string[]): ColumnMapping {
   map[35] = 'ignore'    // networking_interest
   map[36] = 'dietary_restrictions'
   map[37] = 'dietary_details'
-  for (let i = 38; i <= 42; i++) map[i] = 'ignore'
-  map[43] = 'ticket_membership'      // col 44 1-based
-  map[44] = 'is_company_member'      // col 45
-  for (let i = 45; i <= 50; i++) map[i] = 'ignore'
-  map[51] = 'ticket_value'            // col 52
-  map[52] = 'payment_status'          // col 53
-  for (let i = 53; i <= 59; i++) map[i] = 'ignore'
+  // Mark cols 38+ as ignore by default; header scan below overrides booking fields
+  for (let i = 38; i < Math.max(headerRow1.length, 70); i++) map[i] = 'ignore'
 
-  // Header-based detection para ticket_name e coupon_code — têm precedência sobre mapeamento fixo
+  // Header-based detection — has precedence over fixed indices for all booking fields
   for (let i = 0; i < headerRow1.length; i++) {
     const h = headerRow1[i]?.toLowerCase().trim() ?? ''
-    if (h === 'nome do ingresso') {
+    if (h === 'membro ativo') {
+      map[i] = 'ticket_membership'
+    } else if (h === 'empresa é membro' || h === 'empresa e membro') {
+      map[i] = 'is_company_member'
+    } else if (h === 'nome do ingresso') {
       map[i] = 'ticket_name'
+    } else if (h === 'preço do ingresso' || h === 'preco do ingresso' || h === 'valor do ingresso') {
+      map[i] = 'ticket_value'
+    } else if (h === 'status do pagamento' || h === 'status pagamento') {
+      map[i] = 'payment_status'
     } else if (
       h === 'cupom' || h === 'código do cupom' || h === 'codigo do cupom' ||
       h === 'coupon' || h === 'coupon code' || h === 'código de desconto' ||
-      h === 'promo code' || h === 'código promocional'
+      h === 'promo code' || h === 'código promocional' || h === 'nome do desconto'
     ) {
       map[i] = 'coupon_code'
     }
@@ -182,22 +185,32 @@ function buildRow(
     return out
   }
 
-  // Membership: col 44 (idx 43)
-  const membershipRaw = str(cell(43)).toLowerCase()
+  function findCol(field: TargetField): number | null {
+    for (const [k, v] of Object.entries(mapping)) {
+      if (v === field) return Number(k)
+    }
+    return null
+  }
+
+  const membershipCol = findCol('ticket_membership')
+  const membershipRaw = membershipCol !== null ? str(cell(membershipCol)).toLowerCase() : ''
   const ticket_membership: 'MEMBRO' | 'NAO_MEMBRO' =
     membershipRaw === 'sim' ? 'MEMBRO'
     : membershipRaw === 'não' || membershipRaw === 'nao' ? 'NAO_MEMBRO'
-    : (() => { throw new Error(`Valor inválido em "Membro ativo" (coluna 44): "${membershipRaw}"`) })()
+    : (() => { throw new Error(`Valor inválido em "Membro ativo": "${membershipRaw}"`) })()
 
-  // is_company_member: col 45 (idx 44)
-  const cmRaw = str(cell(44)).toLowerCase()
+  const cmCol = findCol('is_company_member')
+  const cmRaw = cmCol !== null ? str(cell(cmCol)).toLowerCase() : ''
   const is_company_member: boolean | null =
     cmRaw === 'sim' ? true : (cmRaw === 'não' || cmRaw === 'nao') ? false : null
 
-  // ticket_value: col 52 (idx 51) — já é number per CONTEXT
-  const tvRaw = cell(51)
+  const tvCol = findCol('ticket_value')
+  const tvRaw = tvCol !== null ? cell(tvCol) : null
   const ticket_value: number | null =
-    typeof tvRaw === 'number' && Number.isFinite(tvRaw) ? tvRaw : null
+    typeof tvRaw === 'number' && Number.isFinite(tvRaw) ? tvRaw
+    : typeof tvRaw === 'string' && tvRaw.trim() !== ''
+      ? (() => { const n = parseFloat(tvRaw.replace(',', '.')); return Number.isFinite(n) ? n : null })()
+    : null
 
   const company_segment_raw = str(cell(10)) || null
   const company_segment_normalized = normalizeCompanySegment(company_segment_raw)
@@ -230,7 +243,7 @@ function buildRow(
     ticket_name,
     coupon_code,
     ticket_value,
-    payment_status: str(cell(52)) || null,
+    payment_status: (() => { const c = findCol('payment_status'); return c !== null ? str(cell(c)) || null : null })(),
     topics_of_interest: collectMulti([], 'topics_of_interest'),
     interested_in_events: collectMulti([], 'interested_in_events'),
     preferred_channels: collectMulti([], 'preferred_channels'),
