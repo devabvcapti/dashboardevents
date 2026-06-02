@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { usePathname, useRouter } from 'next/navigation'
-import { LayoutDashboard, Users, BarChart3, TicketIcon, LogOut, Upload, Calendar, Wallet, Tag, UserCog, Activity } from 'lucide-react'
+import { LayoutDashboard, Users, BarChart3, TicketIcon, LogOut, Upload, Calendar, Wallet, Tag, UserCog, Activity, PiggyBank } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { ThemeToggle } from '@/components/theme-toggle'
 import { EditionSelector } from '@/components/edition-selector'
@@ -20,6 +20,7 @@ const commonNav = [
 
 const adminNav = [
   { href: '/dashboard/eventos', label: 'Eventos', icon: Calendar },
+  { href: '/dashboard/orcamento', label: 'Orçamento', icon: PiggyBank },
   { href: '/dashboard/import', label: 'Importar', icon: Upload },
   { href: '/dashboard/usuarios', label: 'Usuários', icon: UserCog },
 ]

@@ -447,3 +447,80 @@ export async function getRevenueAnalysis(editionId: string): Promise<RevenueAnal
   if (error) throw error
   return data as unknown as RevenueAnalysis
 }
+
+// ─── Budget ──────────────────────────────────────────────────────────────────
+
+export interface BudgetItem {
+  id: string
+  category: string
+  subcategory: string | null
+  budgeted: number
+  realized: number
+  sort_order: number
+}
+
+export interface BudgetCategoryGroup {
+  category: string
+  budgeted: number
+  realized: number
+  variationPct: number
+  status: 'ok' | 'warning' | 'over'
+  items: (BudgetItem & { variationPct: number; status: 'ok' | 'warning' | 'over' })[]
+}
+
+export interface BudgetSummary {
+  totalBudgeted: number
+  totalRealized: number
+  balance: number
+  executionPct: number
+  byCategory: BudgetCategoryGroup[]
+  items: (BudgetItem & { variationPct: number; status: 'ok' | 'warning' | 'over' })[]
+}
+
+function budgetStatus(budgeted: number, realized: number): 'ok' | 'warning' | 'over' {
+  if (budgeted === 0) return realized > 0 ? 'over' : 'ok'
+  const pct = (realized / budgeted) * 100
+  if (pct > 100) return 'over'
+  if (pct >= 90) return 'warning'
+  return 'ok'
+}
+
+export async function getBudgetSummary(editionId: string): Promise<BudgetSummary | null> {
+  const { data, error } = await getSupabase()
+    .from('budget_items')
+    .select('id, category, subcategory, budgeted, realized, sort_order')
+    .eq('edition_id', editionId)
+    .order('sort_order', { ascending: true })
+  if (error) throw error
+  if (!data || data.length === 0) return null
+
+  const items = (data as BudgetItem[]).map(r => ({
+    ...r,
+    budgeted: Number(r.budgeted),
+    realized: Number(r.realized),
+    variationPct: r.budgeted > 0 ? Math.round((Number(r.realized) / Number(r.budgeted)) * 100) : 0,
+    status: budgetStatus(Number(r.budgeted), Number(r.realized)),
+  }))
+
+  const totalBudgeted = items.reduce((s, r) => s + r.budgeted, 0)
+  const totalRealized = items.reduce((s, r) => s + r.realized, 0)
+  const balance = totalBudgeted - totalRealized
+  const executionPct = totalBudgeted > 0 ? Math.round((totalRealized / totalBudgeted) * 100) : 0
+
+  const groupMap: Record<string, BudgetCategoryGroup> = {}
+  for (const item of items) {
+    if (!groupMap[item.category]) {
+      groupMap[item.category] = { category: item.category, budgeted: 0, realized: 0, variationPct: 0, status: 'ok', items: [] }
+    }
+    groupMap[item.category].budgeted += item.budgeted
+    groupMap[item.category].realized += item.realized
+    groupMap[item.category].items.push(item)
+  }
+  const byCategory = Object.values(groupMap).map(g => ({
+    ...g,
+    variationPct: g.budgeted > 0 ? Math.round((g.realized / g.budgeted) * 100) : 0,
+    status: budgetStatus(g.budgeted, g.realized),
+  }))
+
+  return { totalBudgeted, totalRealized, balance, executionPct, byCategory, items }
+}
