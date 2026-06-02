@@ -17,6 +17,7 @@ const TARGET_OPTIONS: Array<{ value: TargetField | 'ignore'; label: string }> = 
   { value: 'interested_in_events', label: 'Eventos de interesse (multi-select)' },
   { value: 'preferred_channels', label: 'Canais preferidos (multi-select)' },
   { value: 'content_interests', label: 'Conteúdos de interesse (multi-select)' },
+  { value: 'vc_day_topics', label: 'Temas VC Day (multi-select)' },
   { value: 'dietary_restrictions', label: 'Restrição alimentar (Sim/Não)' },
   { value: 'dietary_details', label: 'Detalhe da restrição' },
   { value: 'ticket_membership', label: 'Membro ativo (MEMBRO/NAO_MEMBRO)' },
