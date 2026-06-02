@@ -21,6 +21,7 @@ export const ParticipantRowSchema = z.object({
   interested_in_events: z.array(z.string()),
   preferred_channels: z.array(z.string()),
   content_interests: z.array(z.string()),
+  vc_day_topics: z.array(z.string()),
   dietary_restrictions: z.enum(['Sim', 'Não']).nullable(),
   dietary_details: z.string().nullable(),
 })
