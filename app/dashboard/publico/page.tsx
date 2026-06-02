@@ -54,7 +54,7 @@ export default async function PublicoPage() {
             </span>
           )}
           <p className="text-[11px] font-mono text-muted-foreground/50">
-            Perfil demográfico
+            Perfil de Público
           </p>
         </div>
       </div>
