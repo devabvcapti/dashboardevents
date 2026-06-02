@@ -128,6 +128,7 @@ export async function POST(req: Request) {
         interested_in_events: r.interested_in_events,
         preferred_channels: r.preferred_channels,
         content_interests: r.content_interests,
+        vc_day_topics: r.vc_day_topics,
         dietary_restrictions: r.dietary_restrictions,
         dietary_details: r.dietary_details,
       }))

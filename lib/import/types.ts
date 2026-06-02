@@ -13,14 +13,15 @@ export type TargetField =
   | 'interested_in_events'    // grupo multi-select 24-26
   | 'preferred_channels'      // grupo multi-select 27-30
   | 'content_interests'       // grupo multi-select 31-35
+  | 'vc_day_topics'           // grupo multi-select VC Day (detectado por header)
   | 'dietary_restrictions'    // col 37
   | 'dietary_details'         // col 38
-  | 'ticket_membership'       // col 44
-  | 'is_company_member'       // col 45
+  | 'ticket_membership'       // detectado por header
+  | 'is_company_member'       // detectado por header
   | 'ticket_name'             // Nome do ingresso
-  | 'coupon_code'             // Código do cupom
-  | 'ticket_value'            // col 52
-  | 'payment_status'          // col 53
+  | 'coupon_code'             // Código do cupom / Nome do desconto
+  | 'ticket_value'            // detectado por header
+  | 'payment_status'          // detectado por header
 
 export interface ParticipantRow {
   excel_row: number               // 1-based, primeira linha de DADOS é tipicamente 3
@@ -44,6 +45,7 @@ export interface ParticipantRow {
   interested_in_events: string[]
   preferred_channels: string[]
   content_interests: string[]
+  vc_day_topics: string[]
   dietary_restrictions: 'Sim' | 'Não' | null
   dietary_details: string | null
 }

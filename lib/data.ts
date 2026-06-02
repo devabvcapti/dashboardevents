@@ -230,6 +230,7 @@ export interface PublicoAnalysis {
   events: RankingItem[]
   contents: RankingItem[]
   channels: RankingItem[]
+  vcDayTopics: RankingItem[]
 }
 
 function countArray(items: string[]): Record<string, number> {
@@ -250,7 +251,7 @@ function toRanking(counts: Record<string, number>): RankingItem[] {
 export async function getPublicoAnalysis(editionId: string): Promise<PublicoAnalysis> {
   const { data, error } = await getSupabase()
     .from('participants')
-    .select('job_title, form_responses(topics_of_interest, interested_in_events, content_interests, preferred_channels)')
+    .select('job_title, form_responses(topics_of_interest, interested_in_events, content_interests, preferred_channels, vc_day_topics)')
     .eq('edition_id', editionId)
     .limit(5000)
   if (error) throw error
@@ -260,6 +261,7 @@ export async function getPublicoAnalysis(editionId: string): Promise<PublicoAnal
   const eventCounts: Record<string, number> = {}
   const contentCounts: Record<string, number> = {}
   const channelCounts: Record<string, number> = {}
+  const vcDayCounts: Record<string, number> = {}
 
   for (const row of data ?? []) {
     if (row.job_title) {
@@ -272,6 +274,7 @@ export async function getPublicoAnalysis(editionId: string): Promise<PublicoAnal
       for (const [k, v] of Object.entries(countArray(fr.interested_in_events ?? []))) eventCounts[k] = (eventCounts[k] ?? 0) + v
       for (const [k, v] of Object.entries(countArray(fr.content_interests ?? []))) contentCounts[k] = (contentCounts[k] ?? 0) + v
       for (const [k, v] of Object.entries(countArray(fr.preferred_channels ?? []))) channelCounts[k] = (channelCounts[k] ?? 0) + v
+      for (const [k, v] of Object.entries(countArray((fr as { vc_day_topics?: string[] | null }).vc_day_topics ?? []))) vcDayCounts[k] = (vcDayCounts[k] ?? 0) + v
     }
   }
 
@@ -281,6 +284,7 @@ export async function getPublicoAnalysis(editionId: string): Promise<PublicoAnal
     events: toRanking(eventCounts),
     contents: toRanking(contentCounts),
     channels: toRanking(channelCounts),
+    vcDayTopics: toRanking(vcDayCounts),
   }
 }
 

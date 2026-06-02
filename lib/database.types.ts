@@ -50,6 +50,7 @@ export type Database = {
           professional_role: string | null
           raw_data: Json | null
           topics_of_interest: string[] | null
+          vc_day_topics: string[] | null
         }
         Insert: {
           company_segment?: Database["public"]["Enums"]["company_segment"] | null
@@ -67,6 +68,7 @@ export type Database = {
           professional_role?: string | null
           raw_data?: Json | null
           topics_of_interest?: string[] | null
+          vc_day_topics?: string[] | null
         }
         Update: {
           company_segment?: Database["public"]["Enums"]["company_segment"] | null
@@ -84,6 +86,7 @@ export type Database = {
           professional_role?: string | null
           raw_data?: Json | null
           topics_of_interest?: string[] | null
+          vc_day_topics?: string[] | null
         }
         Relationships: [
           {

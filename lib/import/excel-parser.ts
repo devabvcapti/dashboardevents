@@ -79,6 +79,24 @@ export function buildDefaultMapping(headerRow1: string[]): ColumnMapping {
   // Mark cols 38+ as ignore by default; header scan below overrides booking fields
   for (let i = 38; i < Math.max(headerRow1.length, 70); i++) map[i] = 'ignore'
 
+  // VC Day multi-select group: detect by row-1 header containing "vc day", span forward
+  // through columns with the same or empty row-1 header (merged-cell fill or empty slaves)
+  let vcDayStart = -1
+  for (let i = 0; i < headerRow1.length; i++) {
+    if ((headerRow1[i]?.toLowerCase().trim() ?? '').includes('vc day')) {
+      vcDayStart = i
+      break
+    }
+  }
+  if (vcDayStart >= 0) {
+    const groupH = headerRow1[vcDayStart]?.toLowerCase().trim() ?? ''
+    for (let i = vcDayStart; i < Math.min(vcDayStart + 15, headerRow1.length); i++) {
+      const h = headerRow1[i]?.toLowerCase().trim() ?? ''
+      if (i > vcDayStart && h !== '' && h !== groupH) break
+      map[i] = 'vc_day_topics'
+    }
+  }
+
   // Header-based detection — has precedence over fixed indices for all booking fields
   for (let i = 0; i < headerRow1.length; i++) {
     const h = headerRow1[i]?.toLowerCase().trim() ?? ''
@@ -248,6 +266,7 @@ function buildRow(
     interested_in_events: collectMulti([], 'interested_in_events'),
     preferred_channels: collectMulti([], 'preferred_channels'),
     content_interests: collectMulti([], 'content_interests'),
+    vc_day_topics: collectMulti([], 'vc_day_topics'),
     dietary_restrictions,
     dietary_details: str(cell(37)) || null,
   }

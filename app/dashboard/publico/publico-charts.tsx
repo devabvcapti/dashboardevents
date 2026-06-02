@@ -144,18 +144,26 @@ export function PublicoCharts({ byCompanyType, total, analise }: Props) {
           color="#00a99d"
         />
         <RankingSection
-          title="Interesse em Eventos do Ecossistema"
-          items={analise.events}
-          color="oklch(0.62 0.14 162)"
+          title="Temas de Maior Interesse no VC Day"
+          items={analise.vcDayTopics}
+          color="#112468"
         />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <RankingSection
+          title="Interesse em Eventos do Ecossistema"
+          items={analise.events}
+          color="oklch(0.62 0.14 162)"
+        />
+        <RankingSection
           title="Conteúdos de Interesse"
           items={analise.contents}
           color="oklch(0.72 0.14 68)"
         />
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <RankingSection
           title="Canais Preferidos"
           items={analise.channels}
