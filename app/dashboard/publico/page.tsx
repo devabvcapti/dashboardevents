@@ -8,7 +8,7 @@ import type { PublicoAnalysis } from '@/lib/data'
 export const dynamic = 'force-dynamic'
 
 const EMPTY_ANALISE: PublicoAnalysis = {
-  jobTitles: [], topics: [], events: [], contents: [], channels: [],
+  jobTitles: [], topics: [], events: [], contents: [], channels: [], vcDayTopics: [],
 }
 
 export default async function PublicoPage() {
