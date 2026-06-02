@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createSupabaseServerClient } from '@/lib/supabase-server'
 import { createClient } from '@supabase/supabase-js'
-
-const ALLOWED_DOMAIN = '@abvcap.com.br'
+import { isEmailAllowed } from '@/lib/auth-config'
 
 export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url)
@@ -21,7 +20,7 @@ export async function GET(request: NextRequest) {
   }
 
   const email = data.user.email ?? ''
-  if (!email.endsWith(ALLOWED_DOMAIN)) {
+  if (!isEmailAllowed(email)) {
     await supabase.auth.signOut()
     return NextResponse.redirect(`${origin}/login?error=forbidden`)
   }

@@ -2,8 +2,7 @@ import { NextResponse } from 'next/server'
 import { createSupabaseServerClient } from '@/lib/supabase-server'
 import { createClient } from '@supabase/supabase-js'
 import { z } from 'zod'
-
-const ALLOWED_DOMAIN = '@abvcap.com.br'
+import { isEmailAllowed } from '@/lib/auth-config'
 
 const Body = z.object({
   email: z.string().email('Email inválido'),
@@ -34,10 +33,10 @@ export async function POST(req: Request) {
   }
 
   const email = data.user.email ?? ''
-  if (!email.toLowerCase().endsWith(ALLOWED_DOMAIN)) {
+  if (!isEmailAllowed(email)) {
     await supabase.auth.signOut()
     return NextResponse.json(
-      { error: 'Acesso restrito a colaboradores ABVCAP.' },
+      { error: 'Acesso não autorizado para este email.' },
       { status: 403 }
     )
   }
