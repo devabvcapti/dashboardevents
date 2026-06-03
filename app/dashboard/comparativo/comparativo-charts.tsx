@@ -154,7 +154,7 @@ export function ComparativoCharts({ data }: { data: EditionComparison[] }) {
                   <Cell key={i} fill={i === revData.length - 1 ? teal : bar} fillOpacity={i === revData.length - 1 ? 1 : 0.55} />
                 ))}
                 <LabelList dataKey="value" position="top" style={{ ...AXIS_STYLE, fill: 'hsl(var(--foreground))' }}
-                  formatter={(v: number) => `R$${(v / 1000).toFixed(0)}k`} />
+                  formatter={(v) => `R$${(Number(v) / 1000).toFixed(0)}k`} />
               </Bar>
             </BarChart>
           </ResponsiveContainer>

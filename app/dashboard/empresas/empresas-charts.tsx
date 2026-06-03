@@ -101,8 +101,8 @@ export function EmpresasCharts({ analysis }: { analysis: CompanyAnalysis }) {
               <Tooltip
                 contentStyle={tooltipStyle}
                 cursor={{ fill: 'hsl(var(--muted))', opacity: 0.4 }}
-                formatter={(v: number, _: string, props: { payload?: { pct?: number } }) => [
-                  `${v} participantes (${props.payload?.pct ?? 0}%)`,
+                formatter={(v, _, props) => [
+                  `${v} participantes (${(props as { payload?: { pct?: number } }).payload?.pct ?? 0}%)`,
                   'Empresa',
                 ]}
               />
@@ -135,7 +135,7 @@ export function EmpresasCharts({ analysis }: { analysis: CompanyAnalysis }) {
               </Pie>
               <Tooltip
                 contentStyle={tooltipStyle}
-                formatter={(v: number) => [`${v} participantes`, '']}
+                formatter={(v) => [`${v} participantes`, '']}
               />
               <Legend
                 iconType="circle"
