@@ -20,6 +20,7 @@ export async function GET(request: NextRequest) {
   }
 
   const email = data.user.email ?? ''
+  console.log('[auth/callback] email:', JSON.stringify(email), 'allowed:', isEmailAllowed(email))
   if (!isEmailAllowed(email)) {
     await supabase.auth.signOut()
     return NextResponse.redirect(`${origin}/login?error=forbidden`)
