@@ -148,7 +148,7 @@ export function ComparativoCharts({ data }: { data: EditionComparison[] }) {
               <YAxis tick={AXIS_STYLE} axisLine={false} tickLine={false} width={60}
                 tickFormatter={v => `R$${(v / 1000).toFixed(0)}k`} />
               <Tooltip contentStyle={tooltipStyle} cursor={{ fill: 'hsl(var(--muted))', opacity: 0.4 }}
-                formatter={(v: number) => [fmtBRL(v), 'Receita']} />
+                formatter={(v) => [fmtBRL(v as number), 'Receita']} />
               <Bar dataKey="value" name="Receita" radius={[4, 4, 0, 0]}>
                 {revData.map((_, i) => (
                   <Cell key={i} fill={i === revData.length - 1 ? teal : bar} fillOpacity={i === revData.length - 1 ? 1 : 0.55} />
