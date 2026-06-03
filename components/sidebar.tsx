@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { usePathname, useRouter } from 'next/navigation'
-import { LayoutDashboard, Users, BarChart3, TicketIcon, LogOut, Upload, Calendar, Wallet, Tag, UserCog, Activity, PiggyBank, BookOpen } from 'lucide-react'
+import { LayoutDashboard, Users, BarChart3, TicketIcon, LogOut, Upload, Calendar, Wallet, Tag, UserCog, Activity, PiggyBank, BookOpen, GitCompareArrows, Building2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { ThemeToggle } from '@/components/theme-toggle'
 import { EditionSelector } from '@/components/edition-selector'
@@ -16,6 +16,8 @@ const commonNav = [
   { href: '/dashboard/publico', label: 'Análise de Público', icon: BarChart3 },
   { href: '/dashboard/ritmo', label: 'Ritmo de Inscrições', icon: Activity },
   { href: '/dashboard/receita', label: 'Análise de Receita', icon: Wallet },
+  { href: '/dashboard/comparativo', label: 'Comparativo', icon: GitCompareArrows },
+  { href: '/dashboard/empresas', label: 'Empresas', icon: Building2 },
   { href: '/dashboard/manual', label: 'Manual', icon: BookOpen },
 ]
 

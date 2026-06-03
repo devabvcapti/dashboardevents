@@ -524,3 +524,93 @@ export async function getBudgetSummary(editionId: string): Promise<BudgetSummary
 
   return { totalBudgeted, totalRealized, balance, executionPct, byCategory, items }
 }
+
+// ─── Comparativo entre edições ───────────────────────────────────────────────
+
+export interface EditionComparison {
+  edition: Edition
+  stats: OverviewStats
+}
+
+export async function getAllEditionsComparison(): Promise<EditionComparison[]> {
+  const supabase = getSupabase()
+  const { data: editions, error } = await supabase
+    .from('editions')
+    .select('*')
+    .order('year', { ascending: true })
+  if (error) throw error
+  if (!editions || editions.length === 0) return []
+
+  const results = await Promise.all(
+    (editions as Edition[]).map(async (edition) => {
+      const { data, error: rpcError } = await supabase
+        .rpc('get_overview_stats', { p_edition_id: edition.id })
+      if (rpcError || !data) return null
+      return { edition, stats: data as unknown as OverviewStats }
+    })
+  )
+  return results.filter((r): r is EditionComparison => r !== null)
+}
+
+// ─── Análise de empresas ──────────────────────────────────────────────────────
+
+export interface CompanyRow {
+  company: string
+  count: number
+  members: number
+  non_members: number
+  segment: string | null
+  pct: number
+}
+
+export interface CompanyAnalysis {
+  companies: CompanyRow[]
+  total_companies: number
+  total_participants: number
+  top5_pct: number
+  avg_per_company: number
+}
+
+export async function getCompanyAnalysis(editionId: string): Promise<CompanyAnalysis> {
+  const { data, error } = await getSupabase()
+    .from('participants')
+    .select('company, ticket_membership, company_segment_normalized')
+    .eq('edition_id', editionId)
+    .limit(5000)
+  if (error) throw error
+
+  const rows = (data ?? []) as { company: string | null; ticket_membership: string; company_segment_normalized: string | null }[]
+  const total = rows.length
+  const withCompany = rows.filter(r => r.company && r.company.trim() !== '')
+
+  const map = new Map<string, { count: number; members: number; non_members: number; segment: string | null }>()
+  for (const p of withCompany) {
+    const key = p.company!.trim()
+    const v = map.get(key) ?? { count: 0, members: 0, non_members: 0, segment: p.company_segment_normalized }
+    v.count++
+    if (p.ticket_membership === 'MEMBRO') v.members++
+    else v.non_members++
+    map.set(key, v)
+  }
+
+  const companies: CompanyRow[] = Array.from(map.entries())
+    .map(([company, v]) => ({
+      company,
+      count: v.count,
+      members: v.members,
+      non_members: v.non_members,
+      segment: v.segment,
+      pct: total > 0 ? Math.round((v.count / total) * 1000) / 10 : 0,
+    }))
+    .sort((a, b) => b.count - a.count)
+
+  const top5Total = companies.slice(0, 5).reduce((s, c) => s + c.count, 0)
+
+  return {
+    companies,
+    total_companies: companies.length,
+    total_participants: total,
+    top5_pct: total > 0 ? Math.round((top5Total / total) * 1000) / 10 : 0,
+    avg_per_company: companies.length > 0 ? Math.round((withCompany.length / companies.length) * 10) / 10 : 0,
+  }
+}
