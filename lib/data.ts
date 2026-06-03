@@ -549,7 +549,7 @@ export async function getAllEditionsComparison(): Promise<EditionComparison[]> {
       return { edition, stats: data as unknown as OverviewStats }
     })
   )
-  return results.filter((r): r is EditionComparison => r !== null)
+  return results.filter((r): r is EditionComparison => r !== null && r.stats.total >= 20)
 }
 
 // ─── Análise de empresas ──────────────────────────────────────────────────────
