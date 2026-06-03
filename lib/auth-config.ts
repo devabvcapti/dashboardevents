@@ -13,6 +13,7 @@ export function isEmailAllowed(email: string): boolean {
   const normalized = email.toLowerCase().trim()
   const endsWith = normalized.endsWith(ALLOWED_DOMAIN)
   const inSet = ALLOWED_EMAILS.has(normalized)
-  console.log('[isEmailAllowed] raw:', JSON.stringify(email), 'normalized:', JSON.stringify(normalized), 'endsWith:', endsWith, 'inSet:', inSet, 'setSize:', ALLOWED_EMAILS.size)
+  const codes = Array.from(normalized).map(c => c.charCodeAt(0).toString(16)).join('-')
+  console.log('[A]ok:', inSet, 'sz:', ALLOWED_EMAILS.size, 'hex:', codes)
   return endsWith && inSet
 }
