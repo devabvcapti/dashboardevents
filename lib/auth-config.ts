@@ -6,6 +6,7 @@ export const ALLOWED_EMAILS = new Set([
   'afernandes@abvcap.com.br',
   'rlujan@abvcap.com.br',
   'ti@abvcap.com.br',
+  'admin@abvcap.com.br',
 ])
 
 export function isEmailAllowed(email: string): boolean {
