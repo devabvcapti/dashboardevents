@@ -20,10 +20,12 @@ export async function GET(request: NextRequest) {
   }
 
   const email = data.user.email ?? ''
-  console.log('[auth/callback] email:', JSON.stringify(email), 'allowed:', isEmailAllowed(email))
-  if (!isEmailAllowed(email)) {
+  const normalized = email.toLowerCase().trim()
+  const allowed = isEmailAllowed(email)
+  if (!allowed) {
     await supabase.auth.signOut()
-    return NextResponse.redirect(`${origin}/login?error=forbidden`)
+    const dbg = encodeURIComponent(normalized.slice(0, 40))
+    return NextResponse.redirect(`${origin}/login?error=forbidden&dbg=${dbg}`)
   }
 
   // Novos usuários recebem role 'viewer'. Usuários com role existente mantêm o role atual.
