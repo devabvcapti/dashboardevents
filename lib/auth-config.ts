@@ -11,5 +11,8 @@ export const ALLOWED_EMAILS = new Set([
 
 export function isEmailAllowed(email: string): boolean {
   const normalized = email.toLowerCase().trim()
-  return normalized.endsWith(ALLOWED_DOMAIN) && ALLOWED_EMAILS.has(normalized)
+  const endsWith = normalized.endsWith(ALLOWED_DOMAIN)
+  const inSet = ALLOWED_EMAILS.has(normalized)
+  console.log('[isEmailAllowed] raw:', JSON.stringify(email), 'normalized:', JSON.stringify(normalized), 'endsWith:', endsWith, 'inSet:', inSet, 'setSize:', ALLOWED_EMAILS.size)
+  return endsWith && inSet
 }
