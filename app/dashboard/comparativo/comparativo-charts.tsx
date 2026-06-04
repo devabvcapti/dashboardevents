@@ -2,8 +2,7 @@
 
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
-  CartesianGrid, LabelList, Cell, Legend,
-  LineChart, Line,
+  CartesianGrid, LabelList, Cell,
 } from 'recharts'
 import { useTheme } from 'next-themes'
 import type { EditionComparison } from '@/lib/data'
@@ -175,53 +174,53 @@ export function ComparativoCharts({ data }: { data: EditionComparison[] }) {
 
       {/* Análise de Público por Edição */}
       {(() => {
-        const lineData = data.map(d => {
-          const total = d.top_segments.reduce((s, seg) => s + seg.count, 0) || 1
-          const entry: Record<string, string | number> = { name: String(d.edition.year) }
-          for (const key of SEGMENT_KEYS) {
-            const found = d.top_segments.find(s => s.type === key)
-            entry[key] = found ? Math.round((found.count / total) * 100) : 0
-          }
-          return entry
-        })
-        // only draw lines for segments that have any data
-        const activeKeys = SEGMENT_KEYS.filter(key => lineData.some(row => (row[key] as number) > 0))
-        const hasSegData = activeKeys.length > 0
+        const hasSegData = data.some(d => d.top_segments.length > 0)
         const hasJobData = data.some(d => d.top_jobs.length > 0)
         if (!hasSegData && !hasJobData) return null
         return (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Segmento de Atuação — line chart */}
+            {/* Segmento de Atuação — ranking table */}
             {hasSegData && (
-              <div className="border border-border rounded-lg bg-card p-5 space-y-3">
-                <p className="text-[10px] font-mono tracking-[0.18em] text-muted-foreground uppercase">Segmento de Atuação por Edição</p>
-                <ResponsiveContainer width="100%" height={260}>
-                  <LineChart data={lineData} margin={{ top: 8, right: 16, left: 0, bottom: 0 }}>
-                    <CartesianGrid stroke={GRID_COLOR} strokeOpacity={0.5} />
-                    <XAxis dataKey="name" tick={AXIS_STYLE} axisLine={false} tickLine={false} />
-                    <YAxis tick={AXIS_STYLE} axisLine={false} tickLine={false} width={32} tickFormatter={v => `${v}%`} domain={[0, 100]} />
-                    <Tooltip
-                      contentStyle={tooltipStyle}
-                      formatter={(v, name) => [`${v}%`, SEGMENT_LABELS[name as string] ?? name]}
-                    />
-                    <Legend
-                      iconType="circle" iconSize={7}
-                      wrapperStyle={{ fontSize: 10, fontFamily: 'var(--font-mono)', marginTop: 8 }}
-                      formatter={name => SEGMENT_LABELS[name as string] ?? name}
-                    />
-                    {activeKeys.map(key => (
-                      <Line
-                        key={key}
-                        type="monotone"
-                        dataKey={key}
-                        stroke={SEG_COLORS[key]}
-                        strokeWidth={2}
-                        dot={{ r: 4, fill: SEG_COLORS[key] }}
-                        activeDot={{ r: 6 }}
-                      />
-                    ))}
-                  </LineChart>
-                </ResponsiveContainer>
+              <div className="border border-border rounded-lg bg-card overflow-hidden">
+                <div className="px-5 py-3 border-b border-border">
+                  <p className="text-[10px] font-mono tracking-[0.18em] text-muted-foreground uppercase">Segmento de Atuação por Edição</p>
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b border-border">
+                        <th className="text-left px-4 py-2 text-[10px] font-mono tracking-wider text-muted-foreground uppercase">#</th>
+                        {data.map(d => (
+                          <th key={d.edition.id} className="text-left px-4 py-2 text-[10px] font-mono tracking-wider text-muted-foreground uppercase whitespace-nowrap">
+                            {d.edition.year}
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {[0, 1, 2, 3, 4].map(rank => (
+                        <tr key={rank} className="border-b border-border last:border-0 hover:bg-muted/20 transition-colors">
+                          <td className="px-4 py-2.5 tabular-nums text-muted-foreground text-xs">{rank + 1}</td>
+                          {data.map(d => {
+                            const seg = d.top_segments[rank]
+                            return (
+                              <td key={d.edition.id} className="px-4 py-2.5 text-xs">
+                                {seg ? (
+                                  <span>
+                                    <span className="font-medium text-foreground">{SEGMENT_LABELS[seg.type] ?? seg.type}</span>
+                                    <span className="ml-1.5 text-muted-foreground">({seg.pct}%)</span>
+                                  </span>
+                                ) : (
+                                  <span className="text-muted-foreground">—</span>
+                                )}
+                              </td>
+                            )
+                          })}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             )}
 
