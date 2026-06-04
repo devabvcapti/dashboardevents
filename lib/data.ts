@@ -530,6 +530,7 @@ export async function getBudgetSummary(editionId: string): Promise<BudgetSummary
 export interface EditionComparison {
   edition: Edition
   stats: OverviewStats
+  top_segment: string | null
 }
 
 export async function getAllEditionsComparison(): Promise<EditionComparison[]> {
@@ -543,10 +544,29 @@ export async function getAllEditionsComparison(): Promise<EditionComparison[]> {
 
   const results = await Promise.all(
     (editions as Edition[]).map(async (edition) => {
-      const { data, error: rpcError } = await supabase
-        .rpc('get_overview_stats', { p_edition_id: edition.id })
-      if (rpcError || !data) return null
-      return { edition, stats: data as unknown as OverviewStats }
+      const [statsResult, segResult] = await Promise.all([
+        supabase.rpc('get_overview_stats', { p_edition_id: edition.id }),
+        supabase
+          .from('participants')
+          .select('company_segment_raw')
+          .eq('edition_id', edition.id)
+          .not('company_segment_raw', 'is', null)
+          .limit(5000),
+      ])
+      if (statsResult.error || !statsResult.data) return null
+
+      let top_segment: string | null = null
+      if (segResult.data && segResult.data.length > 0) {
+        const counts: Record<string, number> = {}
+        for (const row of segResult.data) {
+          const seg = (row.company_segment_raw as string).trim()
+          if (seg) counts[seg] = (counts[seg] ?? 0) + 1
+        }
+        const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1])
+        top_segment = sorted[0]?.[0] ?? null
+      }
+
+      return { edition, stats: statsResult.data as unknown as OverviewStats, top_segment }
     })
   )
   return results.filter((r): r is EditionComparison => r !== null && r.stats.total >= 20)

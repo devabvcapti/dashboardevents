@@ -13,6 +13,11 @@ const NAVY_LIGHT = '#112468'
 const NAVY_DARK = '#6b9be8'
 const TEAL = '#00a89d'
 
+const SEGMENT_LABELS: Record<string, string> = {
+  GP: 'Gestora (GP)', LP: 'Investidor (LP)', FUNDO: 'Fundo',
+  CORPORATIVO: 'Corporativo', GOVERNO: 'Governo', ACADEMIA: 'Academia', OUTRO: 'Outro',
+}
+
 const AXIS_STYLE = { fontSize: 11, fontFamily: 'var(--font-mono)', fill: 'hsl(var(--muted-foreground))' }
 const GRID_COLOR = 'hsl(var(--border))'
 
@@ -176,7 +181,7 @@ export function ComparativoCharts({ data }: { data: EditionComparison[] }) {
                 <th className="text-right px-4 py-2.5 text-[10px] font-mono tracking-wider text-muted-foreground uppercase">Receita</th>
                 <th className="text-right px-4 py-2.5 text-[10px] font-mono tracking-wider text-muted-foreground uppercase">Ticket Médio</th>
                 <th className="text-right px-4 py-2.5 text-[10px] font-mono tracking-wider text-muted-foreground uppercase">Empresas</th>
-                <th className="text-right px-4 py-2.5 text-[10px] font-mono tracking-wider text-muted-foreground uppercase">Estados</th>
+                <th className="text-right px-4 py-2.5 text-[10px] font-mono tracking-wider text-muted-foreground uppercase">Segmento</th>
               </tr>
             </thead>
             <tbody>
@@ -195,7 +200,9 @@ export function ComparativoCharts({ data }: { data: EditionComparison[] }) {
                     <td className="px-4 py-3 text-right tabular-nums">{fmtBRL(d.stats.total_revenue)}</td>
                     <td className="px-4 py-3 text-right tabular-nums">{fmtBRL(d.stats.avg_ticket)}</td>
                     <td className="px-4 py-3 text-right tabular-nums">{d.stats.unique_companies.toLocaleString('pt-BR')}</td>
-                    <td className="px-4 py-3 text-right tabular-nums">{d.stats.states_represented}</td>
+                    <td className="px-4 py-3 text-right text-muted-foreground">
+                      {d.top_segment ? (SEGMENT_LABELS[d.top_segment] ?? d.top_segment) : '—'}
+                    </td>
                   </tr>
                 )
               })}
