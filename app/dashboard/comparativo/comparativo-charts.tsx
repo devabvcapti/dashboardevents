@@ -3,6 +3,7 @@
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
   CartesianGrid, LabelList, Cell, Legend,
+  LineChart, Line,
 } from 'recharts'
 import { useTheme } from 'next-themes'
 import type { EditionComparison } from '@/lib/data'
@@ -174,43 +175,52 @@ export function ComparativoCharts({ data }: { data: EditionComparison[] }) {
 
       {/* Análise de Público por Edição */}
       {(() => {
-        const segmentChartData = data.map(d => {
+        const lineData = data.map(d => {
           const total = d.top_segments.reduce((s, seg) => s + seg.count, 0) || 1
-          const entry: Record<string, string | number> = { name: d.edition.name }
+          const entry: Record<string, string | number> = { name: String(d.edition.year) }
           for (const key of SEGMENT_KEYS) {
             const found = d.top_segments.find(s => s.type === key)
             entry[key] = found ? Math.round((found.count / total) * 100) : 0
           }
           return entry
         })
-        const hasSegData = data.some(d => d.top_segments.length > 0)
+        // only draw lines for segments that have any data
+        const activeKeys = SEGMENT_KEYS.filter(key => lineData.some(row => (row[key] as number) > 0))
+        const hasSegData = activeKeys.length > 0
         const hasJobData = data.some(d => d.top_jobs.length > 0)
         if (!hasSegData && !hasJobData) return null
         return (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Segmento de Atuação */}
+            {/* Segmento de Atuação — line chart */}
             {hasSegData && (
               <div className="border border-border rounded-lg bg-card p-5 space-y-3">
                 <p className="text-[10px] font-mono tracking-[0.18em] text-muted-foreground uppercase">Segmento de Atuação por Edição</p>
-                <ResponsiveContainer width="100%" height={240}>
-                  <BarChart data={segmentChartData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
-                    <CartesianGrid vertical={false} stroke={GRID_COLOR} strokeOpacity={0.5} />
+                <ResponsiveContainer width="100%" height={260}>
+                  <LineChart data={lineData} margin={{ top: 8, right: 16, left: 0, bottom: 0 }}>
+                    <CartesianGrid stroke={GRID_COLOR} strokeOpacity={0.5} />
                     <XAxis dataKey="name" tick={AXIS_STYLE} axisLine={false} tickLine={false} />
-                    <YAxis tick={AXIS_STYLE} axisLine={false} tickLine={false} width={32} tickFormatter={v => `${v}%`} />
+                    <YAxis tick={AXIS_STYLE} axisLine={false} tickLine={false} width={32} tickFormatter={v => `${v}%`} domain={[0, 100]} />
                     <Tooltip
                       contentStyle={tooltipStyle}
-                      cursor={{ fill: 'hsl(var(--muted))', opacity: 0.4 }}
                       formatter={(v, name) => [`${v}%`, SEGMENT_LABELS[name as string] ?? name]}
                     />
                     <Legend
                       iconType="circle" iconSize={7}
-                      wrapperStyle={{ fontSize: 10, fontFamily: 'var(--font-mono)' }}
+                      wrapperStyle={{ fontSize: 10, fontFamily: 'var(--font-mono)', marginTop: 8 }}
                       formatter={name => SEGMENT_LABELS[name as string] ?? name}
                     />
-                    {SEGMENT_KEYS.map(key => (
-                      <Bar key={key} dataKey={key} stackId="a" fill={SEG_COLORS[key]} />
+                    {activeKeys.map(key => (
+                      <Line
+                        key={key}
+                        type="monotone"
+                        dataKey={key}
+                        stroke={SEG_COLORS[key]}
+                        strokeWidth={2}
+                        dot={{ r: 4, fill: SEG_COLORS[key] }}
+                        activeDot={{ r: 6 }}
+                      />
                     ))}
-                  </BarChart>
+                  </LineChart>
                 </ResponsiveContainer>
               </div>
             )}
