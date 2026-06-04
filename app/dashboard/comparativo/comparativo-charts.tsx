@@ -2,7 +2,7 @@
 
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
-  CartesianGrid, LabelList, Cell,
+  CartesianGrid, LabelList, Cell, Legend,
 } from 'recharts'
 import { useTheme } from 'next-themes'
 import type { EditionComparison } from '@/lib/data'
@@ -16,6 +16,12 @@ const TEAL = '#00a89d'
 const SEGMENT_LABELS: Record<string, string> = {
   GP: 'Gestora (GP)', LP: 'Investidor (LP)', FUNDO: 'Fundo',
   CORPORATIVO: 'Corporativo', GOVERNO: 'Governo', ACADEMIA: 'Academia', OUTRO: 'Outro',
+}
+
+const SEGMENT_KEYS = ['GP', 'LP', 'FUNDO', 'CORPORATIVO', 'GOVERNO', 'ACADEMIA', 'OUTRO']
+const SEG_COLORS: Record<string, string> = {
+  GP: '#112468', LP: '#00a89d', FUNDO: '#2d5be3', CORPORATIVO: '#0e8c82',
+  GOVERNO: '#4878f0', ACADEMIA: '#15b5a8', OUTRO: '#94a3b8',
 }
 
 const AXIS_STYLE = { fontSize: 11, fontFamily: 'var(--font-mono)', fill: 'hsl(var(--muted-foreground))' }
@@ -165,6 +171,94 @@ export function ComparativoCharts({ data }: { data: EditionComparison[] }) {
           </ResponsiveContainer>
         </div>
       </div>
+
+      {/* Análise de Público por Edição */}
+      {(() => {
+        const segmentChartData = data.map(d => {
+          const total = d.top_segments.reduce((s, seg) => s + seg.count, 0) || 1
+          const entry: Record<string, string | number> = { name: d.edition.name }
+          for (const key of SEGMENT_KEYS) {
+            const found = d.top_segments.find(s => s.type === key)
+            entry[key] = found ? Math.round((found.count / total) * 100) : 0
+          }
+          return entry
+        })
+        const hasSegData = data.some(d => d.top_segments.length > 0)
+        const hasJobData = data.some(d => d.top_jobs.length > 0)
+        if (!hasSegData && !hasJobData) return null
+        return (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Segmento de Atuação */}
+            {hasSegData && (
+              <div className="border border-border rounded-lg bg-card p-5 space-y-3">
+                <p className="text-[10px] font-mono tracking-[0.18em] text-muted-foreground uppercase">Segmento de Atuação por Edição</p>
+                <ResponsiveContainer width="100%" height={240}>
+                  <BarChart data={segmentChartData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+                    <CartesianGrid vertical={false} stroke={GRID_COLOR} strokeOpacity={0.5} />
+                    <XAxis dataKey="name" tick={AXIS_STYLE} axisLine={false} tickLine={false} />
+                    <YAxis tick={AXIS_STYLE} axisLine={false} tickLine={false} width={32} tickFormatter={v => `${v}%`} />
+                    <Tooltip
+                      contentStyle={tooltipStyle}
+                      cursor={{ fill: 'hsl(var(--muted))', opacity: 0.4 }}
+                      formatter={(v, name) => [`${v}%`, SEGMENT_LABELS[name as string] ?? name]}
+                    />
+                    <Legend
+                      iconType="circle" iconSize={7}
+                      wrapperStyle={{ fontSize: 10, fontFamily: 'var(--font-mono)' }}
+                      formatter={name => SEGMENT_LABELS[name as string] ?? name}
+                    />
+                    {SEGMENT_KEYS.map(key => (
+                      <Bar key={key} dataKey={key} stackId="a" fill={SEG_COLORS[key]} />
+                    ))}
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            )}
+
+            {/* Cargo / Posição */}
+            {hasJobData && (
+              <div className="border border-border rounded-lg bg-card overflow-hidden">
+                <div className="px-5 py-3 border-b border-border">
+                  <p className="text-[10px] font-mono tracking-[0.18em] text-muted-foreground uppercase">Cargo / Posição por Edição</p>
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b border-border">
+                        <th className="text-left px-4 py-2 text-[10px] font-mono tracking-wider text-muted-foreground uppercase">#</th>
+                        {data.map(d => (
+                          <th key={d.edition.id} className="text-left px-4 py-2 text-[10px] font-mono tracking-wider text-muted-foreground uppercase whitespace-nowrap">
+                            {d.edition.year}
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {[0, 1, 2, 3, 4].map(rank => (
+                        <tr key={rank} className="border-b border-border last:border-0 hover:bg-muted/20 transition-colors">
+                          <td className="px-4 py-2.5 tabular-nums text-muted-foreground text-xs">{rank + 1}</td>
+                          {data.map(d => (
+                            <td key={d.edition.id} className="px-4 py-2.5 text-xs">
+                              {d.top_jobs[rank] ? (
+                                <span>
+                                  <span className="font-medium text-foreground">{d.top_jobs[rank].label}</span>
+                                  <span className="ml-1.5 text-muted-foreground">({d.top_jobs[rank].pct}%)</span>
+                                </span>
+                              ) : (
+                                <span className="text-muted-foreground">—</span>
+                              )}
+                            </td>
+                          ))}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+          </div>
+        )
+      })()}
 
       {/* Tabela comparativa */}
       <div className="border border-border rounded-lg overflow-hidden">

@@ -527,10 +527,15 @@ export async function getBudgetSummary(editionId: string): Promise<BudgetSummary
 
 // ─── Comparativo entre edições ───────────────────────────────────────────────
 
+export interface SegmentCount { type: string; count: number; pct: number }
+export interface JobCount { label: string; count: number; pct: number }
+
 export interface EditionComparison {
   edition: Edition
   stats: OverviewStats
   top_segment: string | null
+  top_segments: SegmentCount[]
+  top_jobs: JobCount[]
 }
 
 export async function getAllEditionsComparison(): Promise<EditionComparison[]> {
@@ -544,7 +549,7 @@ export async function getAllEditionsComparison(): Promise<EditionComparison[]> {
 
   const results = await Promise.all(
     (editions as Edition[]).map(async (edition) => {
-      const [statsResult, segResult] = await Promise.all([
+      const [statsResult, segResult, jobResult] = await Promise.all([
         supabase.rpc('get_overview_stats', { p_edition_id: edition.id }),
         supabase
           .from('participants')
@@ -552,21 +557,41 @@ export async function getAllEditionsComparison(): Promise<EditionComparison[]> {
           .eq('edition_id', edition.id)
           .not('company_segment_raw', 'is', null)
           .limit(5000),
+        supabase
+          .from('participants')
+          .select('job_title')
+          .eq('edition_id', edition.id)
+          .not('job_title', 'is', null)
+          .limit(5000),
       ])
       if (statsResult.error || !statsResult.data) return null
 
-      let top_segment: string | null = null
-      if (segResult.data && segResult.data.length > 0) {
-        const counts: Record<string, number> = {}
-        for (const row of segResult.data) {
-          const seg = (row.company_segment_raw as string).trim()
-          if (seg) counts[seg] = (counts[seg] ?? 0) + 1
-        }
-        const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1])
-        top_segment = sorted[0]?.[0] ?? null
+      // Segment counts
+      const segCounts: Record<string, number> = {}
+      for (const row of segResult.data ?? []) {
+        const seg = (row.company_segment_raw as string).trim()
+        if (seg) segCounts[seg] = (segCounts[seg] ?? 0) + 1
       }
+      const segTotal = Object.values(segCounts).reduce((s, n) => s + n, 0) || 1
+      const top_segments: SegmentCount[] = Object.entries(segCounts)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 7)
+        .map(([type, count]) => ({ type, count, pct: Math.round((count / segTotal) * 100) }))
+      const top_segment = top_segments[0]?.type ?? null
 
-      return { edition, stats: statsResult.data as unknown as OverviewStats, top_segment }
+      // Job title counts
+      const jobCounts: Record<string, number> = {}
+      for (const row of jobResult.data ?? []) {
+        const job = (row.job_title as string).trim()
+        if (job) jobCounts[job] = (jobCounts[job] ?? 0) + 1
+      }
+      const jobTotal = Object.values(jobCounts).reduce((s, n) => s + n, 0) || 1
+      const top_jobs: JobCount[] = Object.entries(jobCounts)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 5)
+        .map(([label, count]) => ({ label, count, pct: Math.round((count / jobTotal) * 100) }))
+
+      return { edition, stats: statsResult.data as unknown as OverviewStats, top_segment, top_segments, top_jobs }
     })
   )
   return results.filter((r): r is EditionComparison => r !== null && r.stats.total >= 20)
