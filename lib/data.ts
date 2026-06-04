@@ -548,7 +548,7 @@ export async function getAllEditionsComparison(): Promise<EditionComparison[]> {
   if (!editions || editions.length === 0) return []
 
   const results = await Promise.all(
-    (editions as Edition[]).map(async (edition) => {
+    (editions as Edition[]).map(async (edition): Promise<EditionComparison | null> => {
       const [statsResult, segResult, jobResult] = await Promise.all([
         supabase.rpc('get_overview_stats', { p_edition_id: edition.id }),
         supabase
