@@ -3,11 +3,11 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { usePathname, useRouter } from 'next/navigation'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import {
   LayoutDashboard, Users, BarChart3, TicketIcon, LogOut, Upload,
   Calendar, Wallet, Tag, UserCog, Activity, PiggyBank, BookOpen,
-  GitCompareArrows, Building2, ChevronLeft, ChevronRight,
+  GitCompareArrows, Building2, Pin, PinOff,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { ThemeToggle } from '@/components/theme-toggle'
@@ -77,19 +77,32 @@ export function Sidebar({
 }) {
   const pathname = usePathname()
   const router = useRouter()
-  const [collapsed, setCollapsed] = useState(false)
+  const [pinned, setPinned] = useState(false)
+  const [hovered, setHovered] = useState(false)
+  const leaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const collapsed = !pinned && !hovered
 
   useEffect(() => {
-    const stored = localStorage.getItem('sidebar-collapsed')
-    if (stored === 'true') setCollapsed(true)
+    const stored = localStorage.getItem('sidebar-pinned')
+    if (stored === 'true') setPinned(true)
   }, [])
 
-  function toggle() {
-    setCollapsed(prev => {
+  function togglePin() {
+    setPinned(prev => {
       const next = !prev
-      localStorage.setItem('sidebar-collapsed', String(next))
+      localStorage.setItem('sidebar-pinned', String(next))
       return next
     })
+  }
+
+  function handleMouseEnter() {
+    if (leaveTimer.current) clearTimeout(leaveTimer.current)
+    setHovered(true)
+  }
+
+  function handleMouseLeave() {
+    leaveTimer.current = setTimeout(() => setHovered(false), 200)
   }
 
   async function handleLogout() {
@@ -98,21 +111,27 @@ export function Sidebar({
   }
 
   return (
-    <aside className={cn(
-      'relative flex flex-col min-h-screen bg-sidebar text-sidebar-foreground shrink-0 transition-all duration-300',
-      collapsed ? 'w-16' : 'w-64'
-    )}>
-
-      {/* Collapse toggle */}
-      <button
-        onClick={toggle}
-        className="absolute -right-3 top-9 z-50 flex h-6 w-6 items-center justify-center rounded-full bg-sidebar border border-sidebar-border text-sidebar-foreground/40 hover:text-sidebar-foreground shadow-sm transition-colors"
-        aria-label={collapsed ? 'Expandir menu' : 'Recolher menu'}
-      >
-        {collapsed
-          ? <ChevronRight className="w-3 h-3" />
-          : <ChevronLeft className="w-3 h-3" />}
-      </button>
+    <aside
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
+      className={cn(
+        'relative flex flex-col min-h-screen bg-sidebar text-sidebar-foreground shrink-0 transition-all duration-300',
+        collapsed ? 'w-16' : 'w-64'
+      )}
+    >
+      {/* Pin button — visible when expanded */}
+      {!collapsed && (
+        <button
+          onClick={togglePin}
+          className="absolute right-3 top-4 z-50 flex h-6 w-6 items-center justify-center rounded text-sidebar-foreground/30 hover:text-sidebar-foreground/70 transition-colors"
+          aria-label={pinned ? 'Desafixar menu' : 'Fixar menu expandido'}
+          title={pinned ? 'Desafixar' : 'Fixar expandido'}
+        >
+          {pinned
+            ? <Pin className="w-3.5 h-3.5 fill-sidebar-primary text-sidebar-primary" />
+            : <PinOff className="w-3.5 h-3.5" />}
+        </button>
+      )}
 
       {/* Brand */}
       <div className={cn('pt-8 pb-7 transition-all duration-300', collapsed ? 'px-3' : 'px-6')}>
