@@ -134,25 +134,39 @@ export function Sidebar({
       )}
 
       {/* Brand */}
-      <div className={cn('pt-8 pb-7 transition-all duration-300', collapsed ? 'px-3' : 'px-6')}>
-        <div className="flex items-start gap-3">
-          <div className="mt-0.5 w-[3px] h-10 bg-sidebar-primary rounded-full shrink-0" />
-          {!collapsed && (
-            <div>
-              <Image
-                src="/logo-abvcap.png"
-                alt="ABVCAP"
-                width={96}
-                height={28}
-                className="mb-2 object-contain"
-                priority
-              />
-              <p className="font-display text-[17px] leading-tight text-sidebar-foreground">Dashboard</p>
-              <p className="font-display text-[17px] leading-none text-sidebar-foreground/50">Eventos</p>
+      <div className={cn('pb-7 transition-all duration-300', collapsed ? 'px-2 pt-6' : 'px-6 pt-8')}>
+        {collapsed ? (
+          <div className="flex flex-col items-center gap-4">
+            <Image
+              src="/logo-abvcap.png"
+              alt="ABVCAP"
+              width={40}
+              height={40}
+              className="object-contain"
+              priority
+            />
+            <div className="h-px w-full bg-sidebar-border" />
+          </div>
+        ) : (
+          <>
+            <div className="flex items-start gap-3">
+              <div className="mt-0.5 w-[3px] h-10 bg-sidebar-primary rounded-full shrink-0" />
+              <div>
+                <Image
+                  src="/logo-abvcap.png"
+                  alt="ABVCAP"
+                  width={96}
+                  height={28}
+                  className="mb-2 object-contain"
+                  priority
+                />
+                <p className="font-display text-[17px] leading-tight text-sidebar-foreground">Dashboard</p>
+                <p className="font-display text-[17px] leading-none text-sidebar-foreground/50">Eventos</p>
+              </div>
             </div>
-          )}
-        </div>
-        <div className="mt-6 h-px bg-sidebar-border" />
+            <div className="mt-6 h-px bg-sidebar-border" />
+          </>
+        )}
       </div>
 
       {/* Edition selector */}
