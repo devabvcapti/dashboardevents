@@ -182,8 +182,8 @@ export function InscricoesClient({ participants, totalCount, currentPage, pageSi
                     : '—'}
                 </TableCell>
                 <TableCell className="text-xs text-muted-foreground">
-                  {p.created_at
-                    ? format(new Date(p.created_at), 'dd/MM/yy HH:mm', { locale: ptBR })
+                  {(p.registered_at ?? p.created_at)
+                    ? format(new Date((p.registered_at ?? p.created_at)!), 'dd/MM/yy - HH:mm', { locale: ptBR })
                     : '—'}
                 </TableCell>
               </TableRow>

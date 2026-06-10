@@ -78,6 +78,8 @@ export function buildDefaultMapping(headerRow1: string[]): ColumnMapping {
   map[37] = 'dietary_details'
   // Mark cols 38+ as ignore by default; header scan below overrides booking fields
   for (let i = 38; i < Math.max(headerRow1.length, 70); i++) map[i] = 'ignore'
+  // Col BM (index 64) — data de inscrição
+  map[64] = 'registered_at'
 
   // VC Day multi-select group: detect by row-1 header containing "vc day", span forward
   // through columns with the same or empty row-1 header (merged-cell fill or empty slaves)
@@ -116,6 +118,11 @@ export function buildDefaultMapping(headerRow1: string[]): ColumnMapping {
       h === 'promo code' || h === 'código promocional' || h === 'nome do desconto'
     ) {
       map[i] = 'coupon_code'
+    } else if (
+      (h.includes('data') && (h.includes('inscri') || h.includes('pedido') || h.includes('cadastr'))) ||
+      h === 'inscrito em' || h === 'registered at' || h === 'registration date' || h === 'order date'
+    ) {
+      map[i] = 'registered_at'
     }
   }
 
@@ -237,12 +244,29 @@ function buildRow(
   const dietary_restrictions: 'Sim' | 'Não' | null =
     dietRaw === 'sim' ? 'Sim' : (dietRaw === 'não' || dietRaw === 'nao') ? 'Não' : null
 
-  // ticket_name e coupon_code: colunas detectadas dinamicamente por header
+  // ticket_name, coupon_code e registered_at: colunas detectadas dinamicamente por header
   let ticket_name: string | null = null
   let coupon_code: string | null = null
+  let registered_at: Date | null = null
   for (const [k, v] of Object.entries(mapping)) {
     if (v === 'ticket_name') ticket_name = str(cell(Number(k))) || null
     if (v === 'coupon_code') coupon_code = str(cell(Number(k))) || null
+    if (v === 'registered_at') {
+      const raw = cell(Number(k))
+      if (raw instanceof Date && !isNaN(raw.getTime())) {
+        registered_at = raw
+      } else if (typeof raw === 'string' && raw.trim()) {
+        // Formato brasileiro: dd/MM/yyyy HH:mm ou dd/MM/yyyy HH:mm:ss
+        const m = raw.trim().match(/^(\d{2})\/(\d{2})\/(\d{4})\s+(\d{2}):(\d{2})/)
+        if (m) {
+          const d = new Date(Number(m[3]), Number(m[2]) - 1, Number(m[1]), Number(m[4]), Number(m[5]))
+          if (!isNaN(d.getTime())) registered_at = d
+        } else {
+          const d = new Date(raw)
+          if (!isNaN(d.getTime())) registered_at = d
+        }
+      }
+    }
   }
 
   return {
@@ -261,6 +285,7 @@ function buildRow(
     ticket_name,
     coupon_code,
     ticket_value,
+    registered_at,
     payment_status: (() => { const c = findCol('payment_status'); return c !== null ? str(cell(c)) || null : null })(),
     topics_of_interest: collectMulti([], 'topics_of_interest'),
     interested_in_events: collectMulti([], 'interested_in_events'),

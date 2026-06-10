@@ -206,6 +206,7 @@ export type Database = {
           job_title: string | null
           payment_status: string | null
           phone: string | null
+          registered_at: string | null
           ticket_membership: Database["public"]["Enums"]["ticket_membership"]
           ticket_name: string | null
           ticket_value: number | null
@@ -226,6 +227,7 @@ export type Database = {
           job_title?: string | null
           payment_status?: string | null
           phone?: string | null
+          registered_at?: string | null
           ticket_membership: Database["public"]["Enums"]["ticket_membership"]
           ticket_name?: string | null
           ticket_value?: number | null
@@ -246,6 +248,7 @@ export type Database = {
           job_title?: string | null
           payment_status?: string | null
           phone?: string | null
+          registered_at?: string | null
           ticket_membership?: Database["public"]["Enums"]["ticket_membership"]
           ticket_name?: string | null
           ticket_value?: number | null
