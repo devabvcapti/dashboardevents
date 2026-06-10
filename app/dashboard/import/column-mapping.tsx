@@ -26,6 +26,7 @@ const TARGET_OPTIONS: Array<{ value: TargetField | 'ignore'; label: string }> = 
   { value: 'coupon_code', label: 'Código do cupom' },
   { value: 'ticket_value', label: 'Preço do ingresso' },
   { value: 'payment_status', label: 'Status do pagamento' },
+  { value: 'registered_at', label: 'Data de inscrição' },
 ]
 
 export function ColumnMappingUI({

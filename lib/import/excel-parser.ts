@@ -119,7 +119,7 @@ export function buildDefaultMapping(headerRow1: string[]): ColumnMapping {
     ) {
       map[i] = 'coupon_code'
     } else if (
-      (h.includes('data') && (h.includes('inscri') || h.includes('pedido') || h.includes('cadastr'))) ||
+      (h.includes('data') && (h.includes('inscri') || h.includes('pedido') || h.includes('cadastr') || h.includes('registr'))) ||
       h === 'inscrito em' || h === 'registered at' || h === 'registration date' || h === 'order date'
     ) {
       map[i] = 'registered_at'
