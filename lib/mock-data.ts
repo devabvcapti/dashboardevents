@@ -91,6 +91,7 @@ const PHASE2_NULLS = {
   company_segment_normalized: null,
   ticket_name: null,
   coupon_code: null,
+  registered_at: null,
 } as const
 
 export const MOCK_PARTICIPANTS: Participant[] = [
