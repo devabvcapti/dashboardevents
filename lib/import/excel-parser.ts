@@ -35,6 +35,10 @@ export async function parseExcelMetadata(buffer: ArrayBuffer): Promise<ParseResu
   const headerRow1 = headerRow1Raw.map((v) => decodeHtmlEntities(String(v ?? '')))
   const headerRow2 = headerRow2Raw.map((v) => decodeHtmlEntities(String(v ?? '')))
 
+  // Detecta planilhas sem linha de sub-labels: se coluna de email (idx 6) da linha 2 contém '@',
+  // a linha 2 já é dado real e não sub-label.
+  const row2isData = typeof headerRow2Raw[6] === 'string' && (headerRow2Raw[6] as string).includes('@')
+
   const detectedMapping = buildDefaultMapping(headerRow1)
 
   return {
@@ -43,7 +47,7 @@ export async function parseExcelMetadata(buffer: ArrayBuffer): Promise<ParseResu
     headerScore: bestScore,
     detectedMapping,
     rawHeaders: { row1: headerRow1, row2: headerRow2 },
-    totalRows: Math.max(0, ws.rowCount - (bestIndex + 2)),
+    totalRows: Math.max(0, ws.rowCount - (bestIndex + (row2isData ? 1 : 2))),
   }
 }
 
@@ -146,17 +150,24 @@ export async function parseExcelRows(
   const headerRow2Raw = (ws.getRow(headerRowIndex + 2).values as Array<string | null>).slice(1)
   const headerRow2 = headerRow2Raw.map((v) => decodeHtmlEntities(String(v ?? '')))
 
+  // Planilhas sem linha de sub-labels: linha 2 já é dado real
+  const row2isData = typeof headerRow2Raw[6] === 'string' && (headerRow2Raw[6] as string).includes('@')
+  const dataStartRow = headerRowIndex + (row2isData ? 2 : 3)
+  // Se não há sub-labels, usa row1 como fonte de labels para multi-selects
+  const subLabelRow = row2isData
+    ? (ws.getRow(headerRowIndex + 1).values as Array<string | null>).slice(1).map(v => decodeHtmlEntities(String(v ?? '')))
+    : headerRow2
+
   const validRows: ParticipantRow[] = []
   const errors: ValidationResult['errors'] = []
 
-  const dataStartRow = headerRowIndex + 3 // 1-based row index in ExcelJS
   for (let r = dataStartRow; r <= ws.rowCount; r++) {
     const row = ws.getRow(r)
     const values = (row.values as Array<string | number | boolean | Date | null>).slice(1)
     if (values.every((v) => v === null || v === '' || v === undefined)) continue
 
     try {
-      const built = buildRow(values, mapping, headerRow2, r)
+      const built = buildRow(values, mapping, subLabelRow, r)
       validRows.push(built)
     } catch (e) {
       errors.push({
