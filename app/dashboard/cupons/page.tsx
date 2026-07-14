@@ -60,7 +60,7 @@ export default async function CuponsPage() {
       {!loadError && stats && stats.total_participants > 0 && (
         <>
           {/* KPIs */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+          <div className={`grid grid-cols-1 md:grid-cols-2 gap-3 ${stats.offline_payments.length > 0 ? 'lg:grid-cols-5' : 'lg:grid-cols-4'}`}>
             <KpiCard title="Usaram Cupom" value={stats.total_with_coupon.toLocaleString('pt-BR')} />
             <KpiCard title="Cupons Únicos" value={stats.unique_coupons.toLocaleString('pt-BR')} />
             <KpiCard title="% com Cupom" value={`${pct}%`} />
@@ -69,6 +69,13 @@ export default async function CuponsPage() {
               value={stats.total_discount_estimate !== null ? formatBRL(stats.total_discount_estimate) : '—'}
               sub="estimativa vs. preço sem cupom"
             />
+            {stats.offline_payments.length > 0 && (
+              <KpiCard
+                title="Receita Offline Registrada"
+                value={formatBRL(stats.offline_total_paid)}
+                sub="soma dos valores lançados manualmente"
+              />
+            )}
           </div>
 
           {stats.total_with_coupon === 0 ? (
@@ -149,52 +156,43 @@ export default async function CuponsPage() {
                   </tbody>
                 </table>
               </div>
-
-              {/* Ranking de empresas */}
-              {stats.top_companies.length > 0 && (
-                <div className="bg-card border border-border rounded-lg p-5">
-                  <p className="text-[10px] font-mono tracking-[0.18em] text-muted-foreground uppercase mb-4">
-                    Empresas que Mais Utilizaram Cupons
-                  </p>
-                  <div className="space-y-3">
-                    {stats.top_companies.map((c, i) => {
-                      const maxCount = stats.top_companies[0]?.count ?? 1
-                      return (
-                        <div key={i} className="flex items-center gap-4">
-                          <span className="text-[10px] font-mono text-muted-foreground/40 w-4 shrink-0 tabular-nums">{i + 1}</span>
-                          <div className="flex-1 min-w-0">
-                            <div className="flex justify-between items-baseline mb-1.5">
-                              <span className="text-sm text-foreground/80 truncate">{c.company}</span>
-                              <span className="text-[11px] font-mono text-muted-foreground ml-3 shrink-0">{c.count}</span>
-                            </div>
-                            <div className="h-1 bg-border rounded-full overflow-hidden">
-                              <div
-                                className="h-full rounded-full bg-primary/70 transition-all duration-500"
-                                style={{ width: `${Math.round((c.count / maxCount) * 100)}%` }}
-                              />
-                            </div>
-                          </div>
-                        </div>
-                      )
-                    })}
-                  </div>
-                </div>
-              )}
             </>
           )}
 
           {/* Pagamentos Offline */}
           {stats.offline_payments.length > 0 && (
-            <>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
-                <KpiCard
-                  title="Receita Offline Registrada"
-                  value={formatBRL(stats.offline_total_paid)}
-                  sub="soma dos valores lançados manualmente"
-                />
+            <OfflinePaymentsTable groups={stats.offline_payments} />
+          )}
+
+          {/* Ranking de empresas */}
+          {stats.top_companies.length > 0 && (
+            <div className="bg-card border border-border rounded-lg p-5">
+              <p className="text-[10px] font-mono tracking-[0.18em] text-muted-foreground uppercase mb-4">
+                Empresas que Mais Utilizaram Cupons
+              </p>
+              <div className="space-y-3">
+                {stats.top_companies.map((c, i) => {
+                  const maxCount = stats.top_companies[0]?.count ?? 1
+                  return (
+                    <div key={i} className="flex items-center gap-4">
+                      <span className="text-[10px] font-mono text-muted-foreground/40 w-4 shrink-0 tabular-nums">{i + 1}</span>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex justify-between items-baseline mb-1.5">
+                          <span className="text-sm text-foreground/80 truncate">{c.company}</span>
+                          <span className="text-[11px] font-mono text-muted-foreground ml-3 shrink-0">{c.count}</span>
+                        </div>
+                        <div className="h-1 bg-border rounded-full overflow-hidden">
+                          <div
+                            className="h-full rounded-full bg-primary/70 transition-all duration-500"
+                            style={{ width: `${Math.round((c.count / maxCount) * 100)}%` }}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  )
+                })}
               </div>
-              <OfflinePaymentsTable groups={stats.offline_payments} />
-            </>
+            </div>
           )}
         </>
       )}
