@@ -95,12 +95,12 @@ export async function getTicketMembershipSummary(editionId: string): Promise<Tic
   return results.sort((a, b) => b.count - a.count)
 }
 
-// ─── Free Tickets (ticket_value = 0) ─────────────────────────────────────────
+// ─── Free Tickets (valor_efetivo = 0) ────────────────────────────────────────
 
 export interface FreeTicketStats { free: number; paid: number; total: number }
 export async function getFreeTicketStats(editionId: string): Promise<FreeTicketStats> {
   const [{ count: free, error: e1 }, { count: total, error: e2 }] = await Promise.all([
-    getSupabase().from('participants').select('*', { count: 'exact', head: true }).eq('edition_id', editionId).eq('ticket_value', 0),
+    getSupabase().from('participants').select('*', { count: 'exact', head: true }).eq('edition_id', editionId).eq('valor_efetivo', 0),
     getSupabase().from('participants').select('*', { count: 'exact', head: true }).eq('edition_id', editionId),
   ])
   if (e1) throw e1
@@ -297,6 +297,21 @@ export interface CuponSummaryRow {
   participants: { name: string; company: string | null }[]
 }
 
+export interface OfflinePaymentParticipant {
+  id: string
+  name: string
+  company: string | null
+  valor_pago_manual: number | null
+  valor_efetivo: number
+}
+
+export interface OfflinePaymentGroup {
+  coupon_code: string
+  count: number
+  total_paid: number
+  participants: OfflinePaymentParticipant[]
+}
+
 export interface CuponsStats {
   total_with_coupon: number
   total_participants: number
@@ -305,22 +320,51 @@ export interface CuponsStats {
   total_discount_estimate: number | null
   by_coupon: CuponSummaryRow[]
   top_companies: { company: string; count: number }[]
+  offline_payments: OfflinePaymentGroup[]
+  offline_total_paid: number
+}
+
+const OFFLINE_COUPON_PREFIX = 'PAGAMENTO OFFLINE'
+
+const DIACRITICS_REGEX = new RegExp('[\\u0300-\\u036f]', 'g')
+
+function isOfflinePaymentCoupon(code: string): boolean {
+  const normalized = code
+    .normalize('NFD')
+    .replace(DIACRITICS_REGEX, '')
+    .trim()
+    .toUpperCase()
+  return normalized.startsWith(OFFLINE_COUPON_PREFIX)
 }
 
 export async function getCuponsSummary(editionId: string): Promise<CuponsStats> {
   const { data, error } = await getSupabase()
     .from('participants')
-    .select('coupon_code, ticket_value, company, full_name')
+    .select('id, coupon_code, ticket_value, valor_pago_manual, valor_efetivo, company, full_name')
     .eq('edition_id', editionId)
     .limit(5000)
   if (error) throw error
 
-  const rows = (data ?? []) as { coupon_code: string | null; ticket_value: number | null; company: string | null; full_name: string | null }[]
-  const withCoupon = rows.filter(r => r.coupon_code)
+  const rows = (data ?? []) as {
+    id: string
+    coupon_code: string | null
+    ticket_value: number | null
+    valor_pago_manual: number | null
+    valor_efetivo: number | null
+    company: string | null
+    full_name: string | null
+  }[]
+
   const noCouponValues = rows.filter(r => !r.coupon_code && r.ticket_value !== null).map(r => r.ticket_value as number)
   const avgNoCopon = noCouponValues.length > 0
     ? noCouponValues.reduce((s, v) => s + v, 0) / noCouponValues.length
     : null
+
+  // Cupons "PAGAMENTO OFFLINE X" não são desconto promocional — são marcadores
+  // operacionais de pagamento via boleto fora do gateway. Tratados à parte,
+  // sem contaminar os KPIs/estatísticas de cupons de desconto reais.
+  const offlineRows = rows.filter(r => r.coupon_code && isOfflinePaymentCoupon(r.coupon_code))
+  const withCoupon = rows.filter(r => r.coupon_code && !isOfflinePaymentCoupon(r.coupon_code))
 
   const byCode: Record<string, { count: number; values: number[]; companies: Set<string>; participants: { name: string; company: string | null }[] }> = {}
   const companyCounts: Record<string, number> = {}
@@ -371,6 +415,34 @@ export async function getCuponsSummary(editionId: string): Promise<CuponsStats> 
     ) / 100
   }
 
+  const offlineByCode: Record<string, OfflinePaymentParticipant[]> = {}
+  for (const row of offlineRows) {
+    const code = row.coupon_code!
+    if (!offlineByCode[code]) offlineByCode[code] = []
+    if (row.full_name) {
+      offlineByCode[code].push({
+        id: row.id,
+        name: row.full_name,
+        company: row.company,
+        valor_pago_manual: row.valor_pago_manual,
+        valor_efetivo: row.valor_efetivo ?? row.ticket_value ?? 0,
+      })
+    }
+  }
+
+  const offline_payments: OfflinePaymentGroup[] = Object.entries(offlineByCode)
+    .map(([code, participants]) => ({
+      coupon_code: code,
+      count: participants.length,
+      total_paid: Math.round(participants.reduce((s, p) => s + p.valor_efetivo, 0) * 100) / 100,
+      participants: participants.sort((a, b) => a.name.localeCompare(b.name)),
+    }))
+    .sort((a, b) => b.count - a.count)
+
+  const offline_total_paid = Math.round(
+    offline_payments.reduce((s, g) => s + g.total_paid, 0) * 100
+  ) / 100
+
   return {
     total_with_coupon: withCoupon.length,
     total_participants: rows.length,
@@ -379,6 +451,8 @@ export async function getCuponsSummary(editionId: string): Promise<CuponsStats> 
     total_discount_estimate,
     by_coupon,
     top_companies,
+    offline_payments,
+    offline_total_paid,
   }
 }
 

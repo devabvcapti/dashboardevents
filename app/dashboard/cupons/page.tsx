@@ -1,6 +1,7 @@
 import { requireAuth } from '@/lib/auth'
 import { getCuponsSummary } from '@/lib/data'
 import { getActiveEditionId } from '@/lib/edition-cookie'
+import { OfflinePaymentsTable } from './offline-payments-table'
 
 export const dynamic = 'force-dynamic'
 export const metadata = { title: 'Cupons — Dashboard ABVCAP' }
@@ -179,6 +180,20 @@ export default async function CuponsPage() {
                   </div>
                 </div>
               )}
+            </>
+          )}
+
+          {/* Pagamentos Offline */}
+          {stats.offline_payments.length > 0 && (
+            <>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+                <KpiCard
+                  title="Receita Offline Registrada"
+                  value={formatBRL(stats.offline_total_paid)}
+                  sub="soma dos valores lançados manualmente"
+                />
+              </div>
+              <OfflinePaymentsTable groups={stats.offline_payments} />
             </>
           )}
         </>

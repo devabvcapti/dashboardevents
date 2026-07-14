@@ -92,9 +92,10 @@ const PHASE2_NULLS = {
   ticket_name: null,
   coupon_code: null,
   registered_at: null,
+  valor_pago_manual: null,
 } as const
 
-export const MOCK_PARTICIPANTS: Participant[] = [
+const RAW_MOCK_PARTICIPANTS: Omit<Participant, 'valor_efetivo'>[] = [
   { ...PHASE2_NULLS, id: '1', full_name: 'Carlos Eduardo Mendonça', email: 'c.mendonca@patriainvestimentos.com.br', company: 'Pátria Investimentos', ticket_membership: 'MEMBRO', ticket_value: 2200, edition_id: EDITION_ID, import_job_id: null, created_at: '2025-05-02T09:14:00Z' },
   { ...PHASE2_NULLS, id: '2', full_name: 'Ana Paula Ribeiro', email: 'ana.ribeiro@vincipartners.com', company: 'Vinci Partners', ticket_membership: 'MEMBRO', ticket_value: 2200, edition_id: EDITION_ID, import_job_id: null, created_at: '2025-05-03T10:30:00Z' },
   { ...PHASE2_NULLS, id: '3', full_name: 'Rodrigo Figueiredo', email: 'rfigueiredo@btgpactual.com', company: 'BTG Pactual Asset Management', ticket_membership: 'MEMBRO', ticket_value: 2200, edition_id: EDITION_ID, import_job_id: null, created_at: '2025-05-04T14:22:00Z' },
@@ -121,3 +122,8 @@ export const MOCK_PARTICIPANTS: Participant[] = [
   { ...PHASE2_NULLS, id: '24', full_name: 'Renata Lopes', email: 'rlopes@valia.com.br', company: 'Valia', ticket_membership: 'MEMBRO', ticket_value: 2200, edition_id: EDITION_ID, import_job_id: null, created_at: '2025-05-20T15:10:00Z' },
   { ...PHASE2_NULLS, id: '25', full_name: 'Henrique Saad', email: 'hsaad@gavekal.com.br', company: 'Gávea Investimentos', ticket_membership: 'MEMBRO', ticket_value: 2200, edition_id: EDITION_ID, import_job_id: null, created_at: '2025-05-21T09:05:00Z' },
 ]
+
+export const MOCK_PARTICIPANTS: Participant[] = RAW_MOCK_PARTICIPANTS.map(p => ({
+  ...p,
+  valor_efetivo: p.ticket_value,
+}))

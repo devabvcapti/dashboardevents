@@ -210,6 +210,8 @@ export type Database = {
           ticket_membership: Database["public"]["Enums"]["ticket_membership"]
           ticket_name: string | null
           ticket_value: number | null
+          valor_pago_manual: number | null
+          valor_efetivo: number | null
         }
         Insert: {
           company?: string | null
@@ -231,6 +233,7 @@ export type Database = {
           ticket_membership: Database["public"]["Enums"]["ticket_membership"]
           ticket_name?: string | null
           ticket_value?: number | null
+          valor_pago_manual?: number | null
         }
         Update: {
           company?: string | null
@@ -252,6 +255,7 @@ export type Database = {
           ticket_membership?: Database["public"]["Enums"]["ticket_membership"]
           ticket_name?: string | null
           ticket_value?: number | null
+          valor_pago_manual?: number | null
         }
         Relationships: [
           {
