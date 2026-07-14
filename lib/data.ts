@@ -294,6 +294,7 @@ export interface CuponSummaryRow {
   avg_ticket: number | null
   discount_pct_estimate: number | null
   companies: string[]
+  participants: { name: string; company: string | null }[]
 }
 
 export interface CuponsStats {
@@ -309,29 +310,32 @@ export interface CuponsStats {
 export async function getCuponsSummary(editionId: string): Promise<CuponsStats> {
   const { data, error } = await getSupabase()
     .from('participants')
-    .select('coupon_code, ticket_value, company')
+    .select('coupon_code, ticket_value, company, full_name')
     .eq('edition_id', editionId)
     .limit(5000)
   if (error) throw error
 
-  const rows = (data ?? []) as { coupon_code: string | null; ticket_value: number | null; company: string | null }[]
+  const rows = (data ?? []) as { coupon_code: string | null; ticket_value: number | null; company: string | null; full_name: string | null }[]
   const withCoupon = rows.filter(r => r.coupon_code)
   const noCouponValues = rows.filter(r => !r.coupon_code && r.ticket_value !== null).map(r => r.ticket_value as number)
   const avgNoCopon = noCouponValues.length > 0
     ? noCouponValues.reduce((s, v) => s + v, 0) / noCouponValues.length
     : null
 
-  const byCode: Record<string, { count: number; values: number[]; companies: Set<string> }> = {}
+  const byCode: Record<string, { count: number; values: number[]; companies: Set<string>; participants: { name: string; company: string | null }[] }> = {}
   const companyCounts: Record<string, number> = {}
 
   for (const row of withCoupon) {
     const code = row.coupon_code!
-    if (!byCode[code]) byCode[code] = { count: 0, values: [], companies: new Set() }
+    if (!byCode[code]) byCode[code] = { count: 0, values: [], companies: new Set(), participants: [] }
     byCode[code].count++
     if (row.ticket_value !== null) byCode[code].values.push(row.ticket_value)
     if (row.company) {
       byCode[code].companies.add(row.company)
       companyCounts[row.company] = (companyCounts[row.company] ?? 0) + 1
+    }
+    if (row.full_name) {
+      byCode[code].participants.push({ name: row.full_name, company: row.company })
     }
   }
 
@@ -347,6 +351,7 @@ export async function getCuponsSummary(editionId: string): Promise<CuponsStats> 
         avg_ticket: avg !== null ? Math.round(avg * 100) / 100 : null,
         discount_pct_estimate: discount,
         companies: Array.from(d.companies).sort(),
+        participants: d.participants.sort((a, b) => a.name.localeCompare(b.name)),
       }
     })
     .sort((a, b) => b.count - a.count)

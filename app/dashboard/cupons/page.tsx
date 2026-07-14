@@ -97,12 +97,12 @@ export default async function CuponsPage() {
                       <th className="text-right px-5 py-3 text-[10px] font-mono tracking-widest text-muted-foreground uppercase">Usos</th>
                       <th className="text-right px-5 py-3 text-[10px] font-mono tracking-widest text-muted-foreground uppercase">Ticket Médio</th>
                       <th className="text-right px-5 py-3 text-[10px] font-mono tracking-widest text-muted-foreground uppercase">Desconto Est.</th>
-                      <th className="text-left px-5 py-3 text-[10px] font-mono tracking-widest text-muted-foreground uppercase">Empresas</th>
+                      <th className="text-left px-5 py-3 text-[10px] font-mono tracking-widest text-muted-foreground uppercase">Participantes</th>
                     </tr>
                   </thead>
                   <tbody>
                     {stats.by_coupon.map((row, i) => (
-                      <tr key={i} className="border-b border-border last:border-0 hover:bg-accent/30 transition-colors">
+                      <tr key={i} className="border-b border-border last:border-0 hover:bg-accent/30 transition-colors align-top">
                         <td className="px-5 py-3 font-mono font-medium text-foreground">
                           {row.coupon_code}
                         </td>
@@ -123,11 +123,25 @@ export default async function CuponsPage() {
                             </span>
                           ) : '—'}
                         </td>
-                        <td className="px-5 py-3 text-[11px] font-mono text-muted-foreground/70 max-w-xs truncate">
-                          {row.companies.slice(0, 3).join(', ')}
-                          {row.companies.length > 3 && (
-                            <span className="text-muted-foreground/40"> +{row.companies.length - 3}</span>
-                          )}
+                        <td className="px-5 py-3 text-[11px] font-mono text-muted-foreground/70 max-w-sm">
+                          {row.participants.length > 0 ? (
+                            <details className="group">
+                              <summary className="cursor-pointer list-none marker:hidden truncate">
+                                {row.participants.slice(0, 2).map(p => p.name).join(', ')}
+                                {row.participants.length > 2 && (
+                                  <span className="text-muted-foreground/40"> +{row.participants.length - 2}</span>
+                                )}
+                              </summary>
+                              <ul className="mt-2 space-y-1 pl-3 border-l border-border">
+                                {row.participants.map((p, j) => (
+                                  <li key={j}>
+                                    {p.name}
+                                    {p.company && <span className="text-muted-foreground/40"> — {p.company}</span>}
+                                  </li>
+                                ))}
+                              </ul>
+                            </details>
+                          ) : '—'}
                         </td>
                       </tr>
                     ))}
