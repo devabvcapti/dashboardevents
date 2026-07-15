@@ -1,0 +1,36 @@
+{
+  "version": "1.0",
+  "timestamp": "2026-07-15T17:53:46.267Z",
+  "phase": null,
+  "phase_name": null,
+  "phase_dir": null,
+  "plan": null,
+  "task": null,
+  "total_tasks": null,
+  "status": "paused",
+  "completed_tasks": [
+    {"id": 1, "name": "Revisar status do repositório (git status/log/diff)", "status": "done"},
+    {"id": 2, "name": "git pull origin/main (fast-forward 375d21d..5ba0375, 40 commits)", "status": "done"}
+  ],
+  "remaining_tasks": [
+    {"id": 3, "name": "Decidir o que fazer com mudanças locais não commitadas (.planning/config.json, submódulo abvcap-congress)", "status": "not_started"},
+    {"id": 4, "name": "Triar arquivos não versionados na raiz (.claude/, memory/, Excel Participantes/, Orçamento.xlsx, logos, arquivos temporários ~$)", "status": "not_started"},
+    {"id": 5, "name": "Reconciliar .planning/ROADMAP.md e STATE.md com o estado real do código (ver blocker abaixo)", "status": "not_started"},
+    {"id": 6, "name": "Planejar/iniciar Phase 4: Analytics Depth (formulário, mapa geográfico, export, histórico de imports) via GSD, se ainda desejado", "status": "not_started"}
+  ],
+  "blockers": [
+    {
+      "description": "STATE.md e ROADMAP.md descrevem o projeto como tendo completado apenas a Phase 3 (Dashboard Core), com Phase 4 'Analytics Depth' not started. Porém o código real (origin/main) já contém páginas e features muito além disso, aparentemente desenvolvidas fora do fluxo GSD: Cupons, Orçamento, Comparativo, Empresas, Ritmo, além de migrations 013-017 (vc_day_topics, budget_items, RLS, registered_at, valor_pago_manual).",
+      "type": "external",
+      "workaround": "Antes de retomar planejamento via GSD (ex. /gsd-plan-phase para Phase 4), rodar /gsd-map-codebase ou /gsd-progress para reconciliar o roadmap com o código atual, evitando replanejar trabalho que já existe."
+    }
+  ],
+  "human_actions_pending": [],
+  "decisions": [],
+  "uncommitted_files": [
+    ".planning/config.json (adicionado _auto_chain_active: false)",
+    "abvcap-congress (submódulo apontando para commit mais antigo que o remoto)"
+  ],
+  "next_action": "Rodar /gsd-progress ou /gsd-map-codebase para reconciliar STATE.md/ROADMAP.md com o código atual antes de planejar a próxima fase.",
+  "context_notes": "Sessão foi só de checagem de status e sincronização: usuário pediu 'Como estamos?', revisamos git status/log, e após confirmação fizemos git pull (fast-forward, sem conflitos). Nenhum código foi alterado nesta sessão. Usuário pediu para pausar e salvar o estado para continuar depois."
+}
