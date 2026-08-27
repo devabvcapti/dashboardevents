@@ -54,21 +54,23 @@ function startOfWeek(iso: string) {
   return dt.toISOString().slice(0, 10)
 }
 
-function toWeekly(daily: { date: string; count: number }[]) {
-  const weeks: Record<string, number> = {}
+function toWeekly(daily: { date: string; count: number; paidCount: number }[]) {
+  const weeks: Record<string, { count: number; paidCount: number }> = {}
   for (const d of daily) {
     const key = startOfWeek(d.date)
-    weeks[key] = (weeks[key] ?? 0) + d.count
+    if (!weeks[key]) weeks[key] = { count: 0, paidCount: 0 }
+    weeks[key].count += d.count
+    weeks[key].paidCount += d.paidCount
   }
   return Object.entries(weeks)
     .sort(([a], [b]) => a.localeCompare(b))
-    .map(([date, count]) => ({ date, count }))
+    .map(([date, v]) => ({ date, ...v }))
 }
 
 interface Props {
   byTicketType: { type: string; count: number }[]
   byCompanyType: { type: string; count: number }[]
-  registrationsByDay: { date: string; count: number }[]
+  registrationsByDay: { date: string; count: number; paidCount: number }[]
   freeTickets: { free: number; paid: number; total: number }
   totalInscritos: number
 }
@@ -82,11 +84,14 @@ export function OverviewCharts({
 }: Props) {
   const CHART_COLORS = useChartColors()
   const [granularity, setGranularity] = useState<'daily' | 'weekly'>('daily')
+  const [ticketFilter, setTicketFilter] = useState<'all' | 'paid'>('all')
 
   const timelineData = useMemo(() => {
     const base = granularity === 'weekly' ? toWeekly(registrationsByDay) : registrationsByDay
     return base.map(d => ({ ...d, dateLabel: formatDateLabel(d.date) }))
   }, [registrationsByDay, granularity])
+
+  const timelineDataKey = ticketFilter === 'paid' ? 'paidCount' : 'count'
 
   // Evita amontoar rótulos no eixo quando há muitos pontos
   const tickStep = Math.max(1, Math.ceil(timelineData.length / 15))
@@ -211,23 +216,41 @@ export function OverviewCharts({
 
       {/* Linha — inscrições ao longo do tempo */}
       <div className="bg-card border border-border rounded-lg p-5 shadow-sm">
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center justify-between mb-4 gap-3 flex-wrap">
           <ChartLabel>Inscrições ao Longo do Tempo</ChartLabel>
-          <div className="flex rounded-md border border-border overflow-hidden text-[10px] font-mono uppercase tracking-wider">
-            {(['daily', 'weekly'] as const).map(g => (
-              <button
-                key={g}
-                type="button"
-                onClick={() => setGranularity(g)}
-                className={`px-2.5 py-1 transition-colors ${
-                  granularity === g
-                    ? 'bg-primary text-primary-foreground'
-                    : 'bg-transparent text-muted-foreground hover:bg-accent/40'
-                }`}
-              >
-                {g === 'daily' ? 'Diário' : 'Semanal'}
-              </button>
-            ))}
+          <div className="flex items-center gap-2">
+            <div className="flex rounded-md border border-border overflow-hidden text-[10px] font-mono uppercase tracking-wider">
+              {(['all', 'paid'] as const).map(f => (
+                <button
+                  key={f}
+                  type="button"
+                  onClick={() => setTicketFilter(f)}
+                  className={`px-2.5 py-1 transition-colors ${
+                    ticketFilter === f
+                      ? 'bg-primary text-primary-foreground'
+                      : 'bg-transparent text-muted-foreground hover:bg-accent/40'
+                  }`}
+                >
+                  {f === 'all' ? 'Todos' : 'Só Pagos'}
+                </button>
+              ))}
+            </div>
+            <div className="flex rounded-md border border-border overflow-hidden text-[10px] font-mono uppercase tracking-wider">
+              {(['daily', 'weekly'] as const).map(g => (
+                <button
+                  key={g}
+                  type="button"
+                  onClick={() => setGranularity(g)}
+                  className={`px-2.5 py-1 transition-colors ${
+                    granularity === g
+                      ? 'bg-primary text-primary-foreground'
+                      : 'bg-transparent text-muted-foreground hover:bg-accent/40'
+                  }`}
+                >
+                  {g === 'daily' ? 'Diário' : 'Semanal'}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
         {timelineData.length === 0 ? <EmptyChart height={180} /> : (
@@ -248,8 +271,8 @@ export function OverviewCharts({
               />
               <Line
                 type="monotone"
-                dataKey="count"
-                name="Inscrições"
+                dataKey={timelineDataKey}
+                name={ticketFilter === 'paid' ? 'Inscrições pagas' : 'Inscrições'}
                 stroke="#00a99d"
                 strokeWidth={2.5}
                 dot={{ r: 3, fill: '#00a99d', strokeWidth: 0 }}

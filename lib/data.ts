@@ -58,11 +58,11 @@ export async function getCompanySegmentSummary(editionId: string): Promise<Compa
 
 // ─── Registrations by Day ─────────────────────────────────────────────────────
 
-export interface RegistrationsByDay { date: string; count: number }
+export interface RegistrationsByDay { date: string; count: number; paidCount: number }
 export async function getRegistrationsByDay(editionId: string): Promise<RegistrationsByDay[]> {
   const { data, error } = await getSupabase()
     .from('participants')
-    .select('registered_at, created_at')
+    .select('registered_at, created_at, valor_efetivo')
     .eq('edition_id', editionId)
     .limit(5000)
   if (error) throw error
@@ -71,11 +71,15 @@ export async function getRegistrationsByDay(editionId: string): Promise<Registra
   // created_at (timestamp do import) só entra como fallback para linhas
   // antigas ou planilhas sem essa coluna mapeada.
   const counts: Record<string, number> = {}
+  const paidCounts: Record<string, number> = {}
   for (const row of data ?? []) {
     const raw = (row.registered_at as string | null) ?? (row.created_at as string | null)
     if (!raw) continue
     const date = raw.slice(0, 10)
     counts[date] = (counts[date] ?? 0) + 1
+    if ((row.valor_efetivo as number | null) !== null && (row.valor_efetivo as number) > 0) {
+      paidCounts[date] = (paidCounts[date] ?? 0) + 1
+    }
   }
 
   const dates = Object.keys(counts).sort()
@@ -87,7 +91,7 @@ export async function getRegistrationsByDay(editionId: string): Promise<Registra
   const end = new Date(`${dates[dates.length - 1]}T00:00:00Z`)
   while (cursor <= end) {
     const iso = cursor.toISOString().slice(0, 10)
-    result.push({ date: iso, count: counts[iso] ?? 0 })
+    result.push({ date: iso, count: counts[iso] ?? 0, paidCount: paidCounts[iso] ?? 0 })
     cursor.setUTCDate(cursor.getUTCDate() + 1)
   }
   return result
