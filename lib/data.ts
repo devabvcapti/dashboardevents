@@ -62,18 +62,35 @@ export interface RegistrationsByDay { date: string; count: number }
 export async function getRegistrationsByDay(editionId: string): Promise<RegistrationsByDay[]> {
   const { data, error } = await getSupabase()
     .from('participants')
-    .select('created_at')
+    .select('registered_at, created_at')
     .eq('edition_id', editionId)
-    .not('created_at', 'is', null)
-    .order('created_at', { ascending: true })
     .limit(5000)
   if (error) throw error
+
+  // registered_at (col BM — data real de inscrição) é a fonte correta;
+  // created_at (timestamp do import) só entra como fallback para linhas
+  // antigas ou planilhas sem essa coluna mapeada.
   const counts: Record<string, number> = {}
   for (const row of data ?? []) {
-    const date = (row.created_at as string).slice(0, 10)
+    const raw = (row.registered_at as string | null) ?? (row.created_at as string | null)
+    if (!raw) continue
+    const date = raw.slice(0, 10)
     counts[date] = (counts[date] ?? 0) + 1
   }
-  return Object.entries(counts).map(([date, count]) => ({ date, count }))
+
+  const dates = Object.keys(counts).sort()
+  if (dates.length === 0) return []
+
+  // Preenche dias sem inscrição com 0 para o gráfico refletir a linha do tempo real
+  const result: RegistrationsByDay[] = []
+  const cursor = new Date(`${dates[0]}T00:00:00Z`)
+  const end = new Date(`${dates[dates.length - 1]}T00:00:00Z`)
+  while (cursor <= end) {
+    const iso = cursor.toISOString().slice(0, 10)
+    result.push({ date: iso, count: counts[iso] ?? 0 })
+    cursor.setUTCDate(cursor.getUTCDate() + 1)
+  }
+  return result
 }
 
 // ─── Ticket Membership Summary (COUNT no banco via head:true) ─────────────────
@@ -466,6 +483,7 @@ export interface RegistrationRhythmDay {
 
 export interface RegistrationRhythm {
   byDay: RegistrationRhythmDay[]
+  daysActive: number
   total: number
   peakDay: { date: string; count: number } | null
   avgPerDay: number
@@ -475,32 +493,46 @@ export interface RegistrationRhythm {
 export async function getRegistrationRhythm(editionId: string): Promise<RegistrationRhythm> {
   const { data, error } = await getSupabase()
     .from('participants')
-    .select('created_at')
+    .select('registered_at, created_at')
     .eq('edition_id', editionId)
-    .not('created_at', 'is', null)
-    .order('created_at', { ascending: true })
     .limit(5000)
   if (error) throw error
 
+  // registered_at (col BM — data real de inscrição) é a fonte correta;
+  // created_at (timestamp do import) só entra como fallback para linhas
+  // antigas ou planilhas sem essa coluna mapeada.
   const counts: Record<string, number> = {}
   for (const row of data ?? []) {
-    const date = (row.created_at as string).slice(0, 10)
+    const raw = (row.registered_at as string | null) ?? (row.created_at as string | null)
+    if (!raw) continue
+    const date = raw.slice(0, 10)
     counts[date] = (counts[date] ?? 0) + 1
   }
 
-  const sortedDates = Object.keys(counts).sort()
-  let cumulative = 0
-  const byDay: RegistrationRhythmDay[] = sortedDates.map(date => {
-    cumulative += counts[date]
-    return { date, count: counts[date], cumulative }
-  })
+  const daysWithRegistration = Object.keys(counts).sort()
 
-  const total = cumulative
+  // Preenche dias sem inscrição com 0 para o gráfico refletir a linha do tempo real
+  let byDay: RegistrationRhythmDay[] = []
+  if (daysWithRegistration.length > 0) {
+    let cumulative = 0
+    const cursor = new Date(`${daysWithRegistration[0]}T00:00:00Z`)
+    const end = new Date(`${daysWithRegistration[daysWithRegistration.length - 1]}T00:00:00Z`)
+    while (cursor <= end) {
+      const iso = cursor.toISOString().slice(0, 10)
+      cumulative += counts[iso] ?? 0
+      byDay.push({ date: iso, count: counts[iso] ?? 0, cumulative })
+      cursor.setUTCDate(cursor.getUTCDate() + 1)
+    }
+  }
+
+  const total = byDay.length > 0 ? byDay[byDay.length - 1].cumulative : 0
   const peakDay = byDay.length > 0
     ? byDay.reduce((best, d) => d.count > best.count ? d : best)
     : null
 
-  const avgPerDay = byDay.length > 0 ? Math.round(total / byDay.length) : 0
+  const avgPerDay = daysWithRegistration.length > 0
+    ? Math.round(total / daysWithRegistration.length)
+    : 0
 
   const milestoneTargets = [25, 50, 75, 100]
   const milestones = milestoneTargets.flatMap(pct => {
@@ -510,7 +542,7 @@ export async function getRegistrationRhythm(editionId: string): Promise<Registra
     return [{ pct, date: byDay[idx].date, dayNumber: idx + 1 }]
   })
 
-  return { byDay, total, peakDay, avgPerDay, milestones }
+  return { byDay, daysActive: daysWithRegistration.length, total, peakDay, avgPerDay, milestones }
 }
 
 export async function getMemberAnalysis(editionId: string): Promise<MemberAnalysisRow[]> {

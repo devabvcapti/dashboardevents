@@ -37,7 +37,7 @@ export default async function RitmoPage() {
         </div>
         {rhythm && (
           <p className="text-[11px] font-mono text-muted-foreground/60 pb-0.5">
-            {rhythm.byDay.length} dias com inscrições
+            {rhythm.daysActive} dias com inscrições
           </p>
         )}
       </div>

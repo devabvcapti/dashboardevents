@@ -1,5 +1,6 @@
 'use client'
 
+import { useMemo, useState } from 'react'
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, LineChart, Line, CartesianGrid, LabelList,
@@ -41,6 +42,29 @@ const TOOLTIP_STYLE = {
 
 const GRID_COLOR = 'oklch(0.89 0.010 240)'
 
+function formatDateLabel(iso: string) {
+  return `${iso.slice(8, 10)}/${iso.slice(5, 7)}`
+}
+
+// Segunda-feira da semana ISO a que a data pertence, em UTC
+function startOfWeek(iso: string) {
+  const dt = new Date(`${iso}T00:00:00Z`)
+  const diffToMonday = (dt.getUTCDay() + 6) % 7
+  dt.setUTCDate(dt.getUTCDate() - diffToMonday)
+  return dt.toISOString().slice(0, 10)
+}
+
+function toWeekly(daily: { date: string; count: number }[]) {
+  const weeks: Record<string, number> = {}
+  for (const d of daily) {
+    const key = startOfWeek(d.date)
+    weeks[key] = (weeks[key] ?? 0) + d.count
+  }
+  return Object.entries(weeks)
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([date, count]) => ({ date, count }))
+}
+
 interface Props {
   byTicketType: { type: string; count: number }[]
   byCompanyType: { type: string; count: number }[]
@@ -57,6 +81,18 @@ export function OverviewCharts({
   totalInscritos,
 }: Props) {
   const CHART_COLORS = useChartColors()
+  const [granularity, setGranularity] = useState<'daily' | 'weekly'>('daily')
+
+  const timelineData = useMemo(() => {
+    const base = granularity === 'weekly' ? toWeekly(registrationsByDay) : registrationsByDay
+    return base.map(d => ({ ...d, dateLabel: formatDateLabel(d.date) }))
+  }, [registrationsByDay, granularity])
+
+  // Evita amontoar rótulos no eixo quando há muitos pontos
+  const tickStep = Math.max(1, Math.ceil(timelineData.length / 15))
+  const timelineTicks = timelineData
+    .filter((_, i) => i % tickStep === 0 || i === timelineData.length - 1)
+    .map(d => d.dateLabel)
 
   // OV-04: ordenar desc + computar % sobre total
   const sumCompany = byCompanyType.reduce((acc, r) => acc + r.count, 0)
@@ -173,16 +209,43 @@ export function OverviewCharts({
         )}
       </div>
 
-      {/* Linha — inscrições ao longo do tempo (mantido) */}
+      {/* Linha — inscrições ao longo do tempo */}
       <div className="bg-card border border-border rounded-lg p-5 shadow-sm">
-        <ChartLabel>Inscrições ao Longo do Tempo</ChartLabel>
-        {registrationsByDay.length === 0 ? <EmptyChart height={180} /> : (
+        <div className="flex items-center justify-between mb-4">
+          <ChartLabel>Inscrições ao Longo do Tempo</ChartLabel>
+          <div className="flex rounded-md border border-border overflow-hidden text-[10px] font-mono uppercase tracking-wider">
+            {(['daily', 'weekly'] as const).map(g => (
+              <button
+                key={g}
+                type="button"
+                onClick={() => setGranularity(g)}
+                className={`px-2.5 py-1 transition-colors ${
+                  granularity === g
+                    ? 'bg-primary text-primary-foreground'
+                    : 'bg-transparent text-muted-foreground hover:bg-accent/40'
+                }`}
+              >
+                {g === 'daily' ? 'Diário' : 'Semanal'}
+              </button>
+            ))}
+          </div>
+        </div>
+        {timelineData.length === 0 ? <EmptyChart height={180} /> : (
           <ResponsiveContainer width="100%" height={180}>
-            <LineChart data={registrationsByDay} margin={{ top: 8, right: 8, left: -28, bottom: 0 }}>
+            <LineChart data={timelineData} margin={{ top: 8, right: 8, left: -28, bottom: 0 }}>
               <CartesianGrid vertical={false} stroke={GRID_COLOR} strokeOpacity={0.6} />
-              <XAxis dataKey="date" tick={{ ...AXIS_STYLE, fontSize: 10 }} axisLine={false} tickLine={false} />
+              <XAxis
+                dataKey="dateLabel"
+                tick={{ ...AXIS_STYLE, fontSize: 10 }}
+                axisLine={false}
+                tickLine={false}
+                ticks={timelineTicks}
+              />
               <YAxis tick={AXIS_STYLE} axisLine={false} tickLine={false} allowDecimals={false} />
-              <Tooltip contentStyle={TOOLTIP_STYLE} />
+              <Tooltip
+                contentStyle={TOOLTIP_STYLE}
+                labelFormatter={label => granularity === 'weekly' ? `Semana de ${label}` : label}
+              />
               <Line
                 type="monotone"
                 dataKey="count"
