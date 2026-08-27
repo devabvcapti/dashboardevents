@@ -1,7 +1,7 @@
 'use client'
 
 import {
-  PieChart, Pie, Cell, Tooltip, ResponsiveContainer,
+  Cell, Tooltip, ResponsiveContainer,
   BarChart, Bar, XAxis, YAxis, LabelList,
 } from 'recharts'
 import type { PublicoAnalysis, RankingItem } from '@/lib/data'
@@ -62,45 +62,26 @@ export function PublicoCharts({ byCompanyType, total, analise }: Props) {
     <div className="space-y-6">
 
       {/* ── Tipo de Empresa ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <div className="bg-card border border-border rounded-lg p-5 shadow-sm">
-          <ChartLabel>Distribuição por Tipo de Empresa</ChartLabel>
-          {companyData.length === 0 ? <EmptyChart /> : (
-            <ResponsiveContainer width="100%" height={260}>
-              <PieChart>
-                <Pie data={companyData} dataKey="count" nameKey="name"
-                  cx="50%" cy="50%" outerRadius={100} innerRadius={52} paddingAngle={2}>
-                  {companyData.map((_, i) => (
-                    <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} stroke="transparent" />
-                  ))}
-                </Pie>
-                <Tooltip contentStyle={TOOLTIP_STYLE} formatter={(v, name) => [`${v} participantes`, name]} />
-              </PieChart>
-            </ResponsiveContainer>
-          )}
-        </div>
-
-        <div className="bg-card border border-border rounded-lg p-5 shadow-sm">
-          <ChartLabel>Percentual por Categoria</ChartLabel>
-          {companyData.length === 0 ? <EmptyChart /> : (
-            <ResponsiveContainer width="100%" height={260}>
-              <BarChart layout="vertical" data={companyData}
-                margin={{ top: 4, right: 44, left: 80, bottom: 4 }}>
-                <XAxis type="number" hide />
-                <YAxis type="category" dataKey="name" width={80}
-                  tick={AXIS_TICK} axisLine={false} tickLine={false} />
-                <Tooltip contentStyle={TOOLTIP_STYLE} formatter={(v) => [`${v}%`, 'Participação']} />
-                <Bar dataKey="pct" name="%" radius={[0, 3, 3, 0]} maxBarSize={20}>
-                  {companyData.map((_, i) => (
-                    <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
-                  ))}
-                  <LabelList dataKey="pct" position="right"
-                    formatter={(v: unknown) => `${v}%`} style={AXIS_TICK} />
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
-          )}
-        </div>
+      <div className="bg-card border border-border rounded-lg p-5 shadow-sm">
+        <ChartLabel>Percentual por Categoria</ChartLabel>
+        {companyData.length === 0 ? <EmptyChart /> : (
+          <ResponsiveContainer width="100%" height={260}>
+            <BarChart layout="vertical" data={companyData}
+              margin={{ top: 4, right: 44, left: 80, bottom: 4 }}>
+              <XAxis type="number" hide />
+              <YAxis type="category" dataKey="name" width={80}
+                tick={AXIS_TICK} axisLine={false} tickLine={false} />
+              <Tooltip contentStyle={TOOLTIP_STYLE} formatter={(v) => [`${v}%`, 'Participação']} />
+              <Bar dataKey="pct" name="%" radius={[0, 3, 3, 0]} maxBarSize={20}>
+                {companyData.map((_, i) => (
+                  <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
+                ))}
+                <LabelList dataKey="pct" position="right"
+                  formatter={(v: unknown) => `${v}%`} style={AXIS_TICK} />
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        )}
       </div>
 
       {/* ── Segmento de Atuação (ranking) ── */}
