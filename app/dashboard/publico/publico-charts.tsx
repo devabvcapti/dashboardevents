@@ -65,14 +65,15 @@ export function PublicoCharts({ byCompanyType, total, analise }: Props) {
       <div className="bg-card border border-border rounded-lg p-5 shadow-sm">
         <ChartLabel>Percentual por Categoria</ChartLabel>
         {companyData.length === 0 ? <EmptyChart /> : (
-          <ResponsiveContainer width="100%" height={260}>
+          <ResponsiveContainer width="100%" height={Math.max(260, companyData.length * 42)}>
             <BarChart layout="vertical" data={companyData}
-              margin={{ top: 4, right: 44, left: 80, bottom: 4 }}>
+              margin={{ top: 4, right: 48, left: 200, bottom: 4 }}
+              barCategoryGap="30%">
               <XAxis type="number" hide />
-              <YAxis type="category" dataKey="name" width={80}
+              <YAxis type="category" dataKey="name" width={200}
                 tick={AXIS_TICK} axisLine={false} tickLine={false} />
               <Tooltip contentStyle={TOOLTIP_STYLE} formatter={(v) => [`${v}%`, 'Participação']} />
-              <Bar dataKey="pct" name="%" radius={[0, 3, 3, 0]} maxBarSize={20}>
+              <Bar dataKey="pct" name="%" radius={[0, 3, 3, 0]} maxBarSize={26}>
                 {companyData.map((_, i) => (
                   <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
                 ))}
