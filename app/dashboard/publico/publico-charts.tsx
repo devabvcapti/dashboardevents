@@ -103,13 +103,6 @@ export function PublicoCharts({ byCompanyType, total, analise }: Props) {
         </div>
       </div>
 
-      {/* ── Cargo / Posição ── */}
-      <RankingSection
-        title="Cargo / Posição"
-        items={analise.jobTitles}
-        color="#112468"
-      />
-
       {/* ── Segmento de Atuação (ranking) ── */}
       <div className="bg-card border border-border rounded-lg p-5 shadow-sm">
         <ChartLabel>Segmento de Atuação</ChartLabel>
@@ -168,6 +161,11 @@ export function PublicoCharts({ byCompanyType, total, analise }: Props) {
           title="Canais Preferidos"
           items={analise.channels}
           color="oklch(0.64 0.18 28)"
+        />
+        <RankingSection
+          title="Cargo / Posição"
+          items={analise.jobTitles}
+          color="#112468"
         />
       </div>
     </div>
