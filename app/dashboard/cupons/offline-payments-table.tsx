@@ -14,6 +14,21 @@ export function OfflinePaymentsTable({ groups }: { groups: OfflinePaymentGroup[]
   const [drafts, setDrafts] = useState<Record<string, string>>({})
   const [savingId, setSavingId] = useState<string | null>(null)
   const [errorId, setErrorId] = useState<string | null>(null)
+  const [onlyPending, setOnlyPending] = useState(true)
+
+  const totalPending = groups.reduce(
+    (s, g) => s + g.participants.filter(p => p.valor_pago_manual === null).length,
+    0
+  )
+
+  const visibleGroups = groups
+    .map(g => ({
+      ...g,
+      participants: onlyPending
+        ? g.participants.filter(p => p.valor_pago_manual === null)
+        : g.participants,
+    }))
+    .filter(g => g.participants.length > 0)
 
   async function handleSave(participantId: string) {
     const raw = drafts[participantId]
@@ -44,14 +59,32 @@ export function OfflinePaymentsTable({ groups }: { groups: OfflinePaymentGroup[]
 
   return (
     <div className="bg-card border border-border rounded-lg overflow-hidden">
-      <div className="px-5 py-4 border-b border-border">
-        <p className="text-[10px] font-mono tracking-[0.18em] text-muted-foreground uppercase">
-          Pagamentos Offline
-        </p>
-        <p className="text-[11px] font-mono text-muted-foreground/60 mt-1">
-          Cupons usados para registrar pagamentos via boleto fora do gateway. O valor não é desconto — informe manualmente o valor real pago por cada participante.
-        </p>
+      <div className="px-5 py-4 border-b border-border flex items-start justify-between gap-4">
+        <div>
+          <p className="text-[10px] font-mono tracking-[0.18em] text-muted-foreground uppercase">
+            Pagamentos Offline
+          </p>
+          <p className="text-[11px] font-mono text-muted-foreground/60 mt-1">
+            Cupons usados para registrar pagamentos via boleto fora do gateway. O valor não é desconto — informe manualmente o valor real pago por cada participante.
+          </p>
+        </div>
+        <label className="flex items-center gap-2 text-[11px] font-mono text-muted-foreground shrink-0 cursor-pointer select-none pt-0.5">
+          <input
+            type="checkbox"
+            checked={onlyPending}
+            onChange={e => setOnlyPending(e.target.checked)}
+            className="h-3.5 w-3.5"
+          />
+          Mostrar só pendentes ({totalPending})
+        </label>
       </div>
+      {visibleGroups.length === 0 ? (
+        <p className="px-5 py-8 text-sm text-muted-foreground text-center">
+          {onlyPending
+            ? 'Nenhum pagamento offline pendente — todos já têm valor lançado.'
+            : 'Nenhum participante com cupom de pagamento offline.'}
+        </p>
+      ) : (
       <table className="w-full text-sm">
         <thead>
           <tr className="border-b border-border bg-muted/30">
@@ -63,7 +96,7 @@ export function OfflinePaymentsTable({ groups }: { groups: OfflinePaymentGroup[]
           </tr>
         </thead>
         <tbody>
-          {groups.map(group => (
+          {visibleGroups.map(group => (
             group.participants.map((p, i) => (
               <tr key={p.id} className="border-b border-border last:border-0 hover:bg-accent/30 transition-colors">
                 {i === 0 && (
@@ -103,6 +136,7 @@ export function OfflinePaymentsTable({ groups }: { groups: OfflinePaymentGroup[]
           ))}
         </tbody>
       </table>
+      )}
     </div>
   )
 }
