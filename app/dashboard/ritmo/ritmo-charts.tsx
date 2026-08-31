@@ -29,6 +29,10 @@ function formatDateLabel(iso: string) {
   return `${iso.slice(8, 10)}/${iso.slice(5, 7)}`
 }
 
+function truncateLabel(text: string, max = 18) {
+  return text.length > max ? `${text.slice(0, max - 1)}…` : text
+}
+
 interface Props {
   byDay: RegistrationRhythmDay[]
   communications?: MarketingCommunication[]
@@ -61,8 +65,8 @@ export function RitmoCharts({ byDay, communications = [] }: Props) {
         <p className="text-[10px] font-mono tracking-[0.20em] text-muted-foreground uppercase mb-4">
           Inscrições Diárias e Acumulado
         </p>
-        <ResponsiveContainer width="100%" height={300}>
-          <ComposedChart data={chartData} margin={{ top: 8, right: 16, left: -20, bottom: 0 }}>
+        <ResponsiveContainer width="100%" height={320}>
+          <ComposedChart data={chartData} margin={{ top: 28, right: 16, left: -20, bottom: 0 }}>
             <CartesianGrid vertical={false} stroke={GRID_COLOR} strokeOpacity={0.6} />
             <XAxis
               dataKey="dateLabel"
@@ -127,11 +131,12 @@ export function RitmoCharts({ byDay, communications = [] }: Props) {
                 strokeDasharray="4 4"
                 strokeWidth={1.5}
                 label={{
-                  value: c.channel,
+                  value: truncateLabel(c.channel),
                   position: 'top',
                   fill: '#f97316',
                   fontSize: 9,
                   fontFamily: 'var(--font-ibm-mono)',
+                  offset: 8,
                 }}
               />
             ))}
