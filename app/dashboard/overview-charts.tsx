@@ -282,6 +282,7 @@ export function OverviewCharts({ participants, stats }: Props) {
         </div>
       )}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      {/* Membros vs Não-Membros e Grátis vs Pagos lado a lado */}
       {/* OV-03 — Donut Membros vs Não-Membros com label central — clicável */}
       <div className="bg-card border border-border rounded-lg p-5 shadow-sm">
         <ChartLabel>Membros vs Não-Membros</ChartLabel>
@@ -331,38 +332,6 @@ export function OverviewCharts({ participants, stats }: Props) {
             participants={filteredParticipantList}
             onClose={() => { setMembershipFilter('all'); setShowMembershipList(false) }}
           />
-        )}
-      </div>
-
-      {/* OV-04 — Barras HORIZONTAIS por tipo de empresa (sorted desc) */}
-      <div className="bg-card border border-border rounded-lg p-5 shadow-sm">
-        <ChartLabel>Perfil por Tipo de Empresa</ChartLabel>
-        {companyData.length === 0 ? <EmptyChart /> : (
-          <ResponsiveContainer width="100%" height={Math.max(220, companyData.length * 36)}>
-            <BarChart data={companyData} layout="vertical" margin={{ top: 8, right: 80, left: 8, bottom: 0 }}>
-              <CartesianGrid horizontal={false} stroke={GRID_COLOR} strokeOpacity={0.5} />
-              <XAxis type="number" tick={AXIS_STYLE} axisLine={false} tickLine={false} allowDecimals={false} />
-              <YAxis dataKey="type" type="category" tick={AXIS_STYLE} axisLine={false} tickLine={false} width={120} />
-              <Tooltip
-                contentStyle={TOOLTIP_STYLE}
-                cursor={{ fill: 'oklch(0.21 0.11 265 / 0.04)' }}
-                formatter={(v, _name, ctx) => [
-                  `${v} (${(ctx as { payload?: { pct?: number } })?.payload?.pct ?? 0}%)`,
-                  'Inscritos',
-                ]}
-              />
-              <Bar dataKey="count" name="Inscritos" radius={[0, 3, 3, 0]} maxBarSize={22}>
-                {companyData.map((_, i) => (
-                  <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
-                ))}
-                <LabelList
-                  dataKey="label"
-                  position="right"
-                  style={{ fontSize: 11, fontFamily: 'var(--font-ibm-mono)', fill: 'oklch(0.52 0.04 254)' }}
-                />
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
         )}
       </div>
 
@@ -416,8 +385,41 @@ export function OverviewCharts({ participants, stats }: Props) {
           />
         )}
       </div>
+      </div>
 
-      {/* Linha — inscrições ao longo do tempo */}
+      {/* OV-04 — Barras HORIZONTAIS por tipo de empresa (sorted desc) — linha própria */}
+      <div className="bg-card border border-border rounded-lg p-5 shadow-sm">
+        <ChartLabel>Perfil por Tipo de Empresa</ChartLabel>
+        {companyData.length === 0 ? <EmptyChart /> : (
+          <ResponsiveContainer width="100%" height={Math.max(220, companyData.length * 36)}>
+            <BarChart data={companyData} layout="vertical" margin={{ top: 8, right: 80, left: 8, bottom: 0 }}>
+              <CartesianGrid horizontal={false} stroke={GRID_COLOR} strokeOpacity={0.5} />
+              <XAxis type="number" tick={AXIS_STYLE} axisLine={false} tickLine={false} allowDecimals={false} />
+              <YAxis dataKey="type" type="category" tick={AXIS_STYLE} axisLine={false} tickLine={false} width={120} />
+              <Tooltip
+                contentStyle={TOOLTIP_STYLE}
+                cursor={{ fill: 'oklch(0.21 0.11 265 / 0.04)' }}
+                formatter={(v, _name, ctx) => [
+                  `${v} (${(ctx as { payload?: { pct?: number } })?.payload?.pct ?? 0}%)`,
+                  'Inscritos',
+                ]}
+              />
+              <Bar dataKey="count" name="Inscritos" radius={[0, 3, 3, 0]} maxBarSize={22}>
+                {companyData.map((_, i) => (
+                  <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
+                ))}
+                <LabelList
+                  dataKey="label"
+                  position="right"
+                  style={{ fontSize: 11, fontFamily: 'var(--font-ibm-mono)', fill: 'oklch(0.52 0.04 254)' }}
+                />
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        )}
+      </div>
+
+      {/* Linha — inscrições ao longo do tempo — linha própria */}
       <div className="bg-card border border-border rounded-lg p-5 shadow-sm">
         <div className="flex items-center justify-between mb-4 gap-3 flex-wrap">
           <ChartLabel>Inscrições ao Longo do Tempo</ChartLabel>
@@ -466,7 +468,6 @@ export function OverviewCharts({ participants, stats }: Props) {
             </LineChart>
           </ResponsiveContainer>
         )}
-      </div>
       </div>
       </div>
     </div>
