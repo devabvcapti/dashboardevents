@@ -569,6 +569,30 @@ export async function getRegistrationWeeklyGoals(editionId: string): Promise<Reg
   }))
 }
 
+// ─── Marketing Communications (correlação com picos de inscrição) ────────────
+
+export interface MarketingCommunication {
+  id: string
+  sentAt: string
+  channel: string
+  description: string | null
+}
+
+export async function getMarketingCommunications(editionId: string): Promise<MarketingCommunication[]> {
+  const { data, error } = await getSupabase()
+    .from('marketing_communications')
+    .select('id, sent_at, channel, description')
+    .eq('edition_id', editionId)
+    .order('sent_at', { ascending: true })
+  if (error) throw error
+  return (data ?? []).map(r => ({
+    id: r.id as string,
+    sentAt: r.sent_at as string,
+    channel: r.channel as string,
+    description: r.description as string | null,
+  }))
+}
+
 // ─── Budget ──────────────────────────────────────────────────────────────────
 
 export interface BudgetItem {

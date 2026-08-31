@@ -2,10 +2,10 @@
 
 import {
   ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid,
-  Tooltip, ResponsiveContainer, Legend,
+  Tooltip, ResponsiveContainer, Legend, ReferenceLine,
 } from 'recharts'
 import { useTheme } from 'next-themes'
-import type { RegistrationRhythmDay } from '@/lib/data'
+import type { RegistrationRhythmDay, MarketingCommunication } from '@/lib/data'
 
 const AXIS_STYLE = {
   fontSize: 11,
@@ -29,7 +29,12 @@ function formatDateLabel(iso: string) {
   return `${iso.slice(8, 10)}/${iso.slice(5, 7)}`
 }
 
-export function RitmoCharts({ byDay }: { byDay: RegistrationRhythmDay[] }) {
+interface Props {
+  byDay: RegistrationRhythmDay[]
+  communications?: MarketingCommunication[]
+}
+
+export function RitmoCharts({ byDay, communications = [] }: Props) {
   const { resolvedTheme } = useTheme()
   const navyColor = resolvedTheme === 'dark' ? '#6b9be8' : '#112468'
 
@@ -43,6 +48,11 @@ export function RitmoCharts({ byDay }: { byDay: RegistrationRhythmDay[] }) {
   const tickDates = chartData
     .filter((_, i) => i % tickStep === 0 || i === chartData.length - 1)
     .map(d => d.dateLabel)
+
+  const chartDateLabels = new Set(chartData.map(d => d.dateLabel))
+  const commMarkers = communications
+    .map(c => ({ ...c, dateLabel: formatDateLabel(c.sentAt) }))
+    .filter(c => chartDateLabels.has(c.dateLabel))
 
   return (
     <div className="space-y-4">
@@ -108,8 +118,31 @@ export function RitmoCharts({ byDay }: { byDay: RegistrationRhythmDay[] }) {
               dot={false}
               activeDot={{ r: 4, fill: navyColor, stroke: '#ffffff', strokeWidth: 2 }}
             />
+            {commMarkers.map(c => (
+              <ReferenceLine
+                key={c.id}
+                x={c.dateLabel}
+                yAxisId="left"
+                stroke="#f97316"
+                strokeDasharray="4 4"
+                strokeWidth={1.5}
+                label={{
+                  value: c.channel,
+                  position: 'top',
+                  fill: '#f97316',
+                  fontSize: 9,
+                  fontFamily: 'var(--font-ibm-mono)',
+                }}
+              />
+            ))}
           </ComposedChart>
         </ResponsiveContainer>
+        {commMarkers.length > 0 && (
+          <p className="text-[10px] font-mono text-muted-foreground/50 mt-3">
+            <span className="inline-block w-3 border-t border-dashed border-[#f97316] align-middle mr-1.5" />
+            linhas tracejadas marcam comunicados de marketing enviados — use para correlacionar visualmente com picos de inscrição
+          </p>
+        )}
       </div>
     </div>
   )

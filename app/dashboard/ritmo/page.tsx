@@ -1,5 +1,6 @@
 import { requireAuth } from '@/lib/auth'
-import { getRegistrationRhythm } from '@/lib/data'
+import { getRegistrationRhythm, getMarketingCommunications } from '@/lib/data'
+import type { MarketingCommunication } from '@/lib/data'
 import { getActiveEdition } from '@/lib/edition-cookie'
 import { RitmoCharts } from './ritmo-charts'
 
@@ -15,12 +16,16 @@ export default async function RitmoPage() {
 
   let rhythm: Awaited<ReturnType<typeof getRegistrationRhythm>> | null = null
   let editionName: string | null = null
+  let communications: MarketingCommunication[] = []
   let loadError = false
 
   try {
     const edition = await getActiveEdition()
     editionName = edition.name
-    rhythm = await getRegistrationRhythm(edition.id)
+    ;[rhythm, communications] = await Promise.all([
+      getRegistrationRhythm(edition.id),
+      getMarketingCommunications(edition.id),
+    ])
   } catch {
     loadError = true
   }
@@ -97,7 +102,7 @@ export default async function RitmoPage() {
           )}
 
           {/* Charts */}
-          <RitmoCharts byDay={rhythm.byDay} />
+          <RitmoCharts byDay={rhythm.byDay} communications={communications} />
         </>
       )}
     </div>

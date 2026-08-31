@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import type { Edition } from '@/lib/database.types'
-import type { RegistrationWeeklyGoal } from '@/lib/data'
+import type { RegistrationWeeklyGoal, MarketingCommunication } from '@/lib/data'
 
 const formatWeekStart = (iso: string) => {
   const [y, m, d] = iso.split('-')
@@ -15,9 +15,10 @@ const formatWeekStart = (iso: string) => {
 interface Props {
   editions: Edition[]
   weeklyGoalsByEdition: Record<string, RegistrationWeeklyGoal[]>
+  communicationsByEdition: Record<string, MarketingCommunication[]>
 }
 
-export function EventosClient({ editions, weeklyGoalsByEdition }: Props) {
+export function EventosClient({ editions, weeklyGoalsByEdition, communicationsByEdition }: Props) {
   const router = useRouter()
   const [showForm, setShowForm] = useState(editions.length === 0)
   const [name, setName] = useState('')
@@ -90,6 +91,75 @@ export function EventosClient({ editions, weeklyGoalsByEdition }: Props) {
       setWeeklyError('Erro de rede.')
     } finally {
       setDeletingWeeklyId(null)
+    }
+  }
+
+  // Comunicados de marketing: edição expandida + rascunho de nova linha + estados
+  const [expandedCommId, setExpandedCommId] = useState<string | null>(null)
+  const [commDateDraft, setCommDateDraft] = useState('')
+  const [commChannelDraft, setCommChannelDraft] = useState('')
+  const [commDescriptionDraft, setCommDescriptionDraft] = useState('')
+  const [savingComm, setSavingComm] = useState(false)
+  const [deletingCommId, setDeletingCommId] = useState<string | null>(null)
+  const [commError, setCommError] = useState<string | null>(null)
+
+  async function handleAddCommunication(editionId: string) {
+    if (!commDateDraft) {
+      setCommError('Escolha uma data.')
+      return
+    }
+    if (!commChannelDraft.trim()) {
+      setCommError('Informe o canal.')
+      return
+    }
+    setSavingComm(true)
+    setCommError(null)
+    try {
+      const res = await fetch('/api/edition/marketing-communication', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          editionId,
+          sentAt: commDateDraft,
+          channel: commChannelDraft.trim(),
+          description: commDescriptionDraft.trim() || undefined,
+        }),
+      })
+      if (!res.ok) {
+        const json = await res.json().catch(() => null)
+        setCommError((json as { error?: string })?.error ?? 'Falha ao salvar comunicado.')
+        return
+      }
+      setCommDateDraft('')
+      setCommChannelDraft('')
+      setCommDescriptionDraft('')
+      router.refresh()
+    } catch {
+      setCommError('Erro de rede.')
+    } finally {
+      setSavingComm(false)
+    }
+  }
+
+  async function handleDeleteCommunication(id: string) {
+    setDeletingCommId(id)
+    setCommError(null)
+    try {
+      const res = await fetch('/api/edition/marketing-communication', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id }),
+      })
+      if (!res.ok) {
+        const json = await res.json().catch(() => null)
+        setCommError((json as { error?: string })?.error ?? 'Falha ao remover comunicado.')
+        return
+      }
+      router.refresh()
+    } catch {
+      setCommError('Erro de rede.')
+    } finally {
+      setDeletingCommId(null)
     }
   }
 
@@ -346,6 +416,78 @@ export function EventosClient({ editions, weeklyGoalsByEdition }: Props) {
                       Use qualquer data da semana — é arredondada para a segunda-feira. &quot;Meta acum.&quot; = total esperado até essa semana.
                     </p>
                     {weeklyError && <p role="alert" className="text-[11px] text-red-600">{weeklyError}</p>}
+                  </div>
+                )}
+              </div>
+
+              <div className="mt-3 pt-3 border-t border-border">
+                <button
+                  type="button"
+                  onClick={() => { setExpandedCommId(expandedCommId === e.id ? null : e.id); setCommError(null) }}
+                  className="text-[10px] font-mono tracking-wider text-muted-foreground uppercase hover:text-primary transition-colors"
+                >
+                  Comunicados de Marketing ({(communicationsByEdition[e.id] ?? []).length}) {expandedCommId === e.id ? '▾' : '▸'}
+                </button>
+
+                {expandedCommId === e.id && (
+                  <div className="mt-3 space-y-2">
+                    {(communicationsByEdition[e.id] ?? []).length === 0 && (
+                      <p className="text-[11px] font-mono text-muted-foreground/50 italic">
+                        Nenhum comunicado registrado ainda.
+                      </p>
+                    )}
+                    {(communicationsByEdition[e.id] ?? []).map(c => (
+                      <div key={c.id} className="flex items-center justify-between text-sm gap-2">
+                        <span className="text-foreground/80 truncate">
+                          {formatWeekStart(c.sentAt)} — {c.channel}
+                          {c.description && <span className="text-muted-foreground/60"> ({c.description})</span>}
+                        </span>
+                        <button
+                          type="button"
+                          disabled={deletingCommId === c.id}
+                          onClick={() => handleDeleteCommunication(c.id)}
+                          className="text-[11px] text-red-500 hover:text-red-600 disabled:opacity-50 shrink-0"
+                        >
+                          {deletingCommId === c.id ? '…' : '✕'}
+                        </button>
+                      </div>
+                    ))}
+
+                    <div className="flex items-center gap-2 pt-2 flex-wrap">
+                      <Input
+                        type="date"
+                        value={commDateDraft}
+                        onChange={ev => setCommDateDraft(ev.target.value)}
+                        className="h-8 text-xs flex-1 min-w-[8rem]"
+                      />
+                      <Input
+                        type="text"
+                        placeholder="canal (ex. e-mail, LinkedIn)"
+                        value={commChannelDraft}
+                        onChange={ev => setCommChannelDraft(ev.target.value)}
+                        className="h-8 text-xs flex-1 min-w-[8rem]"
+                        maxLength={100}
+                      />
+                      <Button
+                        size="sm"
+                        disabled={savingComm}
+                        onClick={() => handleAddCommunication(e.id)}
+                      >
+                        {savingComm ? '…' : '+'}
+                      </Button>
+                    </div>
+                    <Input
+                      type="text"
+                      placeholder="descrição (opcional)"
+                      value={commDescriptionDraft}
+                      onChange={ev => setCommDescriptionDraft(ev.target.value)}
+                      className="h-8 text-xs"
+                      maxLength={500}
+                    />
+                    <p className="text-[10px] font-mono text-muted-foreground/50">
+                      Marca a data no gráfico de Ritmo de Inscrições para correlacionar visualmente com picos.
+                    </p>
+                    {commError && <p role="alert" className="text-[11px] text-red-600">{commError}</p>}
                   </div>
                 )}
               </div>

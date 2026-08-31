@@ -1,6 +1,6 @@
 import { requireAdmin } from '@/lib/auth'
-import { getEditions, getRegistrationWeeklyGoals } from '@/lib/data'
-import type { RegistrationWeeklyGoal } from '@/lib/data'
+import { getEditions, getRegistrationWeeklyGoals, getMarketingCommunications } from '@/lib/data'
+import type { RegistrationWeeklyGoal, MarketingCommunication } from '@/lib/data'
 import { EventosClient } from './eventos-client'
 
 export const dynamic = 'force-dynamic'
@@ -10,10 +10,15 @@ export default async function EventosPage() {
   await requireAdmin()
   let editions: Awaited<ReturnType<typeof getEditions>> = []
   let weeklyGoalsByEdition: Record<string, RegistrationWeeklyGoal[]> = {}
+  let communicationsByEdition: Record<string, MarketingCommunication[]> = {}
   try {
     editions = await getEditions()
-    const goalLists = await Promise.all(editions.map(e => getRegistrationWeeklyGoals(e.id)))
+    const [goalLists, commLists] = await Promise.all([
+      Promise.all(editions.map(e => getRegistrationWeeklyGoals(e.id))),
+      Promise.all(editions.map(e => getMarketingCommunications(e.id))),
+    ])
     weeklyGoalsByEdition = Object.fromEntries(editions.map((e, i) => [e.id, goalLists[i]]))
+    communicationsByEdition = Object.fromEntries(editions.map((e, i) => [e.id, commLists[i]]))
   } catch { editions = [] }
 
   return (
@@ -27,7 +32,11 @@ export default async function EventosPage() {
           Crie e gerencie edições do Congresso ABVCAP. Cada edição agrupa participantes, inscrições e respostas de formulário.
         </p>
       </div>
-      <EventosClient editions={editions} weeklyGoalsByEdition={weeklyGoalsByEdition} />
+      <EventosClient
+        editions={editions}
+        weeklyGoalsByEdition={weeklyGoalsByEdition}
+        communicationsByEdition={communicationsByEdition}
+      />
     </div>
   )
 }

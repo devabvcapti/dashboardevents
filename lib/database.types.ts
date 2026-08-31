@@ -277,6 +277,41 @@ export type Database = {
           },
         ]
       }
+      marketing_communications: {
+        Row: {
+          id: string
+          edition_id: string
+          sent_at: string
+          channel: string
+          description: string | null
+          created_at: string | null
+        }
+        Insert: {
+          id?: string
+          edition_id: string
+          sent_at: string
+          channel: string
+          description?: string | null
+          created_at?: string | null
+        }
+        Update: {
+          id?: string
+          edition_id?: string
+          sent_at?: string
+          channel?: string
+          description?: string | null
+          created_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "marketing_communications_edition_id_fkey"
+            columns: ["edition_id"]
+            isOneToOne: false
+            referencedRelation: "editions"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
       registration_weekly_goals: {
         Row: {
           id: string
