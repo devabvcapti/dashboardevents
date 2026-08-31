@@ -2,6 +2,7 @@ import { requireAuth } from '@/lib/auth'
 import { getCuponsSummary } from '@/lib/data'
 import { getActiveEdition } from '@/lib/edition-cookie'
 import { OfflinePaymentsTable } from './offline-payments-table'
+import { CouponCategorySelect } from './coupon-category-select'
 
 export const dynamic = 'force-dynamic'
 export const metadata = { title: 'Cupons — Dashboard ABVCAP' }
@@ -10,15 +11,17 @@ const formatBRL = (v: number) =>
   `R$ ${v.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`
 
 export default async function CuponsPage() {
-  await requireAuth()
+  const user = await requireAuth()
 
   let stats: Awaited<ReturnType<typeof getCuponsSummary>> | null = null
   let editionName: string | null = null
+  let editionId: string | null = null
   let loadError = false
 
   try {
     const edition = await getActiveEdition()
     editionName = edition.name
+    editionId = edition.id
     stats = await getCuponsSummary(edition.id)
   } catch {
     loadError = true
@@ -106,6 +109,7 @@ export default async function CuponsPage() {
                   <thead>
                     <tr className="border-b border-border bg-muted/30">
                       <th className="text-left px-5 py-3 text-[10px] font-mono tracking-widest text-muted-foreground uppercase">Código</th>
+                      <th className="text-left px-5 py-3 text-[10px] font-mono tracking-widest text-muted-foreground uppercase">Categoria</th>
                       <th className="text-right px-5 py-3 text-[10px] font-mono tracking-widest text-muted-foreground uppercase">Usos</th>
                       <th className="text-right px-5 py-3 text-[10px] font-mono tracking-widest text-muted-foreground uppercase">Ticket Médio</th>
                       <th className="text-right px-5 py-3 text-[10px] font-mono tracking-widest text-muted-foreground uppercase">Desconto Est.</th>
@@ -117,6 +121,16 @@ export default async function CuponsPage() {
                       <tr key={i} className="border-b border-border last:border-0 hover:bg-accent/30 transition-colors align-top">
                         <td className="px-5 py-3 font-mono font-medium text-foreground">
                           {row.coupon_code}
+                        </td>
+                        <td className="px-5 py-3">
+                          {editionId && (
+                            <CouponCategorySelect
+                              editionId={editionId}
+                              couponCode={row.coupon_code}
+                              category={row.category}
+                              isAdmin={user.isAdmin}
+                            />
+                          )}
                         </td>
                         <td className="px-5 py-3 text-right font-mono tabular-nums">
                           {row.count}

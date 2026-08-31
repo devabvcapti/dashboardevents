@@ -277,6 +277,38 @@ export type Database = {
           },
         ]
       }
+      coupon_categories: {
+        Row: {
+          id: string
+          edition_id: string
+          coupon_code: string
+          category: Database["public"]["Enums"]["coupon_category"]
+          created_at: string | null
+        }
+        Insert: {
+          id?: string
+          edition_id: string
+          coupon_code: string
+          category: Database["public"]["Enums"]["coupon_category"]
+          created_at?: string | null
+        }
+        Update: {
+          id?: string
+          edition_id?: string
+          coupon_code?: string
+          category?: Database["public"]["Enums"]["coupon_category"]
+          created_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "coupon_categories_edition_id_fkey"
+            columns: ["edition_id"]
+            isOneToOne: false
+            referencedRelation: "editions"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
       marketing_communications: {
         Row: {
           id: string
@@ -370,6 +402,16 @@ export type Database = {
     }
     Enums: {
       company_segment: "GP" | "LP" | "FUNDO" | "CORPORATIVO" | "GOVERNO" | "ACADEMIA" | "OUTRO"
+      coupon_category:
+        | "PATROCINADOR"
+        | "APOIADOR"
+        | "ESTRATEGICO"
+        | "PALESTRANTES"
+        | "CONVIDADOS_PALESTRANTES"
+        | "IMPRENSA"
+        | "VIPS"
+        | "CONSELHO_ABVCAP"
+        | "PARCEIRO"
       import_status: "PENDING" | "PROCESSING" | "COMPLETED" | "FAILED"
       ticket_membership: "MEMBRO" | "NAO_MEMBRO"
     }

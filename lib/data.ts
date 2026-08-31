@@ -9,6 +9,7 @@ import type {
   RevenueAnalysis,
   PaginatedParticipants,
   ParticipantWithState,
+  Database,
 } from './database.types'
 
 export type {
@@ -293,6 +294,34 @@ export async function getPublicoAnalysis(editionId: string): Promise<PublicoAnal
   }
 }
 
+export type CouponCategory = Database['public']['Enums']['coupon_category']
+
+export const COUPON_CATEGORIES: { value: CouponCategory; label: string }[] = [
+  { value: 'PATROCINADOR', label: 'Patrocinador' },
+  { value: 'APOIADOR', label: 'Apoiador' },
+  { value: 'ESTRATEGICO', label: 'Estratégico' },
+  { value: 'PALESTRANTES', label: 'Palestrantes' },
+  { value: 'CONVIDADOS_PALESTRANTES', label: 'Convidados Palestrantes' },
+  { value: 'IMPRENSA', label: 'Imprensa' },
+  { value: 'VIPS', label: 'VIPs' },
+  { value: 'CONSELHO_ABVCAP', label: 'Conselho ABVCAP' },
+  { value: 'PARCEIRO', label: 'Parceiro' },
+]
+
+export const COUPON_CATEGORY_LABELS: Record<CouponCategory, string> =
+  Object.fromEntries(COUPON_CATEGORIES.map(c => [c.value, c.label])) as Record<CouponCategory, string>
+
+export async function getCouponCategories(editionId: string): Promise<Record<string, CouponCategory>> {
+  const { data, error } = await getSupabase()
+    .from('coupon_categories')
+    .select('coupon_code, category')
+    .eq('edition_id', editionId)
+  if (error) throw error
+  return Object.fromEntries(
+    (data ?? []).map(r => [r.coupon_code as string, r.category as CouponCategory])
+  )
+}
+
 export interface CuponSummaryRow {
   coupon_code: string
   count: number
@@ -300,6 +329,7 @@ export interface CuponSummaryRow {
   discount_pct_estimate: number | null
   companies: string[]
   participants: { name: string; company: string | null }[]
+  category: CouponCategory | null
 }
 
 export interface OfflinePaymentParticipant {
@@ -343,11 +373,14 @@ function isOfflinePaymentCoupon(code: string): boolean {
 }
 
 export async function getCuponsSummary(editionId: string): Promise<CuponsStats> {
-  const { data, error } = await getSupabase()
-    .from('participants')
-    .select('id, coupon_code, ticket_value, valor_pago_manual, valor_efetivo, company, full_name')
-    .eq('edition_id', editionId)
-    .limit(5000)
+  const [{ data, error }, categories] = await Promise.all([
+    getSupabase()
+      .from('participants')
+      .select('id, coupon_code, ticket_value, valor_pago_manual, valor_efetivo, company, full_name')
+      .eq('edition_id', editionId)
+      .limit(5000),
+    getCouponCategories(editionId),
+  ])
   if (error) throw error
 
   const rows = (data ?? []) as {
@@ -401,6 +434,7 @@ export async function getCuponsSummary(editionId: string): Promise<CuponsStats> 
         discount_pct_estimate: discount,
         companies: Array.from(d.companies).sort(),
         participants: d.participants.sort((a, b) => a.name.localeCompare(b.name)),
+        category: categories[code] ?? null,
       }
     })
     .sort((a, b) => b.count - a.count)
