@@ -6,6 +6,7 @@ import {
   PieChart, Pie, Cell, LineChart, Line, CartesianGrid, LabelList,
 } from 'recharts'
 import { useTheme } from 'next-themes'
+import type { OverviewParticipant } from '@/lib/data'
 
 const NAVY_LIGHT = '#112468'
 const NAVY_DARK  = '#6b9be8'
@@ -54,53 +55,131 @@ function startOfWeek(iso: string) {
   return dt.toISOString().slice(0, 10)
 }
 
-function toWeekly(daily: { date: string; count: number; paidCount: number }[]) {
-  const weeks: Record<string, { count: number; paidCount: number }> = {}
+function buildTimeline(list: { date: string | null }[]): { date: string; count: number }[] {
+  const counts: Record<string, number> = {}
+  for (const p of list) {
+    if (!p.date) continue
+    counts[p.date] = (counts[p.date] ?? 0) + 1
+  }
+  const dates = Object.keys(counts).sort()
+  if (dates.length === 0) return []
+
+  // Preenche dias sem inscrição com 0 para o gráfico refletir a linha do tempo real
+  const result: { date: string; count: number }[] = []
+  const cursor = new Date(`${dates[0]}T00:00:00Z`)
+  const end = new Date(`${dates[dates.length - 1]}T00:00:00Z`)
+  while (cursor <= end) {
+    const iso = cursor.toISOString().slice(0, 10)
+    result.push({ date: iso, count: counts[iso] ?? 0 })
+    cursor.setUTCDate(cursor.getUTCDate() + 1)
+  }
+  return result
+}
+
+function toWeekly(daily: { date: string; count: number }[]) {
+  const weeks: Record<string, number> = {}
   for (const d of daily) {
     const key = startOfWeek(d.date)
-    if (!weeks[key]) weeks[key] = { count: 0, paidCount: 0 }
-    weeks[key].count += d.count
-    weeks[key].paidCount += d.paidCount
+    weeks[key] = (weeks[key] ?? 0) + d.count
   }
   return Object.entries(weeks)
     .sort(([a], [b]) => a.localeCompare(b))
-    .map(([date, v]) => ({ date, ...v }))
+    .map(([date, count]) => ({ date, count }))
 }
 
-interface TicketParticipant { id: string; name: string; company: string | null }
+type TicketFilter = 'all' | 'free' | 'paid'
+
+const FILTER_LABEL: Record<TicketFilter, string> = {
+  all: 'Todos',
+  free: 'Grátis (R$0)',
+  paid: 'Pagos',
+}
 
 interface Props {
-  byTicketType: { type: string; count: number }[]
-  byCompanyType: { type: string; count: number }[]
-  registrationsByDay: { date: string; count: number; paidCount: number }[]
-  freeTickets: {
-    free: number
-    paid: number
-    total: number
-    freeParticipants: TicketParticipant[]
-    paidParticipants: TicketParticipant[]
-  }
+  participants: OverviewParticipant[]
   totalInscritos: number
 }
 
-export function OverviewCharts({
-  byTicketType,
-  byCompanyType,
-  registrationsByDay,
-  freeTickets,
-  totalInscritos,
-}: Props) {
+export function OverviewCharts({ participants, totalInscritos }: Props) {
   const CHART_COLORS = useChartColors()
   const [granularity, setGranularity] = useState<'daily' | 'weekly'>('daily')
-  const [ticketFilter, setTicketFilter] = useState<'all' | 'paid'>('all')
-  const [expandedTicketGroup, setExpandedTicketGroup] = useState<'Grátis (R$0)' | 'Pagos' | null>(null)
+  const [filter, setFilter] = useState<TicketFilter>('all')
+  const [showList, setShowList] = useState(false)
 
+  function handleTicketBarClick(clicked: 'free' | 'paid') {
+    if (filter === clicked) {
+      setFilter('all')
+      setShowList(false)
+    } else {
+      setFilter(clicked)
+      setShowList(true)
+    }
+  }
+
+  const filtered = useMemo(() => {
+    if (filter === 'all') return participants
+    return participants.filter(p => filter === 'free' ? p.valor_efetivo === 0 : p.valor_efetivo > 0)
+  }, [participants, filter])
+
+  const displayTotal = filter === 'all' ? totalInscritos : filtered.length
+
+  // Membros vs Não-Membros (recalculado a partir do filtro Grátis/Pagos)
+  const byTicketType = useMemo(() => {
+    let membro = 0
+    let naoMembro = 0
+    for (const p of filtered) {
+      if (p.ticket_membership === 'MEMBRO') membro++
+      else naoMembro++
+    }
+    return [
+      { type: 'Membros', count: membro },
+      { type: 'Não Membros', count: naoMembro },
+    ]
+  }, [filtered])
+
+  // Perfil por Tipo de Empresa
+  const companyData = useMemo(() => {
+    const counts: Record<string, number> = {}
+    for (const p of filtered) {
+      const seg = p.company_segment_raw?.trim()
+      if (seg) counts[seg] = (counts[seg] ?? 0) + 1
+    }
+    const sumCompany = Object.values(counts).reduce((a, b) => a + b, 0)
+    return Object.entries(counts)
+      .map(([type, count]) => ({
+        type,
+        count,
+        pct: sumCompany > 0 ? Math.round((count / sumCompany) * 1000) / 10 : 0,
+        label: `${count} (${sumCompany > 0 ? Math.round((count / sumCompany) * 100) : 0}%)`,
+      }))
+      .sort((a, b) => b.count - a.count)
+  }, [filtered])
+
+  // Grátis vs Pagos — sempre calculado sobre TODOS os participantes (é o
+  // controle do filtro, não um resultado dele)
+  const freeCount = useMemo(() => participants.filter(p => p.valor_efetivo === 0).length, [participants])
+  const paidCount = participants.length - freeCount
+  const freePct = participants.length > 0 ? Math.round((freeCount / participants.length) * 100) : 0
+  const freeChartData = participants.length > 0
+    ? [
+        { type: 'Grátis (R$0)', count: freeCount, groupKey: 'free' as const },
+        { type: 'Pagos', count: paidCount, groupKey: 'paid' as const },
+      ]
+    : []
+
+  const listParticipants = useMemo(() => {
+    if (!showList || filter === 'all') return []
+    return filtered
+      .map(p => ({ id: p.id, name: p.name, company: p.company }))
+      .sort((a, b) => a.name.localeCompare(b.name))
+  }, [filtered, filter, showList])
+
+  // Linha — inscrições ao longo do tempo (já reflete o filtro Grátis/Pagos)
+  const timelineBase = useMemo(() => buildTimeline(filtered), [filtered])
   const timelineData = useMemo(() => {
-    const base = granularity === 'weekly' ? toWeekly(registrationsByDay) : registrationsByDay
+    const base = granularity === 'weekly' ? toWeekly(timelineBase) : timelineBase
     return base.map(d => ({ ...d, dateLabel: formatDateLabel(d.date) }))
-  }, [registrationsByDay, granularity])
-
-  const timelineDataKey = ticketFilter === 'paid' ? 'paidCount' : 'count'
+  }, [timelineBase, granularity])
 
   // Evita amontoar rótulos no eixo quando há muitos pontos
   const tickStep = Math.max(1, Math.ceil(timelineData.length / 15))
@@ -108,30 +187,27 @@ export function OverviewCharts({
     .filter((_, i) => i % tickStep === 0 || i === timelineData.length - 1)
     .map(d => d.dateLabel)
 
-  // OV-04: ordenar desc + computar % sobre total
-  const sumCompany = byCompanyType.reduce((acc, r) => acc + r.count, 0)
-  const companyData = [...byCompanyType]
-    .sort((a, b) => b.count - a.count)
-    .map(r => ({
-      ...r,
-      pct: sumCompany > 0 ? Math.round((r.count / sumCompany) * 1000) / 10 : 0,
-      label: `${r.count} (${sumCompany > 0 ? Math.round((r.count / sumCompany) * 100) : 0}%)`,
-    }))
-
-  const freePct = freeTickets.total > 0 ? Math.round((freeTickets.free / freeTickets.total) * 100) : 0
-  const freeChartData = freeTickets.total > 0
-    ? [
-        { type: 'Grátis (R$0)', count: freeTickets.free },
-        { type: 'Pagos', count: freeTickets.paid },
-      ]
-    : []
+  const timelineName = filter === 'free' ? 'Inscrições grátis' : filter === 'paid' ? 'Inscrições pagas' : 'Inscrições'
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+    <div className="space-y-3">
+      {filter !== 'all' && (
+        <div className="flex items-center gap-2 text-[11px] font-mono text-muted-foreground">
+          <span>Filtrando por: <span className="text-foreground">{FILTER_LABEL[filter]}</span></span>
+          <button
+            type="button"
+            onClick={() => { setFilter('all'); setShowList(false) }}
+            className="text-primary hover:underline"
+          >
+            limpar
+          </button>
+        </div>
+      )}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
       {/* OV-03 — Donut Membros vs Não-Membros com label central */}
       <div className="bg-card border border-border rounded-lg p-5 shadow-sm">
         <ChartLabel>Membros vs Não-Membros</ChartLabel>
-        {byTicketType.length === 0 ? <EmptyChart /> : (
+        {byTicketType.every(t => t.count === 0) ? <EmptyChart /> : (
           <div className="relative">
             <ResponsiveContainer width="100%" height={260}>
               <PieChart>
@@ -156,7 +232,7 @@ export function OverviewCharts({
               </PieChart>
             </ResponsiveContainer>
             <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-              <p className="font-display tabular-nums text-3xl text-foreground leading-none">{totalInscritos}</p>
+              <p className="font-display tabular-nums text-3xl text-foreground leading-none">{displayTotal}</p>
               <p className="text-[9px] font-mono text-muted-foreground uppercase tracking-wider mt-1">total</p>
             </div>
           </div>
@@ -195,13 +271,13 @@ export function OverviewCharts({
         )}
       </div>
 
-      {/* Free vs Pagos (mantido — informativo) */}
+      {/* Free vs Pagos — clicar em uma barra filtra os demais cards */}
       <div className="bg-card border border-border rounded-lg p-5 shadow-sm">
         <ChartLabel>Ingressos Grátis (R$0) vs Pagos</ChartLabel>
         {freeChartData.length === 0 ? <EmptyChart height={120} /> : (
           <div className="flex items-center gap-8">
             <div className="shrink-0 text-center">
-              <p className="font-display tabular-nums text-5xl text-foreground leading-none">{freeTickets.free}</p>
+              <p className="font-display tabular-nums text-5xl text-foreground leading-none">{freeCount}</p>
               <p className="mt-1 text-[10px] font-mono text-muted-foreground uppercase tracking-wider">grátis</p>
               <p className="mt-0.5 text-[11px] font-mono text-muted-foreground/60">{freePct}% do total</p>
             </div>
@@ -218,25 +294,30 @@ export function OverviewCharts({
                     radius={[3, 3, 0, 0]}
                     maxBarSize={48}
                     cursor="pointer"
-                    onClick={(d: { type?: string }) => {
-                      if (d.type !== 'Grátis (R$0)' && d.type !== 'Pagos') return
-                      const clicked = d.type
-                      setExpandedTicketGroup(prev => prev === clicked ? null : clicked)
+                    onClick={(d: unknown) => {
+                      const item = d as { payload?: { groupKey?: string }; groupKey?: string }
+                      const clicked = item?.payload?.groupKey ?? item?.groupKey
+                      if (clicked === 'free' || clicked === 'paid') handleTicketBarClick(clicked)
                     }}
                   >
-                    <Cell fill={CHART_COLORS[0]} />
-                    <Cell fill={CHART_COLORS[1]} />
+                    {freeChartData.map((d, i) => (
+                      <Cell
+                        key={i}
+                        fill={CHART_COLORS[i % CHART_COLORS.length]}
+                        fillOpacity={filter === 'all' || filter === d.groupKey ? 1 : 0.35}
+                      />
+                    ))}
                   </Bar>
                 </BarChart>
               </ResponsiveContainer>
             </div>
           </div>
         )}
-        {expandedTicketGroup && (
+        {showList && filter !== 'all' && (
           <TicketParticipantList
-            title={expandedTicketGroup}
-            participants={expandedTicketGroup === 'Grátis (R$0)' ? freeTickets.freeParticipants : freeTickets.paidParticipants}
-            onClose={() => setExpandedTicketGroup(null)}
+            title={FILTER_LABEL[filter]}
+            participants={listParticipants}
+            onClose={() => { setFilter('all'); setShowList(false) }}
           />
         )}
       </div>
@@ -245,39 +326,21 @@ export function OverviewCharts({
       <div className="bg-card border border-border rounded-lg p-5 shadow-sm">
         <div className="flex items-center justify-between mb-4 gap-3 flex-wrap">
           <ChartLabel>Inscrições ao Longo do Tempo</ChartLabel>
-          <div className="flex items-center gap-2">
-            <div className="flex rounded-md border border-border overflow-hidden text-[10px] font-mono uppercase tracking-wider">
-              {(['all', 'paid'] as const).map(f => (
-                <button
-                  key={f}
-                  type="button"
-                  onClick={() => setTicketFilter(f)}
-                  className={`px-2.5 py-1 transition-colors ${
-                    ticketFilter === f
-                      ? 'bg-primary text-primary-foreground'
-                      : 'bg-transparent text-muted-foreground hover:bg-accent/40'
-                  }`}
-                >
-                  {f === 'all' ? 'Todos' : 'Só Pagos'}
-                </button>
-              ))}
-            </div>
-            <div className="flex rounded-md border border-border overflow-hidden text-[10px] font-mono uppercase tracking-wider">
-              {(['daily', 'weekly'] as const).map(g => (
-                <button
-                  key={g}
-                  type="button"
-                  onClick={() => setGranularity(g)}
-                  className={`px-2.5 py-1 transition-colors ${
-                    granularity === g
-                      ? 'bg-primary text-primary-foreground'
-                      : 'bg-transparent text-muted-foreground hover:bg-accent/40'
-                  }`}
-                >
-                  {g === 'daily' ? 'Diário' : 'Semanal'}
-                </button>
-              ))}
-            </div>
+          <div className="flex rounded-md border border-border overflow-hidden text-[10px] font-mono uppercase tracking-wider">
+            {(['daily', 'weekly'] as const).map(g => (
+              <button
+                key={g}
+                type="button"
+                onClick={() => setGranularity(g)}
+                className={`px-2.5 py-1 transition-colors ${
+                  granularity === g
+                    ? 'bg-primary text-primary-foreground'
+                    : 'bg-transparent text-muted-foreground hover:bg-accent/40'
+                }`}
+              >
+                {g === 'daily' ? 'Diário' : 'Semanal'}
+              </button>
+            ))}
           </div>
         </div>
         {timelineData.length === 0 ? <EmptyChart height={180} /> : (
@@ -298,8 +361,8 @@ export function OverviewCharts({
               />
               <Line
                 type="monotone"
-                dataKey={timelineDataKey}
-                name={ticketFilter === 'paid' ? 'Inscrições pagas' : 'Inscrições'}
+                dataKey="count"
+                name={timelineName}
                 stroke="#00a99d"
                 strokeWidth={2.5}
                 dot={{ r: 3, fill: '#00a99d', strokeWidth: 0 }}
@@ -308,6 +371,7 @@ export function OverviewCharts({
             </LineChart>
           </ResponsiveContainer>
         )}
+      </div>
       </div>
     </div>
   )
@@ -319,7 +383,7 @@ function TicketParticipantList({
   onClose,
 }: {
   title: string
-  participants: TicketParticipant[]
+  participants: { id: string; name: string; company: string | null }[]
   onClose: () => void
 }) {
   return (

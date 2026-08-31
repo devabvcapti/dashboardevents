@@ -56,47 +56,6 @@ export async function getCompanySegmentSummary(editionId: string): Promise<Compa
   return Object.entries(counts).map(([type, count]) => ({ type, count })).sort((a, b) => b.count - a.count)
 }
 
-// ─── Registrations by Day ─────────────────────────────────────────────────────
-
-export interface RegistrationsByDay { date: string; count: number; paidCount: number }
-export async function getRegistrationsByDay(editionId: string): Promise<RegistrationsByDay[]> {
-  const { data, error } = await getSupabase()
-    .from('participants')
-    .select('registered_at, created_at, valor_efetivo')
-    .eq('edition_id', editionId)
-    .limit(5000)
-  if (error) throw error
-
-  // registered_at (col BM — data real de inscrição) é a fonte correta;
-  // created_at (timestamp do import) só entra como fallback para linhas
-  // antigas ou planilhas sem essa coluna mapeada.
-  const counts: Record<string, number> = {}
-  const paidCounts: Record<string, number> = {}
-  for (const row of data ?? []) {
-    const raw = (row.registered_at as string | null) ?? (row.created_at as string | null)
-    if (!raw) continue
-    const date = raw.slice(0, 10)
-    counts[date] = (counts[date] ?? 0) + 1
-    if ((row.valor_efetivo as number | null) !== null && (row.valor_efetivo as number) > 0) {
-      paidCounts[date] = (paidCounts[date] ?? 0) + 1
-    }
-  }
-
-  const dates = Object.keys(counts).sort()
-  if (dates.length === 0) return []
-
-  // Preenche dias sem inscrição com 0 para o gráfico refletir a linha do tempo real
-  const result: RegistrationsByDay[] = []
-  const cursor = new Date(`${dates[0]}T00:00:00Z`)
-  const end = new Date(`${dates[dates.length - 1]}T00:00:00Z`)
-  while (cursor <= end) {
-    const iso = cursor.toISOString().slice(0, 10)
-    result.push({ date: iso, count: counts[iso] ?? 0, paidCount: paidCounts[iso] ?? 0 })
-    cursor.setUTCDate(cursor.getUTCDate() + 1)
-  }
-  return result
-}
-
 // ─── Ticket Membership Summary (COUNT no banco via head:true) ─────────────────
 
 export interface TicketMembershipSummary { ticket_membership: TicketMembership; count: number }
@@ -116,48 +75,44 @@ export async function getTicketMembershipSummary(editionId: string): Promise<Tic
   return results.sort((a, b) => b.count - a.count)
 }
 
-// ─── Free Tickets (valor_efetivo = 0) ────────────────────────────────────────
+// ─── Overview Participants (dados crus para os cards da Visão Geral) ─────────
+// Uma única busca alimenta donut de membros, perfil por empresa, grátis vs
+// pagos e a linha do tempo — os 4 cards recalculam tudo no client quando o
+// usuário filtra por Grátis/Pagos, sem precisar de round-trips extras.
 
-export interface FreeTicketParticipant { id: string; name: string; company: string | null }
-export interface FreeTicketStats {
-  free: number
-  paid: number
-  total: number
-  freeParticipants: FreeTicketParticipant[]
-  paidParticipants: FreeTicketParticipant[]
+export interface OverviewParticipant {
+  id: string
+  name: string
+  company: string | null
+  ticket_membership: TicketMembership
+  company_segment_raw: string | null
+  valor_efetivo: number
+  date: string | null
 }
-export async function getFreeTicketStats(editionId: string): Promise<FreeTicketStats> {
+
+export async function getOverviewParticipants(editionId: string): Promise<OverviewParticipant[]> {
   const { data, error } = await getSupabase()
     .from('participants')
-    .select('id, full_name, company, valor_efetivo')
+    .select('id, full_name, company, ticket_membership, company_segment_raw, valor_efetivo, registered_at, created_at')
     .eq('edition_id', editionId)
     .limit(5000)
   if (error) throw error
 
-  const rows = (data ?? []) as {
-    id: string
-    full_name: string | null
-    company: string | null
-    valor_efetivo: number | null
-  }[]
-
-  const freeParticipants: FreeTicketParticipant[] = []
-  const paidParticipants: FreeTicketParticipant[] = []
-  for (const r of rows) {
-    const p = { id: r.id, name: r.full_name ?? '—', company: r.company }
-    if ((r.valor_efetivo ?? 0) === 0) freeParticipants.push(p)
-    else paidParticipants.push(p)
-  }
-  freeParticipants.sort((a, b) => a.name.localeCompare(b.name))
-  paidParticipants.sort((a, b) => a.name.localeCompare(b.name))
-
-  return {
-    free: freeParticipants.length,
-    paid: paidParticipants.length,
-    total: rows.length,
-    freeParticipants,
-    paidParticipants,
-  }
+  return (data ?? []).map(row => {
+    // registered_at (col BM — data real de inscrição) é a fonte correta;
+    // created_at (timestamp do import) só entra como fallback para linhas
+    // antigas ou planilhas sem essa coluna mapeada.
+    const raw = (row.registered_at as string | null) ?? (row.created_at as string | null)
+    return {
+      id: row.id as string,
+      name: (row.full_name as string | null) ?? '—',
+      company: row.company as string | null,
+      ticket_membership: row.ticket_membership as TicketMembership,
+      company_segment_raw: row.company_segment_raw as string | null,
+      valor_efetivo: (row.valor_efetivo as number | null) ?? 0,
+      date: raw ? raw.slice(0, 10) : null,
+    }
+  })
 }
 
 // ─── NOVOS — consumidos pelos Plans 03/04/05 ─────────────────────────────────

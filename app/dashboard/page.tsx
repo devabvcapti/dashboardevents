@@ -1,8 +1,5 @@
 import { requireAuth } from '@/lib/auth'
-import {
-  getOverviewStats, getCompanySegmentSummary, getRegistrationsByDay,
-  getTicketMembershipSummary, getFreeTicketStats,
-} from '@/lib/data'
+import { getOverviewStats, getOverviewParticipants } from '@/lib/data'
 import { getActiveEditionId } from '@/lib/edition-cookie'
 import Link from 'next/link'
 import { OverviewKpis } from './overview-kpis'
@@ -47,30 +44,16 @@ export default async function DashboardPage() {
   }
 
   let stats: Awaited<ReturnType<typeof getOverviewStats>> | null = null
-  let byTicketType: { type: string; count: number }[] = []
-  let byCompanyType: { type: string; count: number }[] = []
-  let registrationsByDay: { date: string; count: number; paidCount: number }[] = []
-  let freeTickets: Awaited<ReturnType<typeof getFreeTicketStats>> = {
-    free: 0, paid: 0, total: 0, freeParticipants: [], paidParticipants: [],
-  }
+  let participants: Awaited<ReturnType<typeof getOverviewParticipants>> = []
   let isMock = false
 
   try {
-    const [s, ticket, segment, regByDay, free] = await Promise.all([
+    const [s, p] = await Promise.all([
       getOverviewStats(editionId),
-      getTicketMembershipSummary(editionId),
-      getCompanySegmentSummary(editionId),
-      getRegistrationsByDay(editionId),
-      getFreeTicketStats(editionId),
+      getOverviewParticipants(editionId),
     ])
     stats = s
-    byTicketType = ticket.map(r => ({
-      type: r.ticket_membership === 'MEMBRO' ? 'Membros' : 'Não Membros',
-      count: r.count,
-    }))
-    byCompanyType = segment
-    registrationsByDay = regByDay
-    freeTickets = free
+    participants = p
   } catch {
     stats = null
     isMock = true
@@ -103,13 +86,7 @@ export default async function DashboardPage() {
 
       <OverviewKpis stats={display} />
 
-      <OverviewCharts
-        byTicketType={byTicketType}
-        byCompanyType={byCompanyType}
-        registrationsByDay={registrationsByDay}
-        freeTickets={freeTickets}
-        totalInscritos={display.total}
-      />
+      <OverviewCharts participants={participants} totalInscritos={display.total} />
     </div>
   )
 }
