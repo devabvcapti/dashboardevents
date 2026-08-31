@@ -6,6 +6,9 @@ import type { Database } from './lib/database.types'
  * Proxy (formerly middleware): refresca sessão Supabase e protege rotas.
  * Rotas protegidas: /dashboard/**, /api/** EXCETO /api/auth/**.
  * Rotas públicas: /login, /api/auth/**, /, /_next/**.
+ *
+ * Exige apenas usuário autenticado com role provisionado (admin OU viewer) —
+ * restrição a admin é feita rota a rota via requireAdmin(), não aqui.
  */
 export async function proxy(req: NextRequest) {
   let response = NextResponse.next({ request: req })
@@ -48,8 +51,9 @@ export async function proxy(req: NextRequest) {
       return NextResponse.redirect(loginUrl)
     }
     const role = (user.app_metadata as { role?: string } | null)?.role
-    if (role !== 'admin') {
-      // Não-admin: logout forçado e redirect
+    if (!role) {
+      // Sem role provisionado (não deveria ocorrer — login/callback já
+      // concedem 'viewer' automaticamente): logout forçado e redirect.
       await supabase.auth.signOut()
       const loginUrl = new URL('/login', req.url)
       loginUrl.searchParams.set('error', 'forbidden')
