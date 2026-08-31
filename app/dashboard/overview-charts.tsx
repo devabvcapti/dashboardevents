@@ -391,11 +391,12 @@ export function OverviewCharts({ participants, stats }: Props) {
       <div className="bg-card border border-border rounded-lg p-5 shadow-sm">
         <ChartLabel>Perfil por Tipo de Empresa</ChartLabel>
         {companyData.length === 0 ? <EmptyChart /> : (
-          <ResponsiveContainer width="100%" height={Math.max(220, companyData.length * 36)}>
-            <BarChart data={companyData} layout="vertical" margin={{ top: 8, right: 80, left: 8, bottom: 0 }}>
+          <ResponsiveContainer width="100%" height={Math.max(260, companyData.length * 42)}>
+            <BarChart data={companyData} layout="vertical" margin={{ top: 8, right: 48, left: 300, bottom: 0 }}
+              barCategoryGap="30%">
               <CartesianGrid horizontal={false} stroke={GRID_COLOR} strokeOpacity={0.5} />
               <XAxis type="number" tick={AXIS_STYLE} axisLine={false} tickLine={false} allowDecimals={false} />
-              <YAxis dataKey="type" type="category" tick={AXIS_STYLE} axisLine={false} tickLine={false} width={120} />
+              <YAxis dataKey="type" type="category" tick={AXIS_STYLE} axisLine={false} tickLine={false} width={300} />
               <Tooltip
                 contentStyle={TOOLTIP_STYLE}
                 cursor={{ fill: 'oklch(0.21 0.11 265 / 0.04)' }}
@@ -404,7 +405,7 @@ export function OverviewCharts({ participants, stats }: Props) {
                   'Inscritos',
                 ]}
               />
-              <Bar dataKey="count" name="Inscritos" radius={[0, 3, 3, 0]} maxBarSize={22}>
+              <Bar dataKey="count" name="Inscritos" radius={[0, 3, 3, 0]} maxBarSize={26}>
                 {companyData.map((_, i) => (
                   <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
                 ))}
