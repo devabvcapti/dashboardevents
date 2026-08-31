@@ -547,6 +547,28 @@ export async function getRevenueAnalysis(editionId: string): Promise<RevenueAnal
   return data as unknown as RevenueAnalysis
 }
 
+// ─── Registration Weekly Goals (meta semanal progressiva) ────────────────────
+
+export interface RegistrationWeeklyGoal {
+  id: string
+  weekStart: string
+  targetCount: number
+}
+
+export async function getRegistrationWeeklyGoals(editionId: string): Promise<RegistrationWeeklyGoal[]> {
+  const { data, error } = await getSupabase()
+    .from('registration_weekly_goals')
+    .select('id, week_start, target_count')
+    .eq('edition_id', editionId)
+    .order('week_start', { ascending: true })
+  if (error) throw error
+  return (data ?? []).map(r => ({
+    id: r.id as string,
+    weekStart: r.week_start as string,
+    targetCount: r.target_count as number,
+  }))
+}
+
 // ─── Budget ──────────────────────────────────────────────────────────────────
 
 export interface BudgetItem {

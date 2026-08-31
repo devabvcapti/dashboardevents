@@ -5,8 +5,19 @@ import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import type { Edition } from '@/lib/database.types'
+import type { RegistrationWeeklyGoal } from '@/lib/data'
 
-export function EventosClient({ editions }: { editions: Edition[] }) {
+const formatWeekStart = (iso: string) => {
+  const [y, m, d] = iso.split('-')
+  return `${d}/${m}/${y}`
+}
+
+interface Props {
+  editions: Edition[]
+  weeklyGoalsByEdition: Record<string, RegistrationWeeklyGoal[]>
+}
+
+export function EventosClient({ editions, weeklyGoalsByEdition }: Props) {
   const router = useRouter()
   const [showForm, setShowForm] = useState(editions.length === 0)
   const [name, setName] = useState('')
@@ -18,6 +29,69 @@ export function EventosClient({ editions }: { editions: Edition[] }) {
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [deleteError, setDeleteError] = useState<string | null>(null)
+
+  // Metas semanais: edição expandida + rascunho de nova linha + estados
+  const [expandedWeeklyId, setExpandedWeeklyId] = useState<string | null>(null)
+  const [weekDraft, setWeekDraft] = useState('')
+  const [targetDraft, setTargetDraft] = useState('')
+  const [savingWeekly, setSavingWeekly] = useState(false)
+  const [deletingWeeklyId, setDeletingWeeklyId] = useState<string | null>(null)
+  const [weeklyError, setWeeklyError] = useState<string | null>(null)
+
+  async function handleAddWeeklyGoal(editionId: string) {
+    if (!weekDraft) {
+      setWeeklyError('Escolha uma data.')
+      return
+    }
+    const targetCount = Number(targetDraft)
+    if (!Number.isInteger(targetCount) || targetCount <= 0) {
+      setWeeklyError('Informe um número inteiro maior que zero.')
+      return
+    }
+    setSavingWeekly(true)
+    setWeeklyError(null)
+    try {
+      const res = await fetch('/api/edition/weekly-goal', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ editionId, weekStart: weekDraft, targetCount }),
+      })
+      if (!res.ok) {
+        const json = await res.json().catch(() => null)
+        setWeeklyError((json as { error?: string })?.error ?? 'Falha ao salvar meta semanal.')
+        return
+      }
+      setWeekDraft('')
+      setTargetDraft('')
+      router.refresh()
+    } catch {
+      setWeeklyError('Erro de rede.')
+    } finally {
+      setSavingWeekly(false)
+    }
+  }
+
+  async function handleDeleteWeeklyGoal(id: string) {
+    setDeletingWeeklyId(id)
+    setWeeklyError(null)
+    try {
+      const res = await fetch('/api/edition/weekly-goal', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id }),
+      })
+      if (!res.ok) {
+        const json = await res.json().catch(() => null)
+        setWeeklyError((json as { error?: string })?.error ?? 'Falha ao remover meta semanal.')
+        return
+      }
+      router.refresh()
+    } catch {
+      setWeeklyError('Erro de rede.')
+    } finally {
+      setDeletingWeeklyId(null)
+    }
+  }
 
   // Meta de inscrições: id em edição + rascunho + estado de salvamento
   const [editingGoalId, setEditingGoalId] = useState<string | null>(null)
@@ -205,6 +279,74 @@ export function EventosClient({ editions }: { editions: Edition[] }) {
                       ? `${e.registration_goal.toLocaleString('pt-BR')} inscritos`
                       : <span className="text-muted-foreground/50 italic">ainda não definida — clique para definir</span>}
                   </button>
+                )}
+              </div>
+
+              <div className="mt-3 pt-3 border-t border-border">
+                <button
+                  type="button"
+                  onClick={() => { setExpandedWeeklyId(expandedWeeklyId === e.id ? null : e.id); setWeeklyError(null) }}
+                  className="text-[10px] font-mono tracking-wider text-muted-foreground uppercase hover:text-primary transition-colors"
+                >
+                  Metas Semanais ({(weeklyGoalsByEdition[e.id] ?? []).length}) {expandedWeeklyId === e.id ? '▾' : '▸'}
+                </button>
+
+                {expandedWeeklyId === e.id && (
+                  <div className="mt-3 space-y-2">
+                    {(weeklyGoalsByEdition[e.id] ?? []).length === 0 && (
+                      <p className="text-[11px] font-mono text-muted-foreground/50 italic">
+                        Nenhuma meta semanal ainda.
+                      </p>
+                    )}
+                    {(weeklyGoalsByEdition[e.id] ?? []).map(g => (
+                      <div key={g.id} className="flex items-center justify-between text-sm">
+                        <span className="text-foreground/80">
+                          Semana de {formatWeekStart(g.weekStart)}
+                        </span>
+                        <div className="flex items-center gap-2">
+                          <span className="font-mono text-[11px] text-muted-foreground">
+                            {g.targetCount.toLocaleString('pt-BR')} acum.
+                          </span>
+                          <button
+                            type="button"
+                            disabled={deletingWeeklyId === g.id}
+                            onClick={() => handleDeleteWeeklyGoal(g.id)}
+                            className="text-[11px] text-red-500 hover:text-red-600 disabled:opacity-50"
+                          >
+                            {deletingWeeklyId === g.id ? '…' : '✕'}
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+
+                    <div className="flex items-center gap-2 pt-2">
+                      <Input
+                        type="date"
+                        value={weekDraft}
+                        onChange={ev => setWeekDraft(ev.target.value)}
+                        className="h-8 text-xs flex-1"
+                      />
+                      <Input
+                        type="number"
+                        min={1}
+                        placeholder="meta acum."
+                        value={targetDraft}
+                        onChange={ev => setTargetDraft(ev.target.value)}
+                        className="h-8 text-xs w-24"
+                      />
+                      <Button
+                        size="sm"
+                        disabled={savingWeekly}
+                        onClick={() => handleAddWeeklyGoal(e.id)}
+                      >
+                        {savingWeekly ? '…' : '+'}
+                      </Button>
+                    </div>
+                    <p className="text-[10px] font-mono text-muted-foreground/50">
+                      Use qualquer data da semana — é arredondada para a segunda-feira. &quot;Meta acum.&quot; = total esperado até essa semana.
+                    </p>
+                    {weeklyError && <p role="alert" className="text-[11px] text-red-600">{weeklyError}</p>}
+                  </div>
                 )}
               </div>
 

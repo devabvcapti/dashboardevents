@@ -1,5 +1,6 @@
 import { requireAdmin } from '@/lib/auth'
-import { getEditions } from '@/lib/data'
+import { getEditions, getRegistrationWeeklyGoals } from '@/lib/data'
+import type { RegistrationWeeklyGoal } from '@/lib/data'
 import { EventosClient } from './eventos-client'
 
 export const dynamic = 'force-dynamic'
@@ -8,7 +9,12 @@ export const metadata = { title: 'Eventos — Dashboard ABVCAP' }
 export default async function EventosPage() {
   await requireAdmin()
   let editions: Awaited<ReturnType<typeof getEditions>> = []
-  try { editions = await getEditions() } catch { editions = [] }
+  let weeklyGoalsByEdition: Record<string, RegistrationWeeklyGoal[]> = {}
+  try {
+    editions = await getEditions()
+    const goalLists = await Promise.all(editions.map(e => getRegistrationWeeklyGoals(e.id)))
+    weeklyGoalsByEdition = Object.fromEntries(editions.map((e, i) => [e.id, goalLists[i]]))
+  } catch { editions = [] }
 
   return (
     <div className="p-8 space-y-8">
@@ -21,7 +27,7 @@ export default async function EventosPage() {
           Crie e gerencie edições do Congresso ABVCAP. Cada edição agrupa participantes, inscrições e respostas de formulário.
         </p>
       </div>
-      <EventosClient editions={editions} />
+      <EventosClient editions={editions} weeklyGoalsByEdition={weeklyGoalsByEdition} />
     </div>
   )
 }

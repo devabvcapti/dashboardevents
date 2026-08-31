@@ -277,6 +277,38 @@ export type Database = {
           },
         ]
       }
+      registration_weekly_goals: {
+        Row: {
+          id: string
+          edition_id: string
+          week_start: string
+          target_count: number
+          created_at: string | null
+        }
+        Insert: {
+          id?: string
+          edition_id: string
+          week_start: string
+          target_count: number
+          created_at?: string | null
+        }
+        Update: {
+          id?: string
+          edition_id?: string
+          week_start?: string
+          target_count?: number
+          created_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "registration_weekly_goals_edition_id_fkey"
+            columns: ["edition_id"]
+            isOneToOne: false
+            referencedRelation: "editions"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
     }
     Views: {
       [_ in never]: never

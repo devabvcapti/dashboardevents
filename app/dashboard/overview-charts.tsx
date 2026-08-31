@@ -3,10 +3,10 @@
 import { useMemo, useState } from 'react'
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
-  PieChart, Pie, Cell, LineChart, Line, CartesianGrid, LabelList,
+  PieChart, Pie, Cell, LineChart, Line, CartesianGrid, LabelList, Legend,
 } from 'recharts'
 import { useTheme } from 'next-themes'
-import type { OverviewParticipant, OverviewStats } from '@/lib/data'
+import type { OverviewParticipant, OverviewStats, RegistrationWeeklyGoal } from '@/lib/data'
 import { OverviewKpis } from './overview-kpis'
 
 const NAVY_LIGHT = '#112468'
@@ -112,9 +112,16 @@ interface Props {
   participants: OverviewParticipant[]
   stats: OverviewStats
   registrationGoal: number | null
+  weeklyGoals: RegistrationWeeklyGoal[]
 }
 
-export function OverviewCharts({ participants, stats, registrationGoal }: Props) {
+const SEMAFORO: Record<'green' | 'yellow' | 'red', { label: string; dot: string; text: string; bg: string }> = {
+  green:  { label: 'No ritmo',           dot: 'bg-emerald-500', text: 'text-emerald-700', bg: 'bg-emerald-50 border-emerald-200' },
+  yellow: { label: 'Levemente atrasado', dot: 'bg-amber-500',   text: 'text-amber-700',   bg: 'bg-amber-50 border-amber-200' },
+  red:    { label: 'Atrasado',           dot: 'bg-red-500',     text: 'text-red-700',     bg: 'bg-red-50 border-red-200' },
+}
+
+export function OverviewCharts({ participants, stats, registrationGoal, weeklyGoals }: Props) {
   const CHART_COLORS = useChartColors()
   const [granularity, setGranularity] = useState<'daily' | 'weekly'>('daily')
   const [ticketFilter, setTicketFilter] = useState<TicketFilter>('all')
@@ -177,6 +184,57 @@ export function OverviewCharts({ participants, stats, registrationGoal }: Props)
   // como um todo, não faria sentido "cair" ao aplicar um filtro).
   const goalTotal = participants.length
   const goalPct = registrationGoal ? Math.min(100, Math.round((goalTotal / registrationGoal) * 100)) : 0
+
+  // Ritmo semanal — compara o acumulado real com os checkpoints manuais
+  // (registration_weekly_goals) para o gráfico de ritmo e o sinal de semáforo.
+  const todayWeekStart = useMemo(() => startOfWeek(new Date().toISOString().slice(0, 10)), [])
+
+  const sortedWeeklyGoals = useMemo(
+    () => [...weeklyGoals].sort((a, b) => a.weekStart.localeCompare(b.weekStart)),
+    [weeklyGoals]
+  )
+
+  const paceChartData = useMemo(() => {
+    const realWeekly = toWeekly(buildTimeline(participants))
+    const realCumulative: Record<string, number> = {}
+    let running = 0
+    for (const w of realWeekly) {
+      running += w.count
+      realCumulative[w.date] = running
+    }
+    const realWeeksSorted = Object.keys(realCumulative).sort()
+
+    const allWeeks = Array.from(new Set([
+      ...realWeeksSorted,
+      ...sortedWeeklyGoals.map(g => g.weekStart),
+    ])).sort()
+
+    let lastKnownReal = 0
+    return allWeeks.map(week => {
+      if (realCumulative[week] !== undefined) lastKnownReal = realCumulative[week]
+      const meta = sortedWeeklyGoals.find(g => g.weekStart === week)?.targetCount ?? null
+      return {
+        week,
+        dateLabel: formatDateLabel(week),
+        real: week <= todayWeekStart ? lastKnownReal : null,
+        meta,
+      }
+    })
+  }, [participants, sortedWeeklyGoals, todayWeekStart])
+
+  // Semáforo: compara o real de hoje com o checkpoint mais recente já alcançado
+  const currentCheckpoint = useMemo(() => {
+    const passed = sortedWeeklyGoals.filter(g => g.weekStart <= todayWeekStart)
+    return passed.length > 0 ? passed[passed.length - 1] : null
+  }, [sortedWeeklyGoals, todayWeekStart])
+
+  const semaforoStatus: 'green' | 'yellow' | 'red' | null = useMemo(() => {
+    if (!currentCheckpoint) return null
+    const ratio = goalTotal / currentCheckpoint.targetCount
+    if (ratio >= 1) return 'green'
+    if (ratio >= 0.85) return 'yellow'
+    return 'red'
+  }, [currentCheckpoint, goalTotal])
 
   // Faixa de KPIs no topo — recalculada a partir dos filtros ativos.
   // states_represented depende de form_responses (fora do fetch de participants),
@@ -279,21 +337,77 @@ export function OverviewCharts({ participants, stats, registrationGoal }: Props)
   return (
     <div className="space-y-8">
       <OverviewKpis stats={filteredStats} />
-      {registrationGoal !== null && (
+      {(registrationGoal !== null || sortedWeeklyGoals.length > 0) && (
         <div className="bg-card border border-border rounded-lg p-5 shadow-sm">
-          <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center justify-between mb-3 gap-3 flex-wrap">
             <ChartLabel>Meta de Inscrições</ChartLabel>
-            <p className="text-[11px] font-mono text-muted-foreground">
-              <span className="text-foreground font-medium">{goalTotal.toLocaleString('pt-BR')}</span>
-              {' de '}{registrationGoal.toLocaleString('pt-BR')} ({goalPct}%)
-            </p>
+            <div className="flex items-center gap-3">
+              {semaforoStatus && (
+                <span className={`inline-flex items-center gap-1.5 text-[11px] font-mono px-2 py-0.5 rounded border ${SEMAFORO[semaforoStatus].bg} ${SEMAFORO[semaforoStatus].text}`}>
+                  <span className={`w-1.5 h-1.5 rounded-full ${SEMAFORO[semaforoStatus].dot}`} />
+                  {SEMAFORO[semaforoStatus].label}
+                  {currentCheckpoint && (
+                    <span className="text-muted-foreground/60">
+                      ({goalTotal.toLocaleString('pt-BR')} de {currentCheckpoint.targetCount.toLocaleString('pt-BR')} esperados)
+                    </span>
+                  )}
+                </span>
+              )}
+              {registrationGoal !== null && (
+                <p className="text-[11px] font-mono text-muted-foreground">
+                  <span className="text-foreground font-medium">{goalTotal.toLocaleString('pt-BR')}</span>
+                  {' de '}{registrationGoal.toLocaleString('pt-BR')} no total ({goalPct}%)
+                </p>
+              )}
+            </div>
           </div>
-          <div className="h-2 bg-border rounded-full overflow-hidden">
-            <div
-              className="h-full rounded-full bg-primary transition-all duration-500"
-              style={{ width: `${goalPct}%` }}
-            />
-          </div>
+
+          {registrationGoal !== null && (
+            <div className="h-2 bg-border rounded-full overflow-hidden mb-4">
+              <div
+                className="h-full rounded-full bg-primary transition-all duration-500"
+                style={{ width: `${goalPct}%` }}
+              />
+            </div>
+          )}
+
+          {sortedWeeklyGoals.length > 0 && (
+            <ResponsiveContainer width="100%" height={160}>
+              <LineChart data={paceChartData} margin={{ top: 4, right: 8, left: -28, bottom: 0 }}>
+                <CartesianGrid vertical={false} stroke={GRID_COLOR} strokeOpacity={0.6} />
+                <XAxis dataKey="dateLabel" tick={{ ...AXIS_STYLE, fontSize: 10 }} axisLine={false} tickLine={false} />
+                <YAxis tick={AXIS_STYLE} axisLine={false} tickLine={false} allowDecimals={false} />
+                <Tooltip
+                  contentStyle={TOOLTIP_STYLE}
+                  labelFormatter={label => `Semana de ${label}`}
+                  formatter={(v, name) => [v, name === 'real' ? 'Real acumulado' : 'Meta acumulada']}
+                />
+                <Legend
+                  formatter={value => value === 'real' ? 'Real acumulado' : 'Meta acumulada'}
+                  wrapperStyle={{ fontSize: 11, fontFamily: 'var(--font-ibm-mono)' }}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="real"
+                  name="real"
+                  stroke="#00a99d"
+                  strokeWidth={2.5}
+                  dot={{ r: 3, fill: '#00a99d', strokeWidth: 0 }}
+                  connectNulls={false}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="meta"
+                  name="meta"
+                  stroke={CHART_COLORS[1]}
+                  strokeWidth={2}
+                  strokeDasharray="4 3"
+                  dot={{ r: 3, fill: CHART_COLORS[1], strokeWidth: 0 }}
+                  connectNulls
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          )}
         </div>
       )}
       <div className="space-y-3">
