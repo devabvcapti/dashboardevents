@@ -413,6 +413,7 @@ export type Database = {
         | "CONSELHO_ABVCAP"
         | "PARCEIRO"
         | "LPS"
+        | "FINANCEIRO"
       import_status: "PENDING" | "PROCESSING" | "COMPLETED" | "FAILED"
       ticket_membership: "MEMBRO" | "NAO_MEMBRO"
     }

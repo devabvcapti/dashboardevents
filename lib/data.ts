@@ -307,6 +307,7 @@ export const COUPON_CATEGORIES: { value: CouponCategory; label: string }[] = [
   { value: 'CONSELHO_ABVCAP', label: 'Conselho ABVCAP' },
   { value: 'PARCEIRO', label: 'Parceiro' },
   { value: 'LPS', label: 'LPs' },
+  { value: 'FINANCEIRO', label: 'Financeiro' },
 ]
 
 export const COUPON_CATEGORY_LABELS: Record<CouponCategory, string> =

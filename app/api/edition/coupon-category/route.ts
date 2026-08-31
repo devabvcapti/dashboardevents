@@ -17,6 +17,7 @@ const CATEGORY_VALUES = [
   'CONSELHO_ABVCAP',
   'PARCEIRO',
   'LPS',
+  'FINANCEIRO',
 ] as const
 
 const PostBody = z.object({

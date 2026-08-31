@@ -1,0 +1,1 @@
+ALTER TYPE coupon_category ADD VALUE 'FINANCEIRO';
