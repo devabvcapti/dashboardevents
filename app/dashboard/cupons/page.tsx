@@ -3,6 +3,7 @@ import { getCuponsSummary } from '@/lib/data'
 import { getActiveEdition } from '@/lib/edition-cookie'
 import { OfflinePaymentsTable } from './offline-payments-table'
 import { CouponCategorySelect } from './coupon-category-select'
+import { CategoryCards } from './category-cards'
 
 export const dynamic = 'force-dynamic'
 export const metadata = { title: 'Cupons — Dashboard ABVCAP' }
@@ -84,6 +85,9 @@ export default async function CuponsPage() {
               />
             )}
           </div>
+
+          {/* Cards por categoria */}
+          <CategoryCards categories={stats.by_category} />
 
           {stats.total_with_coupon === 0 ? (
             <div className="border border-dashed border-border rounded-lg p-12 text-center">

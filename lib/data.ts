@@ -348,6 +348,13 @@ export interface OfflinePaymentGroup {
   participants: OfflinePaymentParticipant[]
 }
 
+export interface CategorySummaryGroup {
+  category: CouponCategory | 'PAGAMENTO_OFFLINE' | null
+  label: string
+  count: number
+  participants: { name: string; company: string | null }[]
+}
+
 export interface CuponsStats {
   total_with_coupon: number
   total_participants: number
@@ -355,6 +362,7 @@ export interface CuponsStats {
   avg_ticket_no_coupon: number | null
   total_discount_estimate: number | null
   by_coupon: CuponSummaryRow[]
+  by_category: CategorySummaryGroup[]
   top_companies: { company: string; count: number }[]
   offline_payments: OfflinePaymentGroup[]
   offline_total_paid: number
@@ -483,6 +491,36 @@ export async function getCuponsSummary(editionId: string): Promise<CuponsStats> 
     offline_payments.reduce((s, g) => s + g.total_paid, 0) * 100
   ) / 100
 
+  const categoryGroups: Record<string, { name: string; company: string | null }[]> = {}
+  for (const row of by_coupon) {
+    const key = row.category ?? 'SEM_CATEGORIA'
+    if (!categoryGroups[key]) categoryGroups[key] = []
+    categoryGroups[key].push(...row.participants)
+  }
+  if (offline_payments.length > 0) {
+    const key = 'PAGAMENTO_OFFLINE'
+    if (!categoryGroups[key]) categoryGroups[key] = []
+    for (const g of offline_payments) {
+      for (const p of g.participants) categoryGroups[key].push({ name: p.name, company: p.company })
+    }
+  }
+
+  const by_category: CategorySummaryGroup[] = Object.entries(categoryGroups)
+    .map(([key, participants]) => ({
+      category: (
+        key === 'SEM_CATEGORIA' ? null :
+        key === 'PAGAMENTO_OFFLINE' ? 'PAGAMENTO_OFFLINE' :
+        key
+      ) as CouponCategory | 'PAGAMENTO_OFFLINE' | null,
+      label:
+        key === 'SEM_CATEGORIA' ? 'Sem Categoria' :
+        key === 'PAGAMENTO_OFFLINE' ? 'Pagamento Offline' :
+        COUPON_CATEGORY_LABELS[key as CouponCategory],
+      count: participants.length,
+      participants: participants.sort((a, b) => a.name.localeCompare(b.name)),
+    }))
+    .sort((a, b) => b.count - a.count)
+
   return {
     total_with_coupon: withCoupon.length,
     total_participants: rows.length,
@@ -490,6 +528,7 @@ export async function getCuponsSummary(editionId: string): Promise<CuponsStats> 
     avg_ticket_no_coupon: avgNoCopon !== null ? Math.round(avgNoCopon * 100) / 100 : null,
     total_discount_estimate,
     by_coupon,
+    by_category,
     top_companies,
     offline_payments,
     offline_total_paid,
