@@ -111,9 +111,10 @@ function matchesMembership(p: OverviewParticipant, f: MembershipFilter) {
 interface Props {
   participants: OverviewParticipant[]
   stats: OverviewStats
+  registrationGoal: number | null
 }
 
-export function OverviewCharts({ participants, stats }: Props) {
+export function OverviewCharts({ participants, stats, registrationGoal }: Props) {
   const CHART_COLORS = useChartColors()
   const [granularity, setGranularity] = useState<'daily' | 'weekly'>('daily')
   const [ticketFilter, setTicketFilter] = useState<TicketFilter>('all')
@@ -170,6 +171,12 @@ export function OverviewCharts({ participants, stats }: Props) {
   )
 
   const displayTotal = noFilterActive ? stats.total : filtered.length
+
+  // Meta de inscrições — sempre sobre o total real do evento, independente
+  // dos filtros Grátis/Pagos e Membros/Não-Membros (é uma meta do evento
+  // como um todo, não faria sentido "cair" ao aplicar um filtro).
+  const goalTotal = participants.length
+  const goalPct = registrationGoal ? Math.min(100, Math.round((goalTotal / registrationGoal) * 100)) : 0
 
   // Faixa de KPIs no topo — recalculada a partir dos filtros ativos.
   // states_represented depende de form_responses (fora do fetch de participants),
@@ -272,6 +279,23 @@ export function OverviewCharts({ participants, stats }: Props) {
   return (
     <div className="space-y-8">
       <OverviewKpis stats={filteredStats} />
+      {registrationGoal !== null && (
+        <div className="bg-card border border-border rounded-lg p-5 shadow-sm">
+          <div className="flex items-center justify-between mb-3">
+            <ChartLabel>Meta de Inscrições</ChartLabel>
+            <p className="text-[11px] font-mono text-muted-foreground">
+              <span className="text-foreground font-medium">{goalTotal.toLocaleString('pt-BR')}</span>
+              {' de '}{registrationGoal.toLocaleString('pt-BR')} ({goalPct}%)
+            </p>
+          </div>
+          <div className="h-2 bg-border rounded-full overflow-hidden">
+            <div
+              className="h-full rounded-full bg-primary transition-all duration-500"
+              style={{ width: `${goalPct}%` }}
+            />
+          </div>
+        </div>
+      )}
       <div className="space-y-3">
       {!noFilterActive && (
         <div className="flex items-center gap-2 text-[11px] font-mono text-muted-foreground">

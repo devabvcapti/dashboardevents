@@ -19,6 +19,47 @@ export function EventosClient({ editions }: { editions: Edition[] }) {
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [deleteError, setDeleteError] = useState<string | null>(null)
 
+  // Meta de inscrições: id em edição + rascunho + estado de salvamento
+  const [editingGoalId, setEditingGoalId] = useState<string | null>(null)
+  const [goalDraft, setGoalDraft] = useState('')
+  const [savingGoalId, setSavingGoalId] = useState<string | null>(null)
+  const [goalError, setGoalError] = useState<string | null>(null)
+
+  function startEditGoal(e: Edition) {
+    setEditingGoalId(e.id)
+    setGoalDraft(e.registration_goal != null ? String(e.registration_goal) : '')
+    setGoalError(null)
+  }
+
+  async function handleSaveGoal(id: string) {
+    const trimmed = goalDraft.trim()
+    const registrationGoal = trimmed === '' ? null : Number(trimmed)
+    if (registrationGoal !== null && (!Number.isInteger(registrationGoal) || registrationGoal <= 0)) {
+      setGoalError('Informe um número inteiro maior que zero, ou deixe em branco.')
+      return
+    }
+    setSavingGoalId(id)
+    setGoalError(null)
+    try {
+      const res = await fetch('/api/edition/update-goal', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, registrationGoal }),
+      })
+      if (!res.ok) {
+        const json = await res.json().catch(() => null)
+        setGoalError((json as { error?: string })?.error ?? 'Falha ao salvar meta.')
+        return
+      }
+      setEditingGoalId(null)
+      router.refresh()
+    } catch {
+      setGoalError('Erro de rede.')
+    } finally {
+      setSavingGoalId(null)
+    }
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setSubmitting(true)
@@ -119,6 +160,53 @@ export function EventosClient({ editions }: { editions: Edition[] }) {
                   criada {new Date(e.created_at).toLocaleDateString('pt-BR')}
                 </p>
               )}
+
+              <div className="mt-3 pt-3 border-t border-border">
+                <p className="text-[10px] font-mono tracking-wider text-muted-foreground uppercase mb-1.5">
+                  Meta de Inscrições
+                </p>
+                {editingGoalId === e.id ? (
+                  <div className="space-y-2">
+                    <Input
+                      type="number"
+                      min={1}
+                      placeholder="ex. 200"
+                      value={goalDraft}
+                      onChange={ev => setGoalDraft(ev.target.value)}
+                      className="h-8 text-sm"
+                      autoFocus
+                    />
+                    {goalError && <p role="alert" className="text-[11px] text-red-600">{goalError}</p>}
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        disabled={savingGoalId === e.id}
+                        onClick={() => handleSaveGoal(e.id)}
+                      >
+                        {savingGoalId === e.id ? 'Salvando…' : 'Salvar'}
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        disabled={savingGoalId === e.id}
+                        onClick={() => { setEditingGoalId(null); setGoalError(null) }}
+                      >
+                        Cancelar
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => startEditGoal(e)}
+                    className="text-sm text-foreground/80 hover:text-primary transition-colors text-left"
+                  >
+                    {e.registration_goal != null
+                      ? `${e.registration_goal.toLocaleString('pt-BR')} inscritos`
+                      : <span className="text-muted-foreground/50 italic">ainda não definida — clique para definir</span>}
+                  </button>
+                )}
+              </div>
 
               <div className="mt-4 pt-3 border-t border-border">
                 {confirmDeleteId === e.id ? (

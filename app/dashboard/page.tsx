@@ -45,6 +45,7 @@ export default async function DashboardPage() {
   let stats: Awaited<ReturnType<typeof getOverviewStats>> | null = null
   let participants: Awaited<ReturnType<typeof getOverviewParticipants>> = []
   let editionName: string | null = null
+  let registrationGoal: number | null = null
   let isMock = false
 
   try {
@@ -55,7 +56,9 @@ export default async function DashboardPage() {
     ])
     stats = s
     participants = p
-    editionName = editions.find(e => e.id === editionId)?.name ?? null
+    const activeEdition = editions.find(e => e.id === editionId)
+    editionName = activeEdition?.name ?? null
+    registrationGoal = activeEdition?.registration_goal ?? null
   } catch {
     stats = null
     isMock = true
@@ -86,7 +89,7 @@ export default async function DashboardPage() {
         </div>
       </div>
 
-      <OverviewCharts participants={participants} stats={display} />
+      <OverviewCharts participants={participants} stats={display} registrationGoal={registrationGoal} />
     </div>
   )
 }
