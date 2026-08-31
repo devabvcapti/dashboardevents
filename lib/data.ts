@@ -500,7 +500,7 @@ export async function getRegistrationRhythm(editionId: string): Promise<Registra
   const daysWithRegistration = Object.keys(counts).sort()
 
   // Preenche dias sem inscrição com 0 para o gráfico refletir a linha do tempo real
-  let byDay: RegistrationRhythmDay[] = []
+  const byDay: RegistrationRhythmDay[] = []
   if (daysWithRegistration.length > 0) {
     let cumulative = 0
     const cursor = new Date(`${daysWithRegistration[0]}T00:00:00Z`)
