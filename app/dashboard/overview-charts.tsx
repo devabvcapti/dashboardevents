@@ -392,7 +392,7 @@ export function OverviewCharts({ participants, stats }: Props) {
         <ChartLabel>Perfil por Tipo de Empresa</ChartLabel>
         {companyData.length === 0 ? <EmptyChart /> : (
           <ResponsiveContainer width="100%" height={Math.max(260, companyData.length * 42)}>
-            <BarChart data={companyData} layout="vertical" margin={{ top: 8, right: 48, left: 300, bottom: 0 }}
+            <BarChart data={companyData} layout="vertical" margin={{ top: 8, right: 48, left: 8, bottom: 0 }}
               barCategoryGap="30%">
               <CartesianGrid horizontal={false} stroke={GRID_COLOR} strokeOpacity={0.5} />
               <XAxis type="number" tick={AXIS_STYLE} axisLine={false} tickLine={false} allowDecimals={false} />

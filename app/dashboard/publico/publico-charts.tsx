@@ -67,7 +67,7 @@ export function PublicoCharts({ byCompanyType, total, analise }: Props) {
         {companyData.length === 0 ? <EmptyChart /> : (
           <ResponsiveContainer width="100%" height={Math.max(260, companyData.length * 42)}>
             <BarChart layout="vertical" data={companyData}
-              margin={{ top: 4, right: 48, left: 200, bottom: 4 }}
+              margin={{ top: 4, right: 48, left: 4, bottom: 4 }}
               barCategoryGap="30%">
               <XAxis type="number" hide />
               <YAxis type="category" dataKey="name" width={200}
