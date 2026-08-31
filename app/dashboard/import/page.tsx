@@ -1,6 +1,6 @@
 import { requireAdmin } from '@/lib/auth'
 import { getEditions } from '@/lib/data'
-import { getActiveEditionId } from '@/lib/edition-cookie'
+import { getActiveEdition } from '@/lib/edition-cookie'
 import Link from 'next/link'
 import { ImportClient } from './import-client'
 
@@ -12,10 +12,15 @@ export default async function ImportPage() {
 
   let editions: Awaited<ReturnType<typeof getEditions>> = []
   let activeEditionId = ''
+  let editionName: string | null = null
   try {
     editions = await getEditions()
     if (editions.length > 0) {
-      try { activeEditionId = await getActiveEditionId() } catch { activeEditionId = editions[0].id }
+      try {
+        const edition = await getActiveEdition()
+        activeEditionId = edition.id
+        editionName = edition.name
+      } catch { activeEditionId = editions[0].id; editionName = editions[0].name }
     }
   } catch { editions = [] }
 
@@ -26,7 +31,7 @@ export default async function ImportPage() {
           Pipeline
         </p>
         <h1 className="font-display text-3xl text-foreground leading-none">
-          Importar Excel
+          Importar Excel{editionName && <span className="text-muted-foreground"> — {editionName}</span>}
         </h1>
         <p className="text-sm text-muted-foreground mt-2">
           Faça upload de uma planilha exportada da plataforma ABVCAP. O sistema irá detectar o cabeçalho,

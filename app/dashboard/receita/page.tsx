@@ -1,6 +1,6 @@
 import { requireAuth } from '@/lib/auth'
 import { getRevenueAnalysis } from '@/lib/data'
-import { getActiveEditionId } from '@/lib/edition-cookie'
+import { getActiveEdition } from '@/lib/edition-cookie'
 import Link from 'next/link'
 import { StatCard } from '@/components/stat-card'
 import { ReceitaCharts } from './receita-charts'
@@ -18,7 +18,12 @@ export default async function ReceitaPage() {
   await requireAuth()
 
   let editionId: string | null = null
-  try { editionId = await getActiveEditionId() } catch { editionId = null }
+  let editionName: string | null = null
+  try {
+    const edition = await getActiveEdition()
+    editionId = edition.id
+    editionName = edition.name
+  } catch { editionId = null }
 
   if (!editionId) {
     return (
@@ -61,7 +66,9 @@ export default async function ReceitaPage() {
           <p className="text-[10px] font-mono tracking-[0.22em] text-muted-foreground uppercase mb-1">
             Análise
           </p>
-          <h1 className="font-display text-3xl text-foreground leading-none">Análise de Receita</h1>
+          <h1 className="font-display text-3xl text-foreground leading-none">
+            Análise de Receita{editionName && <span className="text-muted-foreground"> — {editionName}</span>}
+          </h1>
           <p className="text-sm text-muted-foreground mt-2">
             Receita total, ticket médio por categoria e distribuição de valores de ingresso.
           </p>

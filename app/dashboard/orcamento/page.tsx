@@ -1,6 +1,6 @@
 import { requireAuth } from '@/lib/auth'
 import { getBudgetSummary } from '@/lib/data'
-import { getActiveEditionId } from '@/lib/edition-cookie'
+import { getActiveEdition } from '@/lib/edition-cookie'
 import { OrcamentoCharts } from './orcamento-charts'
 
 export const dynamic = 'force-dynamic'
@@ -11,10 +11,13 @@ export default async function OrcamentoPage() {
 
   let summary: Awaited<ReturnType<typeof getBudgetSummary>> = null
   let editionId = ''
+  let editionName: string | null = null
   let loadError = false
 
   try {
-    editionId = await getActiveEditionId()
+    const edition = await getActiveEdition()
+    editionId = edition.id
+    editionName = edition.name
     summary = await getBudgetSummary(editionId)
   } catch {
     loadError = true
@@ -27,7 +30,9 @@ export default async function OrcamentoPage() {
           <p className="text-[10px] font-mono tracking-[0.22em] text-muted-foreground uppercase mb-1">
             Financeiro
           </p>
-          <h1 className="font-display text-3xl text-foreground leading-none">Orçamento</h1>
+          <h1 className="font-display text-3xl text-foreground leading-none">
+            Orçamento{editionName && <span className="text-muted-foreground"> — {editionName}</span>}
+          </h1>
           <p className="text-sm text-muted-foreground mt-2">
             Acompanhamento orçado × realizado por categoria do evento.
           </p>

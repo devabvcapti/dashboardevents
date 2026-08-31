@@ -1,6 +1,6 @@
 import { requireAuth } from '@/lib/auth'
 import { getRegistrationRhythm } from '@/lib/data'
-import { getActiveEditionId } from '@/lib/edition-cookie'
+import { getActiveEdition } from '@/lib/edition-cookie'
 import { RitmoCharts } from './ritmo-charts'
 
 export const dynamic = 'force-dynamic'
@@ -14,11 +14,13 @@ export default async function RitmoPage() {
   await requireAuth()
 
   let rhythm: Awaited<ReturnType<typeof getRegistrationRhythm>> | null = null
+  let editionName: string | null = null
   let loadError = false
 
   try {
-    const editionId = await getActiveEditionId()
-    rhythm = await getRegistrationRhythm(editionId)
+    const edition = await getActiveEdition()
+    editionName = edition.name
+    rhythm = await getRegistrationRhythm(edition.id)
   } catch {
     loadError = true
   }
@@ -30,7 +32,9 @@ export default async function RitmoPage() {
           <p className="text-[10px] font-mono tracking-[0.22em] text-muted-foreground uppercase mb-1">
             Análise
           </p>
-          <h1 className="font-display text-3xl text-foreground leading-none">Ritmo de Inscrições</h1>
+          <h1 className="font-display text-3xl text-foreground leading-none">
+            Ritmo de Inscrições{editionName && <span className="text-muted-foreground"> — {editionName}</span>}
+          </h1>
           <p className="text-sm text-muted-foreground mt-2">
             Evolução diária e acumulada das inscrições ao longo do evento.
           </p>

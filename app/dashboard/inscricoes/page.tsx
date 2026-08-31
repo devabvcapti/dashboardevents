@@ -1,6 +1,6 @@
 import { requireAuth } from '@/lib/auth'
 import { getParticipantsPaginated } from '@/lib/data'
-import { getActiveEditionId } from '@/lib/edition-cookie'
+import { getActiveEdition } from '@/lib/edition-cookie'
 import Link from 'next/link'
 import { InscricoesClient } from './inscricoes-client'
 import type { TicketMembership, CompanySegment } from '@/lib/database.types'
@@ -58,7 +58,12 @@ export default async function InscricoesPage({
   await requireAuth()
 
   let editionId: string | null = null
-  try { editionId = await getActiveEditionId() } catch { editionId = null }
+  let editionName: string | null = null
+  try {
+    const edition = await getActiveEdition()
+    editionId = edition.id
+    editionName = edition.name
+  } catch { editionId = null }
 
   if (!editionId) {
     return (
@@ -111,7 +116,9 @@ export default async function InscricoesPage({
           <p className="text-[10px] font-mono tracking-[0.22em] text-muted-foreground uppercase mb-1">
             Gestão
           </p>
-          <h1 className="font-display text-3xl text-foreground leading-none">Inscrições</h1>
+          <h1 className="font-display text-3xl text-foreground leading-none">
+            Inscrições{editionName && <span className="text-muted-foreground"> — {editionName}</span>}
+          </h1>
         </div>
         <p className="text-[11px] font-mono text-muted-foreground/60 pb-0.5">
           {count.toLocaleString('pt-BR')} participante{count !== 1 ? 's' : ''}

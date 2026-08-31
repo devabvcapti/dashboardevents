@@ -1,6 +1,6 @@
 import { requireAuth } from '@/lib/auth'
 import { getTicketMembershipSummary, getTicketNameSummary } from '@/lib/data'
-import { getActiveEditionId } from '@/lib/edition-cookie'
+import { getActiveEdition } from '@/lib/edition-cookie'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { TicketBadge } from '@/components/status-badge'
 import type { TicketMembership } from '@/lib/database.types'
@@ -11,13 +11,15 @@ export default async function IngressosPage() {
   await requireAuth()
   let summary: { ticket_membership: TicketMembership; count: number }[] = []
   let nameSummary: Awaited<ReturnType<typeof getTicketNameSummary>> = []
+  let editionName: string | null = null
   let isMock = false
 
   try {
-    const editionId = await getActiveEditionId()
+    const edition = await getActiveEdition()
+    editionName = edition.name
     ;[summary, nameSummary] = await Promise.all([
-      getTicketMembershipSummary(editionId),
-      getTicketNameSummary(editionId),
+      getTicketMembershipSummary(edition.id),
+      getTicketNameSummary(edition.id),
     ])
   } catch {
     isMock = true
@@ -33,7 +35,9 @@ export default async function IngressosPage() {
           <p className="text-[10px] font-mono tracking-[0.22em] text-muted-foreground uppercase mb-1">
             Controle
           </p>
-          <h1 className="font-display text-3xl text-foreground leading-none">Ingressos</h1>
+          <h1 className="font-display text-3xl text-foreground leading-none">
+            Ingressos{editionName && <span className="text-muted-foreground"> — {editionName}</span>}
+          </h1>
         </div>
         <div className="flex items-center gap-3 pb-0.5">
           {isMock && (

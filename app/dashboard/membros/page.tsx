@@ -1,6 +1,6 @@
 import { requireAuth } from '@/lib/auth'
 import { getMemberAnalysis } from '@/lib/data'
-import { getActiveEditionId } from '@/lib/edition-cookie'
+import { getActiveEdition } from '@/lib/edition-cookie'
 import Link from 'next/link'
 import { MembrosCharts } from './membros-charts'
 
@@ -11,7 +11,12 @@ export default async function MembrosPage() {
   await requireAuth()
 
   let editionId: string | null = null
-  try { editionId = await getActiveEditionId() } catch { editionId = null }
+  let editionName: string | null = null
+  try {
+    const edition = await getActiveEdition()
+    editionId = edition.id
+    editionName = edition.name
+  } catch { editionId = null }
 
   if (!editionId) {
     return (
@@ -46,7 +51,9 @@ export default async function MembrosPage() {
           <p className="text-[10px] font-mono tracking-[0.22em] text-muted-foreground uppercase mb-1">
             Análise
           </p>
-          <h1 className="font-display text-3xl text-foreground leading-none">Análise de Membros</h1>
+          <h1 className="font-display text-3xl text-foreground leading-none">
+            Análise de Membros{editionName && <span className="text-muted-foreground"> — {editionName}</span>}
+          </h1>
           <p className="text-sm text-muted-foreground mt-2">
             Comparativo entre membros e não-membros por tipo de empresa, com taxa de adesão por segmento.
           </p>

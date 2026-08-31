@@ -1,6 +1,6 @@
 import { requireAuth } from '@/lib/auth'
 import { getCuponsSummary } from '@/lib/data'
-import { getActiveEditionId } from '@/lib/edition-cookie'
+import { getActiveEdition } from '@/lib/edition-cookie'
 import { OfflinePaymentsTable } from './offline-payments-table'
 
 export const dynamic = 'force-dynamic'
@@ -13,11 +13,13 @@ export default async function CuponsPage() {
   await requireAuth()
 
   let stats: Awaited<ReturnType<typeof getCuponsSummary>> | null = null
+  let editionName: string | null = null
   let loadError = false
 
   try {
-    const editionId = await getActiveEditionId()
-    stats = await getCuponsSummary(editionId)
+    const edition = await getActiveEdition()
+    editionName = edition.name
+    stats = await getCuponsSummary(edition.id)
   } catch {
     loadError = true
   }
@@ -33,7 +35,9 @@ export default async function CuponsPage() {
           <p className="text-[10px] font-mono tracking-[0.22em] text-muted-foreground uppercase mb-1">
             Análise
           </p>
-          <h1 className="font-display text-3xl text-foreground leading-none">Cupons</h1>
+          <h1 className="font-display text-3xl text-foreground leading-none">
+            Cupons{editionName && <span className="text-muted-foreground"> — {editionName}</span>}
+          </h1>
           <p className="text-sm text-muted-foreground mt-2">
             Utilização de cupons de desconto por participantes e empresas.
           </p>

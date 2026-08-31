@@ -1,6 +1,6 @@
 import { requireAuth } from '@/lib/auth'
 import { getOverviewStats, getCompanySegmentSummary, getTicketMembershipSummary, getPublicoAnalysis } from '@/lib/data'
-import { getActiveEditionId } from '@/lib/edition-cookie'
+import { getActiveEdition } from '@/lib/edition-cookie'
 import { MOCK_STATS, MOCK_BY_COMPANY_TYPE_ENUM, MOCK_BY_TICKET_TYPE } from '@/lib/mock-data'
 import { PublicoCharts } from './publico-charts'
 import type { PublicoAnalysis } from '@/lib/data'
@@ -17,15 +17,17 @@ export default async function PublicoPage() {
   let byCompanyType: { type: string; count: number }[] = []
   let byTicketType: { type: string; count: number }[] = []
   let analise: PublicoAnalysis = EMPTY_ANALISE
+  let editionName: string | null = null
   let isMock = false
 
   try {
-    const editionId = await getActiveEditionId()
+    const edition = await getActiveEdition()
+    editionName = edition.name
     const [stats, segment, ticket, pub] = await Promise.all([
-      getOverviewStats(editionId),
-      getCompanySegmentSummary(editionId),
-      getTicketMembershipSummary(editionId),
-      getPublicoAnalysis(editionId),
+      getOverviewStats(edition.id),
+      getCompanySegmentSummary(edition.id),
+      getTicketMembershipSummary(edition.id),
+      getPublicoAnalysis(edition.id),
     ])
     total = stats.total
     byCompanyType = segment
@@ -45,7 +47,9 @@ export default async function PublicoPage() {
           <p className="text-[10px] font-mono tracking-[0.22em] text-muted-foreground uppercase mb-1">
             Analytics
           </p>
-          <h1 className="font-display text-3xl text-foreground leading-none">Análise de Público</h1>
+          <h1 className="font-display text-3xl text-foreground leading-none">
+            Análise de Público{editionName && <span className="text-muted-foreground"> — {editionName}</span>}
+          </h1>
         </div>
         <div className="flex items-center gap-3 pb-0.5">
           {isMock && (
