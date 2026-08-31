@@ -6,7 +6,8 @@ import {
   PieChart, Pie, Cell, LineChart, Line, CartesianGrid, LabelList,
 } from 'recharts'
 import { useTheme } from 'next-themes'
-import type { OverviewParticipant } from '@/lib/data'
+import type { OverviewParticipant, OverviewStats } from '@/lib/data'
+import { OverviewKpis } from './overview-kpis'
 
 const NAVY_LIGHT = '#112468'
 const NAVY_DARK  = '#6b9be8'
@@ -97,10 +98,10 @@ const FILTER_LABEL: Record<TicketFilter, string> = {
 
 interface Props {
   participants: OverviewParticipant[]
-  totalInscritos: number
+  stats: OverviewStats
 }
 
-export function OverviewCharts({ participants, totalInscritos }: Props) {
+export function OverviewCharts({ participants, stats }: Props) {
   const CHART_COLORS = useChartColors()
   const [granularity, setGranularity] = useState<'daily' | 'weekly'>('daily')
   const [filter, setFilter] = useState<TicketFilter>('all')
@@ -121,7 +122,35 @@ export function OverviewCharts({ participants, totalInscritos }: Props) {
     return participants.filter(p => filter === 'free' ? p.valor_efetivo === 0 : p.valor_efetivo > 0)
   }, [participants, filter])
 
-  const displayTotal = filter === 'all' ? totalInscritos : filtered.length
+  const displayTotal = filter === 'all' ? stats.total : filtered.length
+
+  // Faixa de KPIs no topo — recalculada a partir do filtro Grátis/Pagos.
+  // states_represented depende de form_responses (fora do fetch de participants),
+  // então mantém o valor não filtrado nesse único campo.
+  const filteredStats: OverviewStats = useMemo(() => {
+    if (filter === 'all') return stats
+    let membro = 0
+    let totalRevenue = 0
+    let paidSum = 0
+    let paidCount = 0
+    const companies = new Set<string>()
+    for (const p of filtered) {
+      if (p.ticket_membership === 'MEMBRO') membro++
+      totalRevenue += p.valor_efetivo
+      if (p.valor_efetivo > 0) { paidSum += p.valor_efetivo; paidCount++ }
+      if (p.company) companies.add(p.company)
+    }
+    const total = filtered.length
+    return {
+      total,
+      membro,
+      nao_membro: total - membro,
+      total_revenue: totalRevenue,
+      avg_ticket: paidCount > 0 ? paidSum / paidCount : 0,
+      unique_companies: companies.size,
+      states_represented: stats.states_represented,
+    }
+  }, [filtered, filter, stats])
 
   // Membros vs Não-Membros (recalculado a partir do filtro Grátis/Pagos)
   const byTicketType = useMemo(() => {
@@ -190,7 +219,9 @@ export function OverviewCharts({ participants, totalInscritos }: Props) {
   const timelineName = filter === 'free' ? 'Inscrições grátis' : filter === 'paid' ? 'Inscrições pagas' : 'Inscrições'
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-8">
+      <OverviewKpis stats={filteredStats} />
+      <div className="space-y-3">
       {filter !== 'all' && (
         <div className="flex items-center gap-2 text-[11px] font-mono text-muted-foreground">
           <span>Filtrando por: <span className="text-foreground">{FILTER_LABEL[filter]}</span></span>
@@ -371,6 +402,7 @@ export function OverviewCharts({ participants, totalInscritos }: Props) {
             </LineChart>
           </ResponsiveContainer>
         )}
+      </div>
       </div>
       </div>
     </div>

@@ -2,7 +2,6 @@ import { requireAuth } from '@/lib/auth'
 import { getOverviewStats, getOverviewParticipants } from '@/lib/data'
 import { getActiveEditionId } from '@/lib/edition-cookie'
 import Link from 'next/link'
-import { OverviewKpis } from './overview-kpis'
 import { OverviewCharts } from './overview-charts'
 import type { OverviewStats } from '@/lib/data'
 
@@ -84,9 +83,7 @@ export default async function DashboardPage() {
         </div>
       </div>
 
-      <OverviewKpis stats={display} />
-
-      <OverviewCharts participants={participants} totalInscritos={display.total} />
+      <OverviewCharts participants={participants} stats={display} />
     </div>
   )
 }
