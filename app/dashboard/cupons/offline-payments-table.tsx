@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
 import type { OfflinePaymentGroup } from '@/lib/data'
 
 const formatBRL = (v: number) =>
@@ -89,6 +90,7 @@ export function OfflinePaymentsTable({ groups }: { groups: OfflinePaymentGroup[]
         <thead>
           <tr className="border-b border-border bg-muted/30">
             <th className="text-left px-5 py-3 text-[10px] font-mono tracking-widest text-muted-foreground uppercase">Cupom</th>
+            <th className="text-left px-5 py-3 text-[10px] font-mono tracking-widest text-muted-foreground uppercase">Categoria</th>
             <th className="text-left px-5 py-3 text-[10px] font-mono tracking-widest text-muted-foreground uppercase">Participante</th>
             <th className="text-left px-5 py-3 text-[10px] font-mono tracking-widest text-muted-foreground uppercase">Empresa</th>
             <th className="text-right px-5 py-3 text-[10px] font-mono tracking-widest text-muted-foreground uppercase">Valor Pago</th>
@@ -100,9 +102,16 @@ export function OfflinePaymentsTable({ groups }: { groups: OfflinePaymentGroup[]
             group.participants.map((p, i) => (
               <tr key={p.id} className="border-b border-border last:border-0 hover:bg-accent/30 transition-colors">
                 {i === 0 && (
-                  <td className="px-5 py-3 font-mono font-medium text-foreground align-top" rowSpan={group.participants.length}>
-                    {group.coupon_code}
-                  </td>
+                  <>
+                    <td className="px-5 py-3 font-mono font-medium text-foreground align-top" rowSpan={group.participants.length}>
+                      {group.coupon_code}
+                    </td>
+                    <td className="px-5 py-3 align-top" rowSpan={group.participants.length}>
+                      <Badge variant="outline" className="text-[10px] font-mono">
+                        Pagamento Offline
+                      </Badge>
+                    </td>
+                  </>
                 )}
                 <td className="px-5 py-3 text-foreground/90">{p.name}</td>
                 <td className="px-5 py-3 text-[11px] font-mono text-muted-foreground/70">{p.company ?? '—'}</td>
