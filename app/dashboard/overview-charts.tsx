@@ -89,11 +89,23 @@ function toWeekly(daily: { date: string; count: number }[]) {
 }
 
 type TicketFilter = 'all' | 'free' | 'paid'
+type MembershipFilter = 'all' | 'MEMBRO' | 'NAO_MEMBRO'
 
-const FILTER_LABEL: Record<TicketFilter, string> = {
-  all: 'Todos',
+const TICKET_FILTER_LABEL: Record<Exclude<TicketFilter, 'all'>, string> = {
   free: 'Grátis (R$0)',
   paid: 'Pagos',
+}
+const MEMBERSHIP_FILTER_LABEL: Record<Exclude<MembershipFilter, 'all'>, string> = {
+  MEMBRO: 'Membros',
+  NAO_MEMBRO: 'Não Membros',
+}
+
+function matchesTicket(p: OverviewParticipant, f: TicketFilter) {
+  if (f === 'all') return true
+  return f === 'free' ? p.valor_efetivo === 0 : p.valor_efetivo > 0
+}
+function matchesMembership(p: OverviewParticipant, f: MembershipFilter) {
+  return f === 'all' || p.ticket_membership === f
 }
 
 interface Props {
@@ -104,31 +116,66 @@ interface Props {
 export function OverviewCharts({ participants, stats }: Props) {
   const CHART_COLORS = useChartColors()
   const [granularity, setGranularity] = useState<'daily' | 'weekly'>('daily')
-  const [filter, setFilter] = useState<TicketFilter>('all')
-  const [showList, setShowList] = useState(false)
+  const [ticketFilter, setTicketFilter] = useState<TicketFilter>('all')
+  const [membershipFilter, setMembershipFilter] = useState<MembershipFilter>('all')
+  const [showTicketList, setShowTicketList] = useState(false)
+  const [showMembershipList, setShowMembershipList] = useState(false)
+
+  const noFilterActive = ticketFilter === 'all' && membershipFilter === 'all'
 
   function handleTicketBarClick(clicked: 'free' | 'paid') {
-    if (filter === clicked) {
-      setFilter('all')
-      setShowList(false)
+    if (ticketFilter === clicked) {
+      setTicketFilter('all')
+      setShowTicketList(false)
     } else {
-      setFilter(clicked)
-      setShowList(true)
+      setTicketFilter(clicked)
+      setShowTicketList(true)
     }
   }
 
-  const filtered = useMemo(() => {
-    if (filter === 'all') return participants
-    return participants.filter(p => filter === 'free' ? p.valor_efetivo === 0 : p.valor_efetivo > 0)
-  }, [participants, filter])
+  function handleMembershipClick(clicked: 'MEMBRO' | 'NAO_MEMBRO') {
+    if (membershipFilter === clicked) {
+      setMembershipFilter('all')
+      setShowMembershipList(false)
+    } else {
+      setMembershipFilter(clicked)
+      setShowMembershipList(true)
+    }
+  }
 
-  const displayTotal = filter === 'all' ? stats.total : filtered.length
+  function clearAllFilters() {
+    setTicketFilter('all')
+    setMembershipFilter('all')
+    setShowTicketList(false)
+    setShowMembershipList(false)
+  }
 
-  // Faixa de KPIs no topo — recalculada a partir do filtro Grátis/Pagos.
+  // Filtro combinado (Grátis/Pagos + Membros/Não-Membros) — alimenta o
+  // perfil por empresa, a linha do tempo e a faixa de KPIs.
+  const filtered = useMemo(
+    () => participants.filter(p => matchesTicket(p, ticketFilter) && matchesMembership(p, membershipFilter)),
+    [participants, ticketFilter, membershipFilter]
+  )
+
+  // Cada card fonte de filtro (Membros/Não-Membros e Grátis/Pagos) se
+  // recalcula cruzado pela OUTRA dimensão, mas nunca pela própria — senão
+  // clicar numa fatia faria as demais desaparecerem do próprio gráfico.
+  const byMembershipDimension = useMemo(
+    () => participants.filter(p => matchesTicket(p, ticketFilter)),
+    [participants, ticketFilter]
+  )
+  const byTicketDimension = useMemo(
+    () => participants.filter(p => matchesMembership(p, membershipFilter)),
+    [participants, membershipFilter]
+  )
+
+  const displayTotal = noFilterActive ? stats.total : filtered.length
+
+  // Faixa de KPIs no topo — recalculada a partir dos filtros ativos.
   // states_represented depende de form_responses (fora do fetch de participants),
   // então mantém o valor não filtrado nesse único campo.
   const filteredStats: OverviewStats = useMemo(() => {
-    if (filter === 'all') return stats
+    if (noFilterActive) return stats
     let membro = 0
     let totalRevenue = 0
     let paidSum = 0
@@ -150,23 +197,23 @@ export function OverviewCharts({ participants, stats }: Props) {
       unique_companies: companies.size,
       states_represented: stats.states_represented,
     }
-  }, [filtered, filter, stats])
+  }, [filtered, noFilterActive, stats])
 
-  // Membros vs Não-Membros (recalculado a partir do filtro Grátis/Pagos)
+  // Membros vs Não-Membros — cruzado pelo filtro Grátis/Pagos
   const byTicketType = useMemo(() => {
     let membro = 0
     let naoMembro = 0
-    for (const p of filtered) {
+    for (const p of byMembershipDimension) {
       if (p.ticket_membership === 'MEMBRO') membro++
       else naoMembro++
     }
     return [
-      { type: 'Membros', count: membro },
-      { type: 'Não Membros', count: naoMembro },
+      { type: 'Membros', count: membro, groupKey: 'MEMBRO' as const },
+      { type: 'Não Membros', count: naoMembro, groupKey: 'NAO_MEMBRO' as const },
     ]
-  }, [filtered])
+  }, [byMembershipDimension])
 
-  // Perfil por Tipo de Empresa
+  // Perfil por Tipo de Empresa — respeita os dois filtros
   const companyData = useMemo(() => {
     const counts: Record<string, number> = {}
     for (const p of filtered) {
@@ -184,26 +231,25 @@ export function OverviewCharts({ participants, stats }: Props) {
       .sort((a, b) => b.count - a.count)
   }, [filtered])
 
-  // Grátis vs Pagos — sempre calculado sobre TODOS os participantes (é o
-  // controle do filtro, não um resultado dele)
-  const freeCount = useMemo(() => participants.filter(p => p.valor_efetivo === 0).length, [participants])
-  const paidCount = participants.length - freeCount
-  const freePct = participants.length > 0 ? Math.round((freeCount / participants.length) * 100) : 0
-  const freeChartData = participants.length > 0
+  // Grátis vs Pagos — cruzado pelo filtro Membros/Não-Membros
+  const freeCount = useMemo(() => byTicketDimension.filter(p => p.valor_efetivo === 0).length, [byTicketDimension])
+  const paidCount = byTicketDimension.length - freeCount
+  const freePct = byTicketDimension.length > 0 ? Math.round((freeCount / byTicketDimension.length) * 100) : 0
+  const freeChartData = byTicketDimension.length > 0
     ? [
         { type: 'Grátis (R$0)', count: freeCount, groupKey: 'free' as const },
         { type: 'Pagos', count: paidCount, groupKey: 'paid' as const },
       ]
     : []
 
-  const listParticipants = useMemo(() => {
-    if (!showList || filter === 'all') return []
-    return filtered
+  const filteredParticipantList = useMemo(
+    () => filtered
       .map(p => ({ id: p.id, name: p.name, company: p.company }))
-      .sort((a, b) => a.name.localeCompare(b.name))
-  }, [filtered, filter, showList])
+      .sort((a, b) => a.name.localeCompare(b.name)),
+    [filtered]
+  )
 
-  // Linha — inscrições ao longo do tempo (já reflete o filtro Grátis/Pagos)
+  // Linha — inscrições ao longo do tempo (reflete os filtros ativos)
   const timelineBase = useMemo(() => buildTimeline(filtered), [filtered])
   const timelineData = useMemo(() => {
     const base = granularity === 'weekly' ? toWeekly(timelineBase) : timelineBase
@@ -216,26 +262,27 @@ export function OverviewCharts({ participants, stats }: Props) {
     .filter((_, i) => i % tickStep === 0 || i === timelineData.length - 1)
     .map(d => d.dateLabel)
 
-  const timelineName = filter === 'free' ? 'Inscrições grátis' : filter === 'paid' ? 'Inscrições pagas' : 'Inscrições'
+  const timelineName = ticketFilter === 'free' ? 'Inscrições grátis' : ticketFilter === 'paid' ? 'Inscrições pagas' : 'Inscrições'
+
+  const activeFilterLabels = [
+    ticketFilter !== 'all' ? TICKET_FILTER_LABEL[ticketFilter] : null,
+    membershipFilter !== 'all' ? MEMBERSHIP_FILTER_LABEL[membershipFilter] : null,
+  ].filter((v): v is string => v !== null)
 
   return (
     <div className="space-y-8">
       <OverviewKpis stats={filteredStats} />
       <div className="space-y-3">
-      {filter !== 'all' && (
+      {!noFilterActive && (
         <div className="flex items-center gap-2 text-[11px] font-mono text-muted-foreground">
-          <span>Filtrando por: <span className="text-foreground">{FILTER_LABEL[filter]}</span></span>
-          <button
-            type="button"
-            onClick={() => { setFilter('all'); setShowList(false) }}
-            className="text-primary hover:underline"
-          >
+          <span>Filtrando por: <span className="text-foreground">{activeFilterLabels.join(' e ')}</span></span>
+          <button type="button" onClick={clearAllFilters} className="text-primary hover:underline">
             limpar
           </button>
         </div>
       )}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-      {/* OV-03 — Donut Membros vs Não-Membros com label central */}
+      {/* OV-03 — Donut Membros vs Não-Membros com label central — clicável */}
       <div className="bg-card border border-border rounded-lg p-5 shadow-sm">
         <ChartLabel>Membros vs Não-Membros</ChartLabel>
         {byTicketType.every(t => t.count === 0) ? <EmptyChart /> : (
@@ -251,9 +298,19 @@ export function OverviewCharts({ participants, stats }: Props) {
                   outerRadius={105}
                   paddingAngle={2}
                   stroke="transparent"
+                  cursor="pointer"
+                  onClick={(d: unknown) => {
+                    const item = d as { payload?: { groupKey?: string }; groupKey?: string }
+                    const clicked = item?.payload?.groupKey ?? item?.groupKey
+                    if (clicked === 'MEMBRO' || clicked === 'NAO_MEMBRO') handleMembershipClick(clicked)
+                  }}
                 >
-                  {byTicketType.map((_, i) => (
-                    <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
+                  {byTicketType.map((d, i) => (
+                    <Cell
+                      key={i}
+                      fill={CHART_COLORS[i % CHART_COLORS.length]}
+                      fillOpacity={membershipFilter === 'all' || membershipFilter === d.groupKey ? 1 : 0.35}
+                    />
                   ))}
                 </Pie>
                 <Tooltip
@@ -267,6 +324,13 @@ export function OverviewCharts({ participants, stats }: Props) {
               <p className="text-[9px] font-mono text-muted-foreground uppercase tracking-wider mt-1">total</p>
             </div>
           </div>
+        )}
+        {showMembershipList && membershipFilter !== 'all' && (
+          <TicketParticipantList
+            title={MEMBERSHIP_FILTER_LABEL[membershipFilter]}
+            participants={filteredParticipantList}
+            onClose={() => { setMembershipFilter('all'); setShowMembershipList(false) }}
+          />
         )}
       </div>
 
@@ -335,7 +399,7 @@ export function OverviewCharts({ participants, stats }: Props) {
                       <Cell
                         key={i}
                         fill={CHART_COLORS[i % CHART_COLORS.length]}
-                        fillOpacity={filter === 'all' || filter === d.groupKey ? 1 : 0.35}
+                        fillOpacity={ticketFilter === 'all' || ticketFilter === d.groupKey ? 1 : 0.35}
                       />
                     ))}
                   </Bar>
@@ -344,11 +408,11 @@ export function OverviewCharts({ participants, stats }: Props) {
             </div>
           </div>
         )}
-        {showList && filter !== 'all' && (
+        {showTicketList && ticketFilter !== 'all' && (
           <TicketParticipantList
-            title={FILTER_LABEL[filter]}
-            participants={listParticipants}
-            onClose={() => { setFilter('all'); setShowList(false) }}
+            title={TICKET_FILTER_LABEL[ticketFilter]}
+            participants={filteredParticipantList}
+            onClose={() => { setTicketFilter('all'); setShowTicketList(false) }}
           />
         )}
       </div>
