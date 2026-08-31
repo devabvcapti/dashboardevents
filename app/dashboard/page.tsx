@@ -1,5 +1,5 @@
 import { requireAuth } from '@/lib/auth'
-import { getOverviewStats, getOverviewParticipants } from '@/lib/data'
+import { getOverviewStats, getOverviewParticipants, getEditions } from '@/lib/data'
 import { getActiveEditionId } from '@/lib/edition-cookie'
 import Link from 'next/link'
 import { OverviewCharts } from './overview-charts'
@@ -44,15 +44,18 @@ export default async function DashboardPage() {
 
   let stats: Awaited<ReturnType<typeof getOverviewStats>> | null = null
   let participants: Awaited<ReturnType<typeof getOverviewParticipants>> = []
+  let editionName: string | null = null
   let isMock = false
 
   try {
-    const [s, p] = await Promise.all([
+    const [s, p, editions] = await Promise.all([
       getOverviewStats(editionId),
       getOverviewParticipants(editionId),
+      getEditions(),
     ])
     stats = s
     participants = p
+    editionName = editions.find(e => e.id === editionId)?.name ?? null
   } catch {
     stats = null
     isMock = true
@@ -68,7 +71,7 @@ export default async function DashboardPage() {
             Painel de Controle
           </p>
           <h1 className="font-display text-3xl text-foreground leading-none">
-            Visão Geral
+            Visão Geral{editionName && <span className="text-muted-foreground"> — {editionName}</span>}
           </h1>
         </div>
         <div className="flex items-center gap-3 pb-0.5">
