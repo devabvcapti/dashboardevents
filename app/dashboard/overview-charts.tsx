@@ -67,11 +67,19 @@ function toWeekly(daily: { date: string; count: number; paidCount: number }[]) {
     .map(([date, v]) => ({ date, ...v }))
 }
 
+interface TicketParticipant { id: string; name: string; company: string | null }
+
 interface Props {
   byTicketType: { type: string; count: number }[]
   byCompanyType: { type: string; count: number }[]
   registrationsByDay: { date: string; count: number; paidCount: number }[]
-  freeTickets: { free: number; paid: number; total: number }
+  freeTickets: {
+    free: number
+    paid: number
+    total: number
+    freeParticipants: TicketParticipant[]
+    paidParticipants: TicketParticipant[]
+  }
   totalInscritos: number
 }
 
@@ -85,6 +93,7 @@ export function OverviewCharts({
   const CHART_COLORS = useChartColors()
   const [granularity, setGranularity] = useState<'daily' | 'weekly'>('daily')
   const [ticketFilter, setTicketFilter] = useState<'all' | 'paid'>('all')
+  const [expandedTicketGroup, setExpandedTicketGroup] = useState<'Grátis (R$0)' | 'Pagos' | null>(null)
 
   const timelineData = useMemo(() => {
     const base = granularity === 'weekly' ? toWeekly(registrationsByDay) : registrationsByDay
@@ -203,7 +212,18 @@ export function OverviewCharts({
                   <XAxis dataKey="type" tick={AXIS_STYLE} axisLine={false} tickLine={false} />
                   <YAxis tick={AXIS_STYLE} axisLine={false} tickLine={false} allowDecimals={false} />
                   <Tooltip contentStyle={TOOLTIP_STYLE} cursor={{ fill: 'oklch(0.21 0.11 265 / 0.04)' }} />
-                  <Bar dataKey="count" name="Inscritos" radius={[3, 3, 0, 0]} maxBarSize={48}>
+                  <Bar
+                    dataKey="count"
+                    name="Inscritos"
+                    radius={[3, 3, 0, 0]}
+                    maxBarSize={48}
+                    cursor="pointer"
+                    onClick={(d: { type?: string }) => {
+                      if (d.type !== 'Grátis (R$0)' && d.type !== 'Pagos') return
+                      const clicked = d.type
+                      setExpandedTicketGroup(prev => prev === clicked ? null : clicked)
+                    }}
+                  >
                     <Cell fill={CHART_COLORS[0]} />
                     <Cell fill={CHART_COLORS[1]} />
                   </Bar>
@@ -211,6 +231,13 @@ export function OverviewCharts({
               </ResponsiveContainer>
             </div>
           </div>
+        )}
+        {expandedTicketGroup && (
+          <TicketParticipantList
+            title={expandedTicketGroup}
+            participants={expandedTicketGroup === 'Grátis (R$0)' ? freeTickets.freeParticipants : freeTickets.paidParticipants}
+            onClose={() => setExpandedTicketGroup(null)}
+          />
         )}
       </div>
 
@@ -282,6 +309,49 @@ export function OverviewCharts({
           </ResponsiveContainer>
         )}
       </div>
+    </div>
+  )
+}
+
+function TicketParticipantList({
+  title,
+  participants,
+  onClose,
+}: {
+  title: string
+  participants: TicketParticipant[]
+  onClose: () => void
+}) {
+  return (
+    <div className="mt-4 pt-4 border-t border-border">
+      <div className="flex items-center justify-between mb-3">
+        <p className="text-[11px] font-mono text-muted-foreground">
+          {title} <span className="text-muted-foreground/50">({participants.length})</span>
+        </p>
+        <button
+          type="button"
+          onClick={onClose}
+          className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground hover:text-foreground transition-colors"
+        >
+          Fechar ✕
+        </button>
+      </div>
+      {participants.length === 0 ? (
+        <p className="text-[11px] font-mono text-muted-foreground/40">sem participantes</p>
+      ) : (
+        <div className="max-h-60 overflow-y-auto space-y-1.5 pr-1">
+          {participants.map(p => (
+            <div key={p.id} className="flex items-baseline justify-between gap-3 text-sm">
+              <span className="text-foreground/90 truncate">{p.name}</span>
+              {p.company && (
+                <span className="text-[11px] font-mono text-muted-foreground/60 shrink-0 truncate max-w-[45%]">
+                  {p.company}
+                </span>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   )
 }

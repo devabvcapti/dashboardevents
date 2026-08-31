@@ -50,7 +50,9 @@ export default async function DashboardPage() {
   let byTicketType: { type: string; count: number }[] = []
   let byCompanyType: { type: string; count: number }[] = []
   let registrationsByDay: { date: string; count: number; paidCount: number }[] = []
-  let freeTickets = { free: 0, paid: 0, total: 0 }
+  let freeTickets: Awaited<ReturnType<typeof getFreeTicketStats>> = {
+    free: 0, paid: 0, total: 0, freeParticipants: [], paidParticipants: [],
+  }
   let isMock = false
 
   try {

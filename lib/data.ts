@@ -118,17 +118,46 @@ export async function getTicketMembershipSummary(editionId: string): Promise<Tic
 
 // ─── Free Tickets (valor_efetivo = 0) ────────────────────────────────────────
 
-export interface FreeTicketStats { free: number; paid: number; total: number }
+export interface FreeTicketParticipant { id: string; name: string; company: string | null }
+export interface FreeTicketStats {
+  free: number
+  paid: number
+  total: number
+  freeParticipants: FreeTicketParticipant[]
+  paidParticipants: FreeTicketParticipant[]
+}
 export async function getFreeTicketStats(editionId: string): Promise<FreeTicketStats> {
-  const [{ count: free, error: e1 }, { count: total, error: e2 }] = await Promise.all([
-    getSupabase().from('participants').select('*', { count: 'exact', head: true }).eq('edition_id', editionId).eq('valor_efetivo', 0),
-    getSupabase().from('participants').select('*', { count: 'exact', head: true }).eq('edition_id', editionId),
-  ])
-  if (e1) throw e1
-  if (e2) throw e2
-  const f = free ?? 0
-  const t = total ?? 0
-  return { free: f, paid: t - f, total: t }
+  const { data, error } = await getSupabase()
+    .from('participants')
+    .select('id, full_name, company, valor_efetivo')
+    .eq('edition_id', editionId)
+    .limit(5000)
+  if (error) throw error
+
+  const rows = (data ?? []) as {
+    id: string
+    full_name: string | null
+    company: string | null
+    valor_efetivo: number | null
+  }[]
+
+  const freeParticipants: FreeTicketParticipant[] = []
+  const paidParticipants: FreeTicketParticipant[] = []
+  for (const r of rows) {
+    const p = { id: r.id, name: r.full_name ?? '—', company: r.company }
+    if ((r.valor_efetivo ?? 0) === 0) freeParticipants.push(p)
+    else paidParticipants.push(p)
+  }
+  freeParticipants.sort((a, b) => a.name.localeCompare(b.name))
+  paidParticipants.sort((a, b) => a.name.localeCompare(b.name))
+
+  return {
+    free: freeParticipants.length,
+    paid: paidParticipants.length,
+    total: rows.length,
+    freeParticipants,
+    paidParticipants,
+  }
 }
 
 // ─── NOVOS — consumidos pelos Plans 03/04/05 ─────────────────────────────────
