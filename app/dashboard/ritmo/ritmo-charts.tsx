@@ -63,7 +63,8 @@ export function RitmoCharts({ byDay, communications = [] }: Props) {
       {/* Inscrições diárias + acumulado */}
       <div className="bg-card border border-border rounded-lg p-5 shadow-sm">
         <p className="text-[10px] font-mono tracking-[0.20em] text-muted-foreground uppercase mb-4">
-          Inscrições Diárias e Acumulado
+          Inscrições Diárias e Acumulado{' '}
+          <span className="normal-case tracking-normal text-muted-foreground/50">(apenas pagos)</span>
         </p>
         <ResponsiveContainer width="100%" height={320}>
           <ComposedChart data={chartData} margin={{ top: 28, right: 16, left: -20, bottom: 0 }}>
