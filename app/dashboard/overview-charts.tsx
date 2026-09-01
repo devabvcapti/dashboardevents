@@ -8,7 +8,6 @@ import {
 import { useTheme } from 'next-themes'
 import type { OverviewParticipant, OverviewStats, RegistrationWeeklyGoal } from '@/lib/data'
 import { OverviewKpis } from './overview-kpis'
-import { StatCard } from '@/components/stat-card'
 
 const NAVY_LIGHT = '#112468'
 const NAVY_DARK  = '#6b9be8'
@@ -239,37 +238,10 @@ export function OverviewCharts({ participants, stats, registrationGoal, weeklyGo
     return 'red'
   }, [currentCheckpoint, goalTotal])
 
-  // Faixa de KPIs no topo — recalculada a partir dos filtros ativos.
-  // states_represented depende de form_responses (fora do fetch de participants),
-  // então mantém o valor não filtrado nesse único campo.
-  const filteredStats: OverviewStats = useMemo(() => {
-    if (noFilterActive) return stats
-    let membro = 0
-    let totalRevenue = 0
-    let paidSum = 0
-    let paidCount = 0
-    const companies = new Set<string>()
-    for (const p of filtered) {
-      if (p.ticket_membership === 'MEMBRO') membro++
-      totalRevenue += p.valor_efetivo
-      if (p.valor_efetivo > 0) { paidSum += p.valor_efetivo; paidCount++ }
-      if (p.company) companies.add(p.company)
-    }
-    const total = filtered.length
-    return {
-      total,
-      membro,
-      nao_membro: total - membro,
-      total_revenue: totalRevenue,
-      avg_ticket: paidCount > 0 ? paidSum / paidCount : 0,
-      unique_companies: companies.size,
-      states_represented: stats.states_represented,
-    }
-  }, [filtered, noFilterActive, stats])
-
-  // Resumo de ingressos pagos — ingressos pagos são a prioridade de exibição;
-  // sempre calculado sobre o total do evento (não reage aos filtros Grátis/Pagos
-  // e Membros/Não-Membros da seção abaixo, que servem para quem quer ver os grátis).
+  // Faixa executiva de KPIs — visão fixa do evento inteiro, sempre a mesma
+  // independente dos filtros Grátis/Pagos e Membros/Não-Membros clicáveis
+  // dos gráficos abaixo (esses continuam sendo a forma de explorar/filtrar
+  // as listas). Ingressos pagos são a prioridade de exibição.
   const paidParticipants = useMemo(
     () => participants.filter(p => p.valor_efetivo > 0),
     [participants]
@@ -279,12 +251,7 @@ export function OverviewCharts({ participants, stats, registrationGoal, weeklyGo
     [paidParticipants]
   )
   const paidNaoMembers = paidParticipants.length - paidMembers
-  const paidMemberPct = paidParticipants.length > 0
-    ? Math.round((paidMembers / paidParticipants.length) * 100)
-    : 0
-  const paidNaoMemberPct = paidParticipants.length > 0
-    ? Math.round((paidNaoMembers / paidParticipants.length) * 100)
-    : 0
+  const freeCountAll = participants.length - paidParticipants.length
 
   // Membros vs Não-Membros — cruzado pelo filtro Grátis/Pagos
   const byTicketType = useMemo(() => {
@@ -358,26 +325,13 @@ export function OverviewCharts({ participants, stats, registrationGoal, weeklyGo
 
   return (
     <div className="space-y-8">
-      <OverviewKpis stats={filteredStats} />
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-        <StatCard
-          title="Ingressos Pagos"
-          value={paidParticipants.length}
-          accent="teal"
-        />
-        <StatCard
-          title="Membros (Pagos)"
-          value={paidMembers}
-          subtitle={`${paidMemberPct}% dos pagos`}
-          accent="green"
-        />
-        <StatCard
-          title="Não Membros (Pagos)"
-          value={paidNaoMembers}
-          subtitle={`${paidNaoMemberPct}% dos pagos`}
-          accent="amber"
-        />
-      </div>
+      <OverviewKpis
+        stats={stats}
+        paidCount={paidParticipants.length}
+        freeCount={freeCountAll}
+        paidMembers={paidMembers}
+        paidNaoMembers={paidNaoMembers}
+      />
       {(registrationGoal !== null || sortedWeeklyGoals.length > 0) && (
         <div className="bg-card border border-border rounded-lg p-5 shadow-sm">
           <div className="flex items-center justify-between mb-3 gap-3 flex-wrap">
