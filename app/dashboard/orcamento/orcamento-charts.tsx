@@ -88,7 +88,7 @@ export function OrcamentoCharts({ summary, editionId }: Props) {
           <div className="border border-dashed border-border rounded-lg p-12 text-center">
             <p className="text-sm text-muted-foreground">Nenhum orçamento importado para esta edição.</p>
             <p className="text-xs font-mono text-muted-foreground/50 mt-2">
-              Clique em "Importar planilha" acima para começar.
+              Clique em &quot;Importar planilha&quot; acima para começar.
             </p>
           </div>
           <TemplateHint />

@@ -15,7 +15,6 @@ export type StoredPreview = {
 }
 
 declare global {
-  // eslint-disable-next-line no-var
   var __importPreviewStore: Map<string, StoredPreview> | undefined
 }
 globalThis.__importPreviewStore ??= new Map()

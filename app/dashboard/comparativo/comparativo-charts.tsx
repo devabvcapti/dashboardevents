@@ -18,12 +18,6 @@ const SEGMENT_LABELS: Record<string, string> = {
   CORPORATIVO: 'Corporativo', GOVERNO: 'Governo', ACADEMIA: 'Academia', OUTRO: 'Outro',
 }
 
-const SEGMENT_KEYS = ['GP', 'LP', 'FUNDO', 'CORPORATIVO', 'GOVERNO', 'ACADEMIA', 'OUTRO']
-const SEG_COLORS: Record<string, string> = {
-  GP: '#112468', LP: '#00a89d', FUNDO: '#2d5be3', CORPORATIVO: '#0e8c82',
-  GOVERNO: '#4878f0', ACADEMIA: '#15b5a8', OUTRO: '#94a3b8',
-}
-
 const AXIS_STYLE = { fontSize: 11, fontFamily: 'var(--font-mono)', fill: 'hsl(var(--muted-foreground))' }
 const GRID_COLOR = 'hsl(var(--border))'
 

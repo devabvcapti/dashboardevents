@@ -89,7 +89,7 @@ export default async function ManualPage() {
               <span className="text-[9px] font-mono tracking-widest text-primary bg-primary/10 border border-primary/20 rounded px-1.5 py-0.5 uppercase">Recomendado</span>
             </div>
             <p className="text-sm text-muted-foreground">
-              Clique no botão "Entrar com Microsoft" e use sua conta corporativa <strong>@abvcap.com.br</strong>. Não é necessário lembrar de senha.
+              Clique no botão &quot;Entrar com Microsoft&quot; e use sua conta corporativa <strong>@abvcap.com.br</strong>. Não é necessário lembrar de senha.
             </p>
           </div>
           <div className="border border-border rounded-lg p-4 bg-card space-y-2">
@@ -105,7 +105,7 @@ export default async function ManualPage() {
         <div className="flex items-start gap-2 bg-amber-500/5 border border-amber-500/20 rounded-lg p-3">
           <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
           <p className="text-sm text-amber-700 dark:text-amber-400">
-            O acesso é restrito a contas autorizadas pelo administrador. Caso receba "Acesso não autorizado", entre em contato com o TI.
+            O acesso é restrito a contas autorizadas pelo administrador. Caso receba &quot;Acesso não autorizado&quot;, entre em contato com o TI.
           </p>
         </div>
       </Section>

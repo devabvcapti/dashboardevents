@@ -85,6 +85,7 @@ export function Sidebar({
 
   useEffect(() => {
     const stored = localStorage.getItem('sidebar-pinned')
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- reads localStorage post-mount on purpose, to avoid an SSR hydration mismatch
     if (stored === 'true') setPinned(true)
   }, [])
 

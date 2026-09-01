@@ -93,6 +93,7 @@ const PHASE2_NULLS = {
   coupon_code: null,
   registered_at: null,
   valor_pago_manual: null,
+  ticket_id: null,
 } as const
 
 const RAW_MOCK_PARTICIPANTS: Omit<Participant, 'valor_efetivo'>[] = [

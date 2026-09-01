@@ -12,6 +12,9 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Nested clone of the same repo left inside the working tree —
+    // has its own node_modules/app and hangs the linter otherwise.
+    "abvcap-congress/**",
   ]),
 ]);
 
