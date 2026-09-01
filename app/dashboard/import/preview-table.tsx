@@ -13,10 +13,11 @@ export function PreviewTable({
   onBack: () => void
   onConfirm: () => void
 }) {
-  const { validRows, errors, duplicateEmails } = preview.validation
-  const [ackDuplicates, setAckDuplicates] = useState(false)
-  const hasDuplicates = duplicateEmails.length > 0
-  const confirmDisabled = validRows.length === 0 || (hasDuplicates && !ackDuplicates)
+  const { validRows, errors, duplicateEmails, duplicateTicketIds } = preview.validation
+  const [ackDuplicateTickets, setAckDuplicateTickets] = useState(false)
+  const hasDuplicateEmails = duplicateEmails.length > 0
+  const hasDuplicateTickets = duplicateTicketIds.length > 0
+  const confirmDisabled = validRows.length === 0 || (hasDuplicateTickets && !ackDuplicateTickets)
 
   return (
     <div className="space-y-4">
@@ -27,10 +28,16 @@ export function PreviewTable({
             <span className="text-emerald-600">{validRows.length} linhas válidas</span>
             {' · '}
             <span className="text-red-600">{errors.length} erros</span>
-            {hasDuplicates && (
+            {hasDuplicateEmails && (
               <>
                 {' · '}
-                <span className="text-amber-600">{duplicateEmails.length} e-mails duplicados</span>
+                <span className="text-muted-foreground">{duplicateEmails.length} e-mails repetidos (grupo)</span>
+              </>
+            )}
+            {hasDuplicateTickets && (
+              <>
+                {' · '}
+                <span className="text-amber-600">{duplicateTicketIds.length} IDs de ingresso duplicados</span>
               </>
             )}
             {' — '}arquivo {preview.parseResult.filename}
@@ -44,22 +51,21 @@ export function PreviewTable({
         </div>
       </div>
 
-      {hasDuplicates && (
+      {hasDuplicateTickets && (
         <div className="border border-amber-500/30 bg-amber-500/5 rounded-lg p-3 space-y-3">
           <details open>
             <summary className="text-sm font-medium text-amber-700 cursor-pointer">
-              {duplicateEmails.length} e-mails repetidos no arquivo — só a última linha de cada um vai sobreviver (clique para expandir)
+              {duplicateTicketIds.length} IDs de ingresso duplicados no arquivo — só a última linha de cada um vai sobreviver (clique para expandir)
             </summary>
             <p className="mt-2 text-xs text-amber-700/80">
-              Linhas com o mesmo e-mail sobrescrevem umas às outras no banco (a chave de participante é e-mail + evento).
-              Se essas linhas são de pessoas diferentes que compartilham um e-mail genérico/placeholder na planilha
-              (ex. um e-mail de contato usado para vários palestrantes), os dados das linhas anteriores serão perdidos.
-              Corrija os e-mails na planilha antes de confirmar, se for esse o caso.
+              Cada participante é identificado pelo ID do ingresso (coluna A) + evento. Linhas com o mesmo ID
+              sobrescrevem umas às outras no banco. Isso não deveria acontecer normalmente — verifique se a planilha
+              não tem linhas duplicadas ou corrompidas antes de confirmar.
             </p>
             <ul className="mt-3 space-y-1.5 text-xs font-mono max-h-60 overflow-y-auto">
-              {duplicateEmails.map((d, i) => (
+              {duplicateTicketIds.map((d, i) => (
                 <li key={i}>
-                  <span className="text-amber-700">{d.email}</span>
+                  <span className="text-amber-700">{d.ticket_id}</span>
                   {' — linhas '}
                   {d.rows.join(', ')}
                   {' ('}
@@ -72,13 +78,33 @@ export function PreviewTable({
           <label className="flex items-start gap-2 text-xs text-amber-800 cursor-pointer select-none">
             <input
               type="checkbox"
-              checked={ackDuplicates}
-              onChange={e => setAckDuplicates(e.target.checked)}
+              checked={ackDuplicateTickets}
+              onChange={e => setAckDuplicateTickets(e.target.checked)}
               className="mt-0.5"
             />
-            Estou ciente e quero importar mesmo assim (apenas a última linha de cada e-mail duplicado será mantida).
+            Estou ciente e quero importar mesmo assim (apenas a última linha de cada ID duplicado será mantida).
           </label>
         </div>
+      )}
+
+      {hasDuplicateEmails && (
+        <details className="border border-border rounded-lg p-3">
+          <summary className="text-sm font-medium text-muted-foreground cursor-pointer">
+            {duplicateEmails.length} e-mails usados por mais de um participante (normal em inscrições de grupo — clique para expandir)
+          </summary>
+          <ul className="mt-3 space-y-1.5 text-xs font-mono max-h-60 overflow-y-auto">
+            {duplicateEmails.map((d, i) => (
+              <li key={i}>
+                <span className="text-muted-foreground">{d.email}</span>
+                {' — linhas '}
+                {d.rows.join(', ')}
+                {' ('}
+                {d.names.join(', ')}
+                {')'}
+              </li>
+            ))}
+          </ul>
+        </details>
       )}
 
       {errors.length > 0 && (

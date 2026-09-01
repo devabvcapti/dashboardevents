@@ -113,10 +113,9 @@ export async function POST(req: Request) {
     }
   }
 
-  // 8. Detectar e-mails duplicados dentro do próprio arquivo — cada ocorrência
-  // extra sobrescreve a anterior no upsert (mesma chave email+edição), então
-  // sem esse aviso a perda de dados é silenciosa (ex.: participantes
-  // diferentes reaproveitando um e-mail genérico/placeholder na planilha).
+  // 8. E-mails duplicados são informativos (normais em pedidos de grupo — a
+  // chave de identidade do participante é ticket_id, não email, então cada
+  // linha vira um registro distinto mesmo com email repetido).
   const emailGroups = new Map<string, ValidationResult['validRows']>()
   for (const row of validRows) {
     const key = row.email.toLowerCase()
@@ -132,13 +131,30 @@ export async function POST(req: Request) {
       names: rows.map(r => r.full_name),
     }))
 
+  // 8b. ticket_id duplicado É um problema real: as linhas colidem na mesma
+  // chave de upsert (ticket_id + edição) e uma sobrescreve a outra.
+  const ticketGroups = new Map<string, ValidationResult['validRows']>()
+  for (const row of validRows) {
+    const key = row.ticket_id ?? ''
+    const group = ticketGroups.get(key)
+    if (group) group.push(row)
+    else ticketGroups.set(key, [row])
+  }
+  const duplicateTicketIds: ValidationResult['duplicateTicketIds'] = Array.from(ticketGroups.entries())
+    .filter(([, rows]) => rows.length > 1)
+    .map(([ticket_id, rows]) => ({
+      ticket_id,
+      rows: rows.map(r => r.excel_row),
+      names: rows.map(r => r.full_name),
+    }))
+
   // 9. Armazenar para o commit via shared preview-store
   const serverToken = randomBytes(16).toString('hex')
   storePreview(serverToken, { rows: validRows, filename: file.name })
 
   const response: PreviewResponse = {
     parseResult,
-    validation: { validRows, errors, duplicateEmails },
+    validation: { validRows, errors, duplicateEmails, duplicateTicketIds },
     serverToken,
   }
   return NextResponse.json(response, { status: 200 })

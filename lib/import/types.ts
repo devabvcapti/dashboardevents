@@ -68,10 +68,21 @@ export interface ValidationResult {
     field: string | null
     message: string  // PT-BR
   }>
+  // e-mails repetidos são normais (pedidos em grupo reaproveitam um e-mail de contato);
+  // cada linha vira um participante distinto porque a chave é ticket_id, não email.
+  // Mantido só como informação para o admin, não bloqueia o import.
   duplicateEmails: Array<{
     email: string
     rows: number[]     // excel_row de cada ocorrência, na ordem do arquivo
     names: string[]     // full_name de cada ocorrência, alinhado com rows
+  }>
+  // ticket_id repetido É um problema real: as linhas colidem na mesma chave
+  // de upsert e uma sobrescreve a outra. Não deveria acontecer (ticket_id
+  // vem único da plataforma de inscrição) — se acontecer, bloqueia o import.
+  duplicateTicketIds: Array<{
+    ticket_id: string
+    rows: number[]
+    names: string[]
   }>
 }
 

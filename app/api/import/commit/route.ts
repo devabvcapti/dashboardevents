@@ -122,7 +122,7 @@ export async function POST(req: Request) {
 
       // 6b. Upsert form responses AFTER participants in same chunk
       const formRows = chunk.map((r) => ({
-        participant_email: r.email,
+        ticket_id: r.ticket_id,
         excel_row: r.excel_row,
         topics_of_interest: r.topics_of_interest,
         interested_in_events: r.interested_in_events,

@@ -2,7 +2,7 @@ import { z } from 'zod'
 
 export const ParticipantRowSchema = z.object({
   excel_row: z.number().int().positive(),
-  ticket_id: z.string().nullable(),
+  ticket_id: z.string().min(1, 'ID do ingresso (coluna A) é obrigatório'),
   full_name: z.string().min(1, 'Nome é obrigatório'),
   email: z.string().email('Email inválido'),
   company: z.string().nullable(),
