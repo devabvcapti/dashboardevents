@@ -179,10 +179,18 @@ export function OverviewCharts({ participants, stats, registrationGoal, weeklyGo
 
   const displayTotal = noFilterActive ? stats.total : filtered.length
 
-  // Meta de inscrições — sempre sobre o total real do evento, independente
-  // dos filtros Grátis/Pagos e Membros/Não-Membros (é uma meta do evento
-  // como um todo, não faria sentido "cair" ao aplicar um filtro).
-  const goalTotal = participants.length
+  // Ingressos pagos são a prioridade de exibição — grátis não contam na meta
+  // nem na linha do tempo. Calculado sempre sobre o evento inteiro, independente
+  // dos filtros Grátis/Pagos e Membros/Não-Membros clicáveis dos gráficos abaixo.
+  const paidParticipants = useMemo(
+    () => participants.filter(p => p.valor_efetivo > 0),
+    [participants]
+  )
+
+  // Meta de inscrições — só ingressos pagos contam; sempre sobre o total real
+  // do evento, independente dos filtros Grátis/Pagos e Membros/Não-Membros (é
+  // uma meta do evento como um todo, não faria sentido "cair" ao aplicar um filtro).
+  const goalTotal = paidParticipants.length
   const goalPct = registrationGoal ? Math.min(100, Math.round((goalTotal / registrationGoal) * 100)) : 0
 
   // Ritmo semanal — compara o acumulado real com os checkpoints manuais
@@ -195,7 +203,7 @@ export function OverviewCharts({ participants, stats, registrationGoal, weeklyGo
   )
 
   const paceChartData = useMemo(() => {
-    const realWeekly = toWeekly(buildTimeline(participants))
+    const realWeekly = toWeekly(buildTimeline(paidParticipants))
     const realCumulative: Record<string, number> = {}
     let running = 0
     for (const w of realWeekly) {
@@ -222,7 +230,7 @@ export function OverviewCharts({ participants, stats, registrationGoal, weeklyGo
       })
     }
     return result
-  }, [participants, sortedWeeklyGoals, todayWeekStart])
+  }, [paidParticipants, sortedWeeklyGoals, todayWeekStart])
 
   // Semáforo: compara o real de hoje com o checkpoint mais recente já alcançado
   const currentCheckpoint = useMemo(() => {
@@ -242,10 +250,6 @@ export function OverviewCharts({ participants, stats, registrationGoal, weeklyGo
   // independente dos filtros Grátis/Pagos e Membros/Não-Membros clicáveis
   // dos gráficos abaixo (esses continuam sendo a forma de explorar/filtrar
   // as listas). Ingressos pagos são a prioridade de exibição.
-  const paidParticipants = useMemo(
-    () => participants.filter(p => p.valor_efetivo > 0),
-    [participants]
-  )
   const paidMembers = useMemo(
     () => paidParticipants.filter(p => p.ticket_membership === 'MEMBRO').length,
     [paidParticipants]
@@ -303,8 +307,14 @@ export function OverviewCharts({ participants, stats, registrationGoal, weeklyGo
     [filtered]
   )
 
-  // Linha — inscrições ao longo do tempo (reflete os filtros ativos)
-  const timelineBase = useMemo(() => buildTimeline(filtered), [filtered])
+  // Linha — inscrições ao longo do tempo. Só ingressos pagos contam (grátis
+  // não entram), consistente com a Meta de Inscrições acima; ainda cruza
+  // com o filtro Membros/Não-Membros quando ativo.
+  const paidTimelineBase = useMemo(
+    () => paidParticipants.filter(p => matchesMembership(p, membershipFilter)),
+    [paidParticipants, membershipFilter]
+  )
+  const timelineBase = useMemo(() => buildTimeline(paidTimelineBase), [paidTimelineBase])
   const timelineData = useMemo(() => {
     const base = granularity === 'weekly' ? toWeekly(timelineBase) : timelineBase
     return base.map(d => ({ ...d, dateLabel: formatDateLabel(d.date) }))
@@ -316,7 +326,11 @@ export function OverviewCharts({ participants, stats, registrationGoal, weeklyGo
     .filter((_, i) => i % tickStep === 0 || i === timelineData.length - 1)
     .map(d => d.dateLabel)
 
-  const timelineName = ticketFilter === 'free' ? 'Inscrições grátis' : ticketFilter === 'paid' ? 'Inscrições pagas' : 'Inscrições'
+  const timelineName = membershipFilter === 'MEMBRO'
+    ? 'Inscrições pagas — Membros'
+    : membershipFilter === 'NAO_MEMBRO'
+      ? 'Inscrições pagas — Não Membros'
+      : 'Inscrições pagas'
 
   const activeFilterLabels = [
     ticketFilter !== 'all' ? TICKET_FILTER_LABEL[ticketFilter] : null,
@@ -335,7 +349,10 @@ export function OverviewCharts({ participants, stats, registrationGoal, weeklyGo
       {(registrationGoal !== null || sortedWeeklyGoals.length > 0) && (
         <div className="bg-card border border-border rounded-lg p-5 shadow-sm">
           <div className="flex items-center justify-between mb-3 gap-3 flex-wrap">
-            <ChartLabel>Meta de Inscrições</ChartLabel>
+            <ChartLabel>
+              Meta de Inscrições{' '}
+              <span className="normal-case tracking-normal text-muted-foreground/50">(apenas pagos)</span>
+            </ChartLabel>
             <div className="flex items-center gap-3">
               {semaforoStatus && (
                 <span className={`inline-flex items-center gap-1.5 text-[11px] font-mono px-2 py-0.5 rounded border ${SEMAFORO[semaforoStatus].bg} ${SEMAFORO[semaforoStatus].text}`}>
@@ -556,7 +573,10 @@ export function OverviewCharts({ participants, stats, registrationGoal, weeklyGo
       {/* Linha — inscrições ao longo do tempo — linha própria */}
       <div className="bg-card border border-border rounded-lg p-5 shadow-sm">
         <div className="flex items-center justify-between mb-4 gap-3 flex-wrap">
-          <ChartLabel>Inscrições ao Longo do Tempo</ChartLabel>
+          <ChartLabel>
+            Inscrições ao Longo do Tempo{' '}
+            <span className="normal-case tracking-normal text-muted-foreground/50">(apenas pagos)</span>
+          </ChartLabel>
           <div className="flex rounded-md border border-border overflow-hidden text-[10px] font-mono uppercase tracking-wider">
             {(['daily', 'weekly'] as const).map(g => (
               <button
