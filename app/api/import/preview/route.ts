@@ -113,13 +113,32 @@ export async function POST(req: Request) {
     }
   }
 
-  // 8. Armazenar para o commit via shared preview-store
+  // 8. Detectar e-mails duplicados dentro do próprio arquivo — cada ocorrência
+  // extra sobrescreve a anterior no upsert (mesma chave email+edição), então
+  // sem esse aviso a perda de dados é silenciosa (ex.: participantes
+  // diferentes reaproveitando um e-mail genérico/placeholder na planilha).
+  const emailGroups = new Map<string, ValidationResult['validRows']>()
+  for (const row of validRows) {
+    const key = row.email.toLowerCase()
+    const group = emailGroups.get(key)
+    if (group) group.push(row)
+    else emailGroups.set(key, [row])
+  }
+  const duplicateEmails: ValidationResult['duplicateEmails'] = Array.from(emailGroups.entries())
+    .filter(([, rows]) => rows.length > 1)
+    .map(([email, rows]) => ({
+      email,
+      rows: rows.map(r => r.excel_row),
+      names: rows.map(r => r.full_name),
+    }))
+
+  // 9. Armazenar para o commit via shared preview-store
   const serverToken = randomBytes(16).toString('hex')
   storePreview(serverToken, { rows: validRows, filename: file.name })
 
   const response: PreviewResponse = {
     parseResult,
-    validation: { validRows, errors },
+    validation: { validRows, errors, duplicateEmails },
     serverToken,
   }
   return NextResponse.json(response, { status: 200 })

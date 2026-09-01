@@ -68,6 +68,11 @@ export interface ValidationResult {
     field: string | null
     message: string  // PT-BR
   }>
+  duplicateEmails: Array<{
+    email: string
+    rows: number[]     // excel_row de cada ocorrência, na ordem do arquivo
+    names: string[]     // full_name de cada ocorrência, alinhado com rows
+  }>
 }
 
 export interface PreviewResponse {

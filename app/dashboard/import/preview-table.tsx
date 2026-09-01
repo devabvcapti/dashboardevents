@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import type { PreviewResponse } from '@/lib/import/types'
 
@@ -12,7 +13,11 @@ export function PreviewTable({
   onBack: () => void
   onConfirm: () => void
 }) {
-  const { validRows, errors } = preview.validation
+  const { validRows, errors, duplicateEmails } = preview.validation
+  const [ackDuplicates, setAckDuplicates] = useState(false)
+  const hasDuplicates = duplicateEmails.length > 0
+  const confirmDisabled = validRows.length === 0 || (hasDuplicates && !ackDuplicates)
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
@@ -22,16 +27,59 @@ export function PreviewTable({
             <span className="text-emerald-600">{validRows.length} linhas válidas</span>
             {' · '}
             <span className="text-red-600">{errors.length} erros</span>
+            {hasDuplicates && (
+              <>
+                {' · '}
+                <span className="text-amber-600">{duplicateEmails.length} e-mails duplicados</span>
+              </>
+            )}
             {' — '}arquivo {preview.parseResult.filename}
           </p>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" onClick={onBack}>← Voltar ao mapeamento</Button>
-          <Button onClick={onConfirm} disabled={validRows.length === 0}>
+          <Button onClick={onConfirm} disabled={confirmDisabled}>
             Confirmar import ({validRows.length} linhas)
           </Button>
         </div>
       </div>
+
+      {hasDuplicates && (
+        <div className="border border-amber-500/30 bg-amber-500/5 rounded-lg p-3 space-y-3">
+          <details open>
+            <summary className="text-sm font-medium text-amber-700 cursor-pointer">
+              {duplicateEmails.length} e-mails repetidos no arquivo — só a última linha de cada um vai sobreviver (clique para expandir)
+            </summary>
+            <p className="mt-2 text-xs text-amber-700/80">
+              Linhas com o mesmo e-mail sobrescrevem umas às outras no banco (a chave de participante é e-mail + evento).
+              Se essas linhas são de pessoas diferentes que compartilham um e-mail genérico/placeholder na planilha
+              (ex. um e-mail de contato usado para vários palestrantes), os dados das linhas anteriores serão perdidos.
+              Corrija os e-mails na planilha antes de confirmar, se for esse o caso.
+            </p>
+            <ul className="mt-3 space-y-1.5 text-xs font-mono max-h-60 overflow-y-auto">
+              {duplicateEmails.map((d, i) => (
+                <li key={i}>
+                  <span className="text-amber-700">{d.email}</span>
+                  {' — linhas '}
+                  {d.rows.join(', ')}
+                  {' ('}
+                  {d.names.join(', ')}
+                  {')'}
+                </li>
+              ))}
+            </ul>
+          </details>
+          <label className="flex items-start gap-2 text-xs text-amber-800 cursor-pointer select-none">
+            <input
+              type="checkbox"
+              checked={ackDuplicates}
+              onChange={e => setAckDuplicates(e.target.checked)}
+              className="mt-0.5"
+            />
+            Estou ciente e quero importar mesmo assim (apenas a última linha de cada e-mail duplicado será mantida).
+          </label>
+        </div>
+      )}
 
       {errors.length > 0 && (
         <details className="border border-red-500/30 bg-red-500/5 rounded-lg p-3">

@@ -141,7 +141,7 @@ export async function parseExcelRows(
   buffer: ArrayBuffer,
   mapping: ColumnMapping,
   headerRowIndex: number
-): Promise<ValidationResult> {
+): Promise<{ validRows: ParticipantRow[]; errors: ValidationResult['errors'] }> {
   const wb = new ExcelJS.Workbook()
   await wb.xlsx.load(buffer)
   const ws = wb.getWorksheet('Evento_Lista de participantes') ?? wb.worksheets[0]
