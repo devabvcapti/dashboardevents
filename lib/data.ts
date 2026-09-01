@@ -556,16 +556,19 @@ export interface RegistrationRhythm {
 export async function getRegistrationRhythm(editionId: string): Promise<RegistrationRhythm> {
   const { data, error } = await getSupabase()
     .from('participants')
-    .select('registered_at, created_at')
+    .select('registered_at, created_at, valor_efetivo')
     .eq('edition_id', editionId)
     .limit(5000)
   if (error) throw error
 
   // registered_at (col BM — data real de inscrição) é a fonte correta;
   // created_at (timestamp do import) só entra como fallback para linhas
-  // antigas ou planilhas sem essa coluna mapeada.
+  // antigas ou planilhas sem essa coluna mapeada. Só ingressos pagos contam
+  // (valor_efetivo > 0) — grátis não representam ritmo de venda real.
   const counts: Record<string, number> = {}
   for (const row of data ?? []) {
+    const valorEfetivo = row.valor_efetivo as number | null
+    if (valorEfetivo === null || valorEfetivo <= 0) continue
     const raw = (row.registered_at as string | null) ?? (row.created_at as string | null)
     if (!raw) continue
     const date = raw.slice(0, 10)

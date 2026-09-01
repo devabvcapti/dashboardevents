@@ -41,7 +41,7 @@ export default async function RitmoPage() {
             Ritmo de Inscrições{editionName && <span className="text-muted-foreground"> — {editionName}</span>}
           </h1>
           <p className="text-sm text-muted-foreground mt-2">
-            Evolução diária e acumulada das inscrições ao longo do evento.
+            Evolução diária e acumulada das inscrições pagas ao longo do evento.
           </p>
         </div>
         {rhythm && (
@@ -68,7 +68,7 @@ export default async function RitmoPage() {
           {/* KPIs */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             <KpiCard
-              title="Total de Inscritos"
+              title="Total de Inscritos Pagos"
               value={rhythm.total.toLocaleString('pt-BR')}
             />
             <KpiCard
