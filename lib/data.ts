@@ -820,6 +820,94 @@ export async function getAllEditionsComparison(): Promise<EditionComparison[]> {
   return results.filter((r): r is EditionComparison => r !== null && r.stats.total >= 20)
 }
 
+// ─── Comparativo por contagem regressiva (dias antes do evento) ──────────────
+
+export interface CountdownPoint { daysBefore: number; cumulative: number }
+export interface CountdownMilestone { label: string; daysBefore: number; cumulative: number | null }
+export interface EditionCountdown {
+  edition: Edition
+  points: CountdownPoint[]
+  milestones: CountdownMilestone[]
+}
+
+// [dias antes do evento, rótulo] — do mais distante para o mais próximo do evento.
+const COUNTDOWN_MILESTONES: Array<[number, string]> = [
+  [84, '12 semanas antes'],
+  [56, '8 semanas antes'],
+  [28, '4 semanas antes'],
+  [14, '2 semanas antes'],
+  [7, '1 semana antes'],
+  [3, '3 dias antes'],
+  [0, 'No dia'],
+]
+
+export async function getEditionsCountdownComparison(): Promise<EditionCountdown[]> {
+  const supabase = getSupabase()
+  const { data: editions, error } = await supabase
+    .from('editions')
+    .select('*')
+    .not('event_date', 'is', null)
+    .order('year', { ascending: true })
+  if (error) throw error
+  if (!editions || editions.length === 0) return []
+
+  const results = await Promise.all(
+    (editions as Edition[]).map(async (edition): Promise<EditionCountdown> => {
+      const { data, error: pErr } = await supabase
+        .from('participants')
+        .select('registered_at, created_at, valor_efetivo')
+        .eq('edition_id', edition.id)
+        .limit(5000)
+      if (pErr) throw pErr
+
+      // registered_at é a data real de inscrição (created_at é fallback do
+      // import). Só ingressos pagos contam — mesmo critério do Ritmo.
+      const eventDate = new Date(`${edition.event_date}T00:00:00Z`)
+      const counts: Record<number, number> = {}
+      for (const row of data ?? []) {
+        const valorEfetivo = row.valor_efetivo as number | null
+        if (valorEfetivo === null || valorEfetivo <= 0) continue
+        const raw = (row.registered_at as string | null) ?? (row.created_at as string | null)
+        if (!raw) continue
+        const regDate = new Date(`${raw.slice(0, 10)}T00:00:00Z`)
+        const daysBefore = Math.round((eventDate.getTime() - regDate.getTime()) / 86_400_000)
+        counts[daysBefore] = (counts[daysBefore] ?? 0) + 1
+      }
+
+      const daysWithData = Object.keys(counts).map(Number)
+      const points: CountdownPoint[] = []
+      const cumByDay = new Map<number, number>()
+      if (daysWithData.length > 0) {
+        const maxDays = Math.max(...daysWithData)
+        const minDays = Math.min(...daysWithData)
+        let cumulative = 0
+        for (let d = maxDays; d >= minDays; d--) {
+          cumulative += counts[d] ?? 0
+          points.push({ daysBefore: d, cumulative })
+          cumByDay.set(d, cumulative)
+        }
+      }
+
+      const total = points.length > 0 ? points[points.length - 1].cumulative : 0
+      const maxDays = points.length > 0 ? points[0].daysBefore : null
+      const minDays = points.length > 0 ? points[points.length - 1].daysBefore : null
+
+      const milestones: CountdownMilestone[] = COUNTDOWN_MILESTONES.map(([daysBefore, label]) => {
+        let cumulative: number | null
+        if (maxDays === null) cumulative = null
+        else if (daysBefore > maxDays) cumulative = 0
+        else if (minDays !== null && daysBefore < minDays) cumulative = total
+        else cumulative = cumByDay.get(daysBefore) ?? null
+        return { label, daysBefore, cumulative }
+      })
+
+      return { edition, points, milestones }
+    })
+  )
+
+  return results
+}
+
 // ─── Análise de empresas ──────────────────────────────────────────────────────
 
 export interface CompanyRow {

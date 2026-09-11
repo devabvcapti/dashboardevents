@@ -1,5 +1,5 @@
 import { requireAuth } from '@/lib/auth'
-import { getAllEditionsComparison } from '@/lib/data'
+import { getAllEditionsComparison, getEditionsCountdownComparison } from '@/lib/data'
 import { ComparativoCharts } from './comparativo-charts'
 
 export const dynamic = 'force-dynamic'
@@ -9,10 +9,12 @@ export default async function ComparativoPage() {
   await requireAuth()
 
   let data = null
+  let countdownData: Awaited<ReturnType<typeof getEditionsCountdownComparison>> = []
   let loadError = false
 
   try {
     data = await getAllEditionsComparison()
+    countdownData = await getEditionsCountdownComparison()
   } catch {
     loadError = true
   }
@@ -35,7 +37,7 @@ export default async function ComparativoPage() {
         </div>
       )}
 
-      {!loadError && data && <ComparativoCharts data={data} />}
+      {!loadError && data && <ComparativoCharts data={data} countdownData={countdownData} />}
     </div>
   )
 }

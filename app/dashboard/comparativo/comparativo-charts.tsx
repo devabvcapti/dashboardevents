@@ -2,11 +2,11 @@
 
 import { useMemo, useState } from 'react'
 import {
-  BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
-  CartesianGrid, LabelList, Cell,
+  BarChart, Bar, LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer,
+  CartesianGrid, LabelList, Cell, Legend,
 } from 'recharts'
 import { useTheme } from 'next-themes'
-import type { EditionComparison } from '@/lib/data'
+import type { EditionComparison, EditionCountdown } from '@/lib/data'
 import { TrendingUp, TrendingDown, Minus, ListFilter } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
@@ -18,6 +18,7 @@ import {
 const NAVY_LIGHT = '#112468'
 const NAVY_DARK = '#6b9be8'
 const TEAL = '#00a89d'
+const COUNTDOWN_PALETTE = ['#112468', '#00a89d', '#c2410c', '#7c3aed', '#be185d', '#0369a1']
 
 const SEGMENT_LABELS: Record<string, string> = {
   GP: 'Gestora (GP)', LP: 'Investidor (LP)', FUNDO: 'Fundo',
@@ -64,7 +65,7 @@ function KpiCard({ label, value, sub, growth }: { label: string; value: string; 
   )
 }
 
-export function ComparativoCharts({ data }: { data: EditionComparison[] }) {
+export function ComparativoCharts({ data, countdownData }: { data: EditionComparison[]; countdownData: EditionCountdown[] }) {
   const { resolvedTheme } = useTheme()
   const dark = resolvedTheme === 'dark'
   const bar = dark ? NAVY_DARK : NAVY_LIGHT
@@ -86,6 +87,11 @@ export function ComparativoCharts({ data }: { data: EditionComparison[] }) {
   const filtered = useMemo(
     () => data.filter(d => selectedIds.has(d.edition.id)),
     [data, selectedIds]
+  )
+
+  const filteredCountdown = useMemo(
+    () => countdownData.filter(d => selectedIds.has(d.edition.id) && d.points.length > 0),
+    [countdownData, selectedIds]
   )
 
   if (data.length === 0) {
@@ -158,6 +164,28 @@ export function ComparativoCharts({ data }: { data: EditionComparison[] }) {
     fontSize: 12,
     fontFamily: 'var(--font-mono)',
     color: 'hsl(var(--foreground))',
+  }
+
+  // Cumulativo de uma edição em um dia "X antes do evento" específico:
+  // 0 antes da primeira inscrição, total após a última (linha estável até o evento).
+  function cumulativeAt(ec: EditionCountdown, day: number): number {
+    if (ec.points.length === 0) return 0
+    const maxDays = ec.points[0].daysBefore
+    const minDays = ec.points[ec.points.length - 1].daysBefore
+    if (day > maxDays) return 0
+    if (day < minDays) return ec.points[ec.points.length - 1].cumulative
+    return ec.points[maxDays - day]?.cumulative ?? 0
+  }
+
+  const countdownGlobalMaxDays = filteredCountdown.length > 0
+    ? Math.max(...filteredCountdown.map(ec => ec.points[0].daysBefore))
+    : 0
+
+  const countdownChartData: Array<Record<string, number>> = []
+  for (let d = countdownGlobalMaxDays; d >= 0; d--) {
+    const row: Record<string, number> = { daysBefore: d }
+    filteredCountdown.forEach(ec => { row[ec.edition.name] = cumulativeAt(ec, d) })
+    countdownChartData.push(row)
   }
 
   return (
@@ -235,6 +263,80 @@ export function ComparativoCharts({ data }: { data: EditionComparison[] }) {
           </ResponsiveContainer>
         </div>
       </div>
+
+      {/* Comparativo por contagem regressiva (dias antes do evento) */}
+      {filteredCountdown.length > 0 && (
+        <div className="border border-border rounded-lg bg-card p-5 space-y-4">
+          <div>
+            <p className="text-[10px] font-mono tracking-[0.18em] text-muted-foreground uppercase">
+              Ritmo Comparado — Dias Antes do Evento
+            </p>
+            <p className="text-xs text-muted-foreground mt-1">
+              Inscrições pagas acumuladas, alinhadas pela contagem regressiva até o evento de cada edição.
+            </p>
+          </div>
+
+          <ResponsiveContainer width="100%" height={260}>
+            <LineChart data={countdownChartData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+              <CartesianGrid vertical={false} stroke={GRID_COLOR} strokeOpacity={0.5} />
+              <XAxis
+                dataKey="daysBefore"
+                tick={AXIS_STYLE}
+                axisLine={false}
+                tickLine={false}
+                tickFormatter={(v) => v === 0 ? 'Evento' : `-${v}d`}
+              />
+              <YAxis tick={AXIS_STYLE} axisLine={false} tickLine={false} width={40} />
+              <Tooltip
+                contentStyle={tooltipStyle}
+                cursor={{ stroke: 'hsl(var(--border))' }}
+                labelFormatter={(v) => v === 0 ? 'No dia do evento' : `${v} dias antes do evento`}
+              />
+              <Legend wrapperStyle={{ fontSize: 11, fontFamily: 'var(--font-mono)' }} />
+              {filteredCountdown.map((ec, i) => (
+                <Line
+                  key={ec.edition.id}
+                  type="monotone"
+                  dataKey={ec.edition.name}
+                  stroke={COUNTDOWN_PALETTE[i % COUNTDOWN_PALETTE.length]}
+                  strokeWidth={2}
+                  dot={false}
+                />
+              ))}
+            </LineChart>
+          </ResponsiveContainer>
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-border">
+                  <th className="text-left px-4 py-2 text-[10px] font-mono tracking-wider text-muted-foreground uppercase">Marco</th>
+                  {filteredCountdown.map(ec => (
+                    <th key={ec.edition.id} className="text-right px-4 py-2 text-[10px] font-mono tracking-wider text-muted-foreground uppercase whitespace-nowrap">
+                      {ec.edition.name}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {filteredCountdown[0].milestones.map((m, rowIdx) => (
+                  <tr key={m.label} className="border-b border-border last:border-0 hover:bg-muted/20 transition-colors">
+                    <td className="px-4 py-2.5 text-foreground/80 text-xs">{m.label}</td>
+                    {filteredCountdown.map(ec => {
+                      const cell = ec.milestones[rowIdx]
+                      return (
+                        <td key={ec.edition.id} className="px-4 py-2.5 text-right tabular-nums text-xs">
+                          {cell?.cumulative != null ? cell.cumulative.toLocaleString('pt-BR') : '—'}
+                        </td>
+                      )
+                    })}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
 
       {/* Análise de Público por Edição */}
       {(() => {

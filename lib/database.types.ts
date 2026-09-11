@@ -56,6 +56,7 @@ export type Database = {
       editions: {
         Row: {
           created_at: string | null
+          event_date: string | null
           id: string
           name: string
           registration_goal: number | null
@@ -63,6 +64,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string | null
+          event_date?: string | null
           id?: string
           name: string
           registration_goal?: number | null
@@ -70,6 +72,7 @@ export type Database = {
         }
         Update: {
           created_at?: string | null
+          event_date?: string | null
           id?: string
           name?: string
           registration_goal?: number | null

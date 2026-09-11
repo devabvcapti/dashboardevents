@@ -163,6 +163,42 @@ export function EventosClient({ editions, weeklyGoalsByEdition, communicationsBy
     }
   }
 
+  // Data do evento: id em edição + rascunho + estado de salvamento
+  const [editingDateId, setEditingDateId] = useState<string | null>(null)
+  const [dateDraft, setDateDraft] = useState('')
+  const [savingDateId, setSavingDateId] = useState<string | null>(null)
+  const [dateError, setDateError] = useState<string | null>(null)
+
+  function startEditDate(e: Edition) {
+    setEditingDateId(e.id)
+    setDateDraft(e.event_date ?? '')
+    setDateError(null)
+  }
+
+  async function handleSaveDate(id: string) {
+    const eventDate = dateDraft === '' ? null : dateDraft
+    setSavingDateId(id)
+    setDateError(null)
+    try {
+      const res = await fetch('/api/edition/update-event-date', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, eventDate }),
+      })
+      if (!res.ok) {
+        const json = await res.json().catch(() => null)
+        setDateError((json as { error?: string })?.error ?? 'Falha ao salvar data.')
+        return
+      }
+      setEditingDateId(null)
+      router.refresh()
+    } catch {
+      setDateError('Erro de rede.')
+    } finally {
+      setSavingDateId(null)
+    }
+  }
+
   // Meta de inscrições: id em edição + rascunho + estado de salvamento
   const [editingGoalId, setEditingGoalId] = useState<string | null>(null)
   const [goalDraft, setGoalDraft] = useState('')
@@ -304,6 +340,54 @@ export function EventosClient({ editions, weeklyGoalsByEdition, communicationsBy
                   criada {new Date(e.created_at).toLocaleDateString('pt-BR')}
                 </p>
               )}
+
+              <div className="mt-3 pt-3 border-t border-border">
+                <p className="text-[10px] font-mono tracking-wider text-muted-foreground uppercase mb-1.5">
+                  Data do Evento
+                </p>
+                {editingDateId === e.id ? (
+                  <div className="space-y-2">
+                    <Input
+                      type="date"
+                      value={dateDraft}
+                      onChange={ev => setDateDraft(ev.target.value)}
+                      className="h-8 text-sm"
+                      autoFocus
+                    />
+                    {dateError && <p role="alert" className="text-[11px] text-red-600">{dateError}</p>}
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        disabled={savingDateId === e.id}
+                        onClick={() => handleSaveDate(e.id)}
+                      >
+                        {savingDateId === e.id ? 'Salvando…' : 'Salvar'}
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        disabled={savingDateId === e.id}
+                        onClick={() => { setEditingDateId(null); setDateError(null) }}
+                      >
+                        Cancelar
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => startEditDate(e)}
+                    className="text-sm text-foreground/80 hover:text-primary transition-colors text-left"
+                  >
+                    {e.event_date
+                      ? formatWeekStart(e.event_date)
+                      : <span className="text-muted-foreground/50 italic">ainda não definida — clique para definir</span>}
+                  </button>
+                )}
+                <p className="text-[10px] font-mono text-muted-foreground/50 mt-1">
+                  Usada no comparativo &quot;dias antes do evento&quot; entre edições.
+                </p>
+              </div>
 
               <div className="mt-3 pt-3 border-t border-border">
                 <p className="text-[10px] font-mono tracking-wider text-muted-foreground uppercase mb-1.5">
