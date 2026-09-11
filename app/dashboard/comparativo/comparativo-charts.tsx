@@ -1,13 +1,19 @@
 'use client'
 
+import { useMemo, useState } from 'react'
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
   CartesianGrid, LabelList, Cell,
 } from 'recharts'
 import { useTheme } from 'next-themes'
 import type { EditionComparison } from '@/lib/data'
-import { TrendingUp, TrendingDown, Minus } from 'lucide-react'
+import { TrendingUp, TrendingDown, Minus, ListFilter } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { Button } from '@/components/ui/button'
+import {
+  DropdownMenu, DropdownMenuTrigger, DropdownMenuContent,
+  DropdownMenuCheckboxItem, DropdownMenuSeparator, DropdownMenuItem,
+} from '@/components/ui/dropdown-menu'
 
 const NAVY_LIGHT = '#112468'
 const NAVY_DARK = '#6b9be8'
@@ -64,6 +70,24 @@ export function ComparativoCharts({ data }: { data: EditionComparison[] }) {
   const bar = dark ? NAVY_DARK : NAVY_LIGHT
   const teal = TEAL
 
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(
+    () => new Set(data.map(d => d.edition.id))
+  )
+
+  function toggle(id: string) {
+    setSelectedIds(prev => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
+
+  const filtered = useMemo(
+    () => data.filter(d => selectedIds.has(d.edition.id)),
+    [data, selectedIds]
+  )
+
   if (data.length === 0) {
     return (
       <div className="border border-dashed border-border rounded-lg p-12 text-center">
@@ -72,16 +96,60 @@ export function ComparativoCharts({ data }: { data: EditionComparison[] }) {
     )
   }
 
-  const last = data[data.length - 1]
-  const prev = data.length >= 2 ? data[data.length - 2] : null
+  const editionFilter = (
+    <DropdownMenu>
+      <DropdownMenuTrigger
+        render={
+          <Button variant="outline" size="sm">
+            <ListFilter className="size-3.5" />
+            {selectedIds.size === data.length
+              ? 'Todas as edições'
+              : `${selectedIds.size} de ${data.length} edições`}
+          </Button>
+        }
+      />
+      <DropdownMenuContent align="end" className="min-w-56">
+        <DropdownMenuItem onClick={() => setSelectedIds(new Set(data.map(d => d.edition.id)))}>
+          Selecionar todas
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => setSelectedIds(new Set())}>
+          Limpar seleção
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        {data.map(d => (
+          <DropdownMenuCheckboxItem
+            key={d.edition.id}
+            checked={selectedIds.has(d.edition.id)}
+            onCheckedChange={() => toggle(d.edition.id)}
+          >
+            {d.edition.name}
+          </DropdownMenuCheckboxItem>
+        ))}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  )
+
+  if (filtered.length === 0) {
+    return (
+      <div className="space-y-4">
+        <div className="flex justify-end">{editionFilter}</div>
+        <div className="border border-dashed border-border rounded-lg p-12 text-center">
+          <p className="text-sm text-muted-foreground">Selecione ao menos uma edição para comparar.</p>
+        </div>
+      </div>
+    )
+  }
+
+  const last = filtered[filtered.length - 1]
+  const prev = filtered.length >= 2 ? filtered[filtered.length - 2] : null
 
   const inscGrowth = prev ? growthPct(last.stats.total, prev.stats.total) : null
   const revGrowth = prev ? growthPct(last.stats.total_revenue, prev.stats.total_revenue) : null
   const ticketGrowth = prev ? growthPct(last.stats.avg_ticket, prev.stats.avg_ticket) : null
   const compGrowth = prev ? growthPct(last.stats.unique_companies, prev.stats.unique_companies) : null
 
-  const inscData = data.map(d => ({ name: d.edition.name, value: d.stats.total }))
-  const revData = data.map(d => ({ name: d.edition.name, value: Math.round(d.stats.total_revenue) }))
+  const inscData = filtered.map(d => ({ name: d.edition.name, value: d.stats.total }))
+  const revData = filtered.map(d => ({ name: d.edition.name, value: Math.round(d.stats.total_revenue) }))
 
   const tooltipStyle = {
     backgroundColor: 'hsl(var(--popover))',
@@ -94,6 +162,8 @@ export function ComparativoCharts({ data }: { data: EditionComparison[] }) {
 
   return (
     <div className="space-y-8">
+      <div className="flex justify-end">{editionFilter}</div>
+
       {/* KPIs edição atual */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <KpiCard
@@ -168,8 +238,8 @@ export function ComparativoCharts({ data }: { data: EditionComparison[] }) {
 
       {/* Análise de Público por Edição */}
       {(() => {
-        const hasSegData = data.some(d => d.top_segments.length > 0)
-        const hasJobData = data.some(d => d.top_jobs.length > 0)
+        const hasSegData = filtered.some(d => d.top_segments.length > 0)
+        const hasJobData = filtered.some(d => d.top_jobs.length > 0)
         if (!hasSegData && !hasJobData) return null
         return (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -184,7 +254,7 @@ export function ComparativoCharts({ data }: { data: EditionComparison[] }) {
                     <thead>
                       <tr className="border-b border-border">
                         <th className="text-left px-4 py-2 text-[10px] font-mono tracking-wider text-muted-foreground uppercase">#</th>
-                        {data.map(d => (
+                        {filtered.map(d => (
                           <th key={d.edition.id} className="text-left px-4 py-2 text-[10px] font-mono tracking-wider text-muted-foreground uppercase whitespace-nowrap">
                             {d.edition.year}
                           </th>
@@ -195,7 +265,7 @@ export function ComparativoCharts({ data }: { data: EditionComparison[] }) {
                       {[0, 1, 2, 3, 4].map(rank => (
                         <tr key={rank} className="border-b border-border last:border-0 hover:bg-muted/20 transition-colors">
                           <td className="px-4 py-2.5 tabular-nums text-muted-foreground text-xs">{rank + 1}</td>
-                          {data.map(d => {
+                          {filtered.map(d => {
                             const seg = d.top_segments[rank]
                             return (
                               <td key={d.edition.id} className="px-4 py-2.5 text-xs">
@@ -229,7 +299,7 @@ export function ComparativoCharts({ data }: { data: EditionComparison[] }) {
                     <thead>
                       <tr className="border-b border-border">
                         <th className="text-left px-4 py-2 text-[10px] font-mono tracking-wider text-muted-foreground uppercase">#</th>
-                        {data.map(d => (
+                        {filtered.map(d => (
                           <th key={d.edition.id} className="text-left px-4 py-2 text-[10px] font-mono tracking-wider text-muted-foreground uppercase whitespace-nowrap">
                             {d.edition.year}
                           </th>
@@ -240,7 +310,7 @@ export function ComparativoCharts({ data }: { data: EditionComparison[] }) {
                       {[0, 1, 2, 3, 4].map(rank => (
                         <tr key={rank} className="border-b border-border last:border-0 hover:bg-muted/20 transition-colors">
                           <td className="px-4 py-2.5 tabular-nums text-muted-foreground text-xs">{rank + 1}</td>
-                          {data.map(d => (
+                          {filtered.map(d => (
                             <td key={d.edition.id} className="px-4 py-2.5 text-xs">
                               {d.top_jobs[rank] ? (
                                 <span>
@@ -282,7 +352,7 @@ export function ComparativoCharts({ data }: { data: EditionComparison[] }) {
               </tr>
             </thead>
             <tbody>
-              {[...data].reverse().map((d, idx) => {
+              {[...filtered].reverse().map((d, idx) => {
                 const isLast = idx === 0
                 return (
                   <tr key={d.edition.id} className={cn('border-b border-border last:border-0', isLast && 'bg-primary/5')}>
