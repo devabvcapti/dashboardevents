@@ -10,6 +10,7 @@ import type {
   PaginatedParticipants,
   ParticipantWithState,
   Database,
+  VcDayPanel,
 } from './database.types'
 
 export type {
@@ -968,5 +969,107 @@ export async function getCompanyAnalysis(editionId: string): Promise<CompanyAnal
     total_participants: total,
     top5_pct: total > 0 ? Math.round((top5Total / total) * 1000) / 10 : 0,
     avg_per_company: companies.length > 0 ? Math.round((withCompany.length / companies.length) * 10) / 10 : 0,
+  }
+}
+
+// ─── VC Day — Q&A e Avaliações de Painéis ─────────────────────────────────────
+
+export interface VcDayPanelSummary {
+  id: string
+  name: string
+  nameEn: string | null
+  startsAt: string
+  endsAt: string
+  speakers: string | null
+  questionCount: number
+  evaluationCount: number
+  avgRating: number | null
+}
+
+export interface VcDayComment {
+  id: string
+  panelId: string | null
+  panelName: string | null
+  rating: number
+  liked: string | null
+  improve: string | null
+  authorName: string | null
+  createdAt: string
+}
+
+export interface VcDayQaSummary {
+  panels: VcDayPanelSummary[]
+  totalQuestions: number
+  totalEvaluations: number
+  overallAvgRating: number | null
+  comments: VcDayComment[]
+}
+
+export async function getVcDayQaSummary(): Promise<VcDayQaSummary> {
+  const supabase = getSupabase()
+  const [panelsRes, questionsRes, evaluationsRes] = await Promise.all([
+    supabase.from('vcday_panels').select('*').order('sort_order', { ascending: true }),
+    supabase.from('vcday_questions').select('panel_id'),
+    supabase.from('vcday_evaluations').select('*'),
+  ])
+  if (panelsRes.error) throw panelsRes.error
+  if (questionsRes.error) throw questionsRes.error
+  if (evaluationsRes.error) throw evaluationsRes.error
+
+  const panels = (panelsRes.data ?? []) as VcDayPanel[]
+  const questions = questionsRes.data ?? []
+  const evaluations = evaluationsRes.data ?? []
+
+  const questionCountByPanel = new Map<string, number>()
+  for (const q of questions) {
+    questionCountByPanel.set(q.panel_id, (questionCountByPanel.get(q.panel_id) ?? 0) + 1)
+  }
+
+  const ratingsByPanel = new Map<string, number[]>()
+  for (const ev of evaluations) {
+    if (!ev.panel_id) continue
+    const arr = ratingsByPanel.get(ev.panel_id) ?? []
+    arr.push(ev.rating)
+    ratingsByPanel.set(ev.panel_id, arr)
+  }
+
+  const panelSummaries: VcDayPanelSummary[] = panels.map(p => {
+    const ratings = ratingsByPanel.get(p.id) ?? []
+    return {
+      id: p.id,
+      name: p.name,
+      nameEn: p.name_en,
+      startsAt: p.starts_at,
+      endsAt: p.ends_at,
+      speakers: p.speakers,
+      questionCount: questionCountByPanel.get(p.id) ?? 0,
+      evaluationCount: ratings.length,
+      avgRating: ratings.length > 0 ? ratings.reduce((a, b) => a + b, 0) / ratings.length : null,
+    }
+  })
+
+  const panelNameById = new Map(panels.map(p => [p.id, p.name]))
+  const comments: VcDayComment[] = evaluations
+    .filter(ev => (ev.liked && ev.liked.trim() !== '') || (ev.improve && ev.improve.trim() !== ''))
+    .map(ev => ({
+      id: ev.id,
+      panelId: ev.panel_id,
+      panelName: ev.panel_id ? (panelNameById.get(ev.panel_id) ?? null) : null,
+      rating: ev.rating,
+      liked: ev.liked,
+      improve: ev.improve,
+      authorName: ev.author_name,
+      createdAt: ev.created_at,
+    }))
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+
+  const allRatings = evaluations.map(ev => ev.rating)
+
+  return {
+    panels: panelSummaries,
+    totalQuestions: questions.length,
+    totalEvaluations: evaluations.length,
+    overallAvgRating: allRatings.length > 0 ? allRatings.reduce((a, b) => a + b, 0) / allRatings.length : null,
+    comments,
   }
 }

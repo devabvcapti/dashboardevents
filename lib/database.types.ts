@@ -7,6 +7,8 @@ export type Json =
   | Json[]
 
 export type Database = {
+  // Allows to automatically instantiate createClient with right options
+  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
     PostgrestVersion: "14.5"
   }
@@ -14,34 +16,34 @@ export type Database = {
     Tables: {
       budget_items: {
         Row: {
-          id: string
-          edition_id: string
-          category: string
-          subcategory: string | null
           budgeted: number
+          category: string
+          created_at: string | null
+          edition_id: string
+          id: string
           realized: number
           sort_order: number
-          created_at: string | null
+          subcategory: string | null
         }
         Insert: {
-          id?: string
-          edition_id: string
-          category: string
-          subcategory?: string | null
-          budgeted: number
-          realized: number
-          sort_order?: number
-          created_at?: string | null
-        }
-        Update: {
-          id?: string
-          edition_id?: string
-          category?: string
-          subcategory?: string | null
           budgeted?: number
+          category: string
+          created_at?: string | null
+          edition_id: string
+          id?: string
           realized?: number
           sort_order?: number
+          subcategory?: string | null
+        }
+        Update: {
+          budgeted?: number
+          category?: string
           created_at?: string | null
+          edition_id?: string
+          id?: string
+          realized?: number
+          sort_order?: number
+          subcategory?: string | null
         }
         Relationships: [
           {
@@ -50,7 +52,39 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "editions"
             referencedColumns: ["id"]
-          }
+          },
+        ]
+      }
+      coupon_categories: {
+        Row: {
+          category: Database["public"]["Enums"]["coupon_category"]
+          coupon_code: string
+          created_at: string | null
+          edition_id: string
+          id: string
+        }
+        Insert: {
+          category: Database["public"]["Enums"]["coupon_category"]
+          coupon_code: string
+          created_at?: string | null
+          edition_id: string
+          id?: string
+        }
+        Update: {
+          category?: Database["public"]["Enums"]["coupon_category"]
+          coupon_code?: string
+          created_at?: string | null
+          edition_id?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "coupon_categories_edition_id_fkey"
+            columns: ["edition_id"]
+            isOneToOne: false
+            referencedRelation: "editions"
+            referencedColumns: ["id"]
+          },
         ]
       }
       editions: {
@@ -100,7 +134,9 @@ export type Database = {
           vc_day_topics: string[] | null
         }
         Insert: {
-          company_segment?: Database["public"]["Enums"]["company_segment"] | null
+          company_segment?:
+            | Database["public"]["Enums"]["company_segment"]
+            | null
           company_size?: string | null
           content_interests?: string[] | null
           created_at?: string | null
@@ -118,7 +154,9 @@ export type Database = {
           vc_day_topics?: string[] | null
         }
         Update: {
-          company_segment?: Database["public"]["Enums"]["company_segment"] | null
+          company_segment?:
+            | Database["public"]["Enums"]["company_segment"]
+            | null
           company_size?: string | null
           content_interests?: string[] | null
           created_at?: string | null
@@ -195,10 +233,47 @@ export type Database = {
           },
         ]
       }
+      marketing_communications: {
+        Row: {
+          channel: string
+          created_at: string | null
+          description: string | null
+          edition_id: string
+          id: string
+          sent_at: string
+        }
+        Insert: {
+          channel: string
+          created_at?: string | null
+          description?: string | null
+          edition_id: string
+          id?: string
+          sent_at: string
+        }
+        Update: {
+          channel?: string
+          created_at?: string | null
+          description?: string | null
+          edition_id?: string
+          id?: string
+          sent_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "marketing_communications_edition_id_fkey"
+            columns: ["edition_id"]
+            isOneToOne: false
+            referencedRelation: "editions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       participants: {
         Row: {
           company: string | null
-          company_segment_normalized: Database["public"]["Enums"]["company_segment"] | null
+          company_segment_normalized:
+            | Database["public"]["Enums"]["company_segment"]
+            | null
           company_segment_raw: string | null
           coupon_code: string | null
           cpf: string | null
@@ -217,12 +292,14 @@ export type Database = {
           ticket_membership: Database["public"]["Enums"]["ticket_membership"]
           ticket_name: string | null
           ticket_value: number | null
-          valor_pago_manual: number | null
           valor_efetivo: number | null
+          valor_pago_manual: number | null
         }
         Insert: {
           company?: string | null
-          company_segment_normalized?: Database["public"]["Enums"]["company_segment"] | null
+          company_segment_normalized?:
+            | Database["public"]["Enums"]["company_segment"]
+            | null
           company_segment_raw?: string | null
           coupon_code?: string | null
           cpf?: string | null
@@ -241,11 +318,14 @@ export type Database = {
           ticket_membership: Database["public"]["Enums"]["ticket_membership"]
           ticket_name?: string | null
           ticket_value?: number | null
+          valor_efetivo?: number | null
           valor_pago_manual?: number | null
         }
         Update: {
           company?: string | null
-          company_segment_normalized?: Database["public"]["Enums"]["company_segment"] | null
+          company_segment_normalized?:
+            | Database["public"]["Enums"]["company_segment"]
+            | null
           company_segment_raw?: string | null
           coupon_code?: string | null
           cpf?: string | null
@@ -264,6 +344,7 @@ export type Database = {
           ticket_membership?: Database["public"]["Enums"]["ticket_membership"]
           ticket_name?: string | null
           ticket_value?: number | null
+          valor_efetivo?: number | null
           valor_pago_manual?: number | null
         }
         Relationships: [
@@ -283,94 +364,27 @@ export type Database = {
           },
         ]
       }
-      coupon_categories: {
-        Row: {
-          id: string
-          edition_id: string
-          coupon_code: string
-          category: Database["public"]["Enums"]["coupon_category"]
-          created_at: string | null
-        }
-        Insert: {
-          id?: string
-          edition_id: string
-          coupon_code: string
-          category: Database["public"]["Enums"]["coupon_category"]
-          created_at?: string | null
-        }
-        Update: {
-          id?: string
-          edition_id?: string
-          coupon_code?: string
-          category?: Database["public"]["Enums"]["coupon_category"]
-          created_at?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "coupon_categories_edition_id_fkey"
-            columns: ["edition_id"]
-            isOneToOne: false
-            referencedRelation: "editions"
-            referencedColumns: ["id"]
-          }
-        ]
-      }
-      marketing_communications: {
-        Row: {
-          id: string
-          edition_id: string
-          sent_at: string
-          channel: string
-          description: string | null
-          created_at: string | null
-        }
-        Insert: {
-          id?: string
-          edition_id: string
-          sent_at: string
-          channel: string
-          description?: string | null
-          created_at?: string | null
-        }
-        Update: {
-          id?: string
-          edition_id?: string
-          sent_at?: string
-          channel?: string
-          description?: string | null
-          created_at?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "marketing_communications_edition_id_fkey"
-            columns: ["edition_id"]
-            isOneToOne: false
-            referencedRelation: "editions"
-            referencedColumns: ["id"]
-          }
-        ]
-      }
       registration_weekly_goals: {
         Row: {
-          id: string
-          edition_id: string
-          week_start: string
-          target_count: number
           created_at: string | null
+          edition_id: string
+          id: string
+          target_count: number
+          week_start: string
         }
         Insert: {
-          id?: string
-          edition_id: string
-          week_start: string
-          target_count: number
           created_at?: string | null
+          edition_id: string
+          id?: string
+          target_count: number
+          week_start: string
         }
         Update: {
-          id?: string
-          edition_id?: string
-          week_start?: string
-          target_count?: number
           created_at?: string | null
+          edition_id?: string
+          id?: string
+          target_count?: number
+          week_start?: string
         }
         Relationships: [
           {
@@ -379,7 +393,140 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "editions"
             referencedColumns: ["id"]
-          }
+          },
+        ]
+      }
+      vcday_app_settings: {
+        Row: {
+          key: string
+          value: string
+        }
+        Insert: {
+          key: string
+          value: string
+        }
+        Update: {
+          key?: string
+          value?: string
+        }
+        Relationships: []
+      }
+      vcday_evaluations: {
+        Row: {
+          author_name: string | null
+          created_at: string
+          event_slug: string
+          id: string
+          improve: string | null
+          liked: string | null
+          panel_id: string | null
+          rating: number
+        }
+        Insert: {
+          author_name?: string | null
+          created_at?: string
+          event_slug?: string
+          id?: string
+          improve?: string | null
+          liked?: string | null
+          panel_id?: string | null
+          rating: number
+        }
+        Update: {
+          author_name?: string | null
+          created_at?: string
+          event_slug?: string
+          id?: string
+          improve?: string | null
+          liked?: string | null
+          panel_id?: string | null
+          rating?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vcday_evaluations_panel_id_fkey"
+            columns: ["panel_id"]
+            isOneToOne: false
+            referencedRelation: "vcday_panels"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vcday_panels: {
+        Row: {
+          created_at: string
+          ends_at: string
+          event_date: string
+          id: string
+          name: string
+          name_en: string | null
+          sort_order: number
+          speakers: string | null
+          starts_at: string
+          status_override: string | null
+        }
+        Insert: {
+          created_at?: string
+          ends_at: string
+          event_date: string
+          id: string
+          name: string
+          name_en?: string | null
+          sort_order?: number
+          speakers?: string | null
+          starts_at: string
+          status_override?: string | null
+        }
+        Update: {
+          created_at?: string
+          ends_at?: string
+          event_date?: string
+          id?: string
+          name?: string
+          name_en?: string | null
+          sort_order?: number
+          speakers?: string | null
+          starts_at?: string
+          status_override?: string | null
+        }
+        Relationships: []
+      }
+      vcday_questions: {
+        Row: {
+          author_name: string | null
+          created_at: string
+          id: string
+          panel_id: string
+          question_text: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          author_name?: string | null
+          created_at?: string
+          id?: string
+          panel_id: string
+          question_text: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          author_name?: string | null
+          created_at?: string
+          id?: string
+          panel_id?: string
+          question_text?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vcday_questions_panel_id_fkey"
+            columns: ["panel_id"]
+            isOneToOne: false
+            referencedRelation: "vcday_panels"
+            referencedColumns: ["id"]
+          },
         ]
       }
     }
@@ -387,27 +534,68 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      get_overview_stats: { Args: { p_edition_id: string }; Returns: Json }
       get_member_analysis: { Args: { p_edition_id: string }; Returns: Json }
+      get_overview_stats: { Args: { p_edition_id: string }; Returns: Json }
       get_revenue_analysis: { Args: { p_edition_id: string }; Returns: Json }
       upsert_form_responses_batch: {
-        Args: {
-          p_rows: Json
-          p_edition_id: string
-        }
+        Args: { p_edition_id: string; p_rows: Json }
         Returns: Json
       }
       upsert_participants_batch: {
-        Args: {
-          p_rows: Json
-          p_edition_id: string
-          p_import_job_id: string
-        }
+        Args: { p_edition_id: string; p_import_job_id: string; p_rows: Json }
         Returns: Json
+      }
+      vcday_admin_list_evaluations: {
+        Args: { p_event_slug?: string; p_passcode: string }
+        Returns: {
+          author_name: string | null
+          created_at: string
+          event_slug: string
+          id: string
+          improve: string | null
+          liked: string | null
+          panel_id: string | null
+          rating: number
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "vcday_evaluations"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      vcday_admin_list_questions: {
+        Args: { p_panel_id: string; p_passcode: string }
+        Returns: {
+          author_name: string | null
+          created_at: string
+          id: string
+          panel_id: string
+          question_text: string
+          status: string
+          updated_at: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "vcday_questions"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      vcday_admin_set_status: {
+        Args: { p_passcode: string; p_question_id: string; p_status: string }
+        Returns: undefined
       }
     }
     Enums: {
-      company_segment: "GP" | "LP" | "FUNDO" | "CORPORATIVO" | "GOVERNO" | "ACADEMIA" | "OUTRO"
+      company_segment:
+        | "GP"
+        | "LP"
+        | "FUNDO"
+        | "CORPORATIVO"
+        | "GOVERNO"
+        | "ACADEMIA"
+        | "OUTRO"
       coupon_category:
         | "PATROCINADOR"
         | "APOIADOR"
@@ -429,6 +617,154 @@ export type Database = {
   }
 }
 
+type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">
+
+type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">]
+
+export type Tables<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+        DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
+    : never) = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+      DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
+      Row: infer R
+    }
+    ? R
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema["Tables"] &
+        DefaultSchema["Views"])
+    ? (DefaultSchema["Tables"] &
+        DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
+        Row: infer R
+      }
+      ? R
+      : never
+    : never
+
+export type TablesInsert<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof DefaultSchema["Tables"]
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    : never) = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+      Insert: infer I
+    }
+    ? I
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
+    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+        Insert: infer I
+      }
+      ? I
+      : never
+    : never
+
+export type TablesUpdate<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof DefaultSchema["Tables"]
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    : never) = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+      Update: infer U
+    }
+    ? U
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
+    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+        Update: infer U
+      }
+      ? U
+      : never
+    : never
+
+export type Enums<
+  DefaultSchemaEnumNameOrOptions extends
+    | keyof DefaultSchema["Enums"]
+    | { schema: keyof DatabaseWithoutInternals },
+  EnumName extends (DefaultSchemaEnumNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
+    : never) = never,
+> = DefaultSchemaEnumNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
+  : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
+    ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
+    : never
+
+export type CompositeTypes<
+  PublicCompositeTypeNameOrOptions extends
+    | keyof DefaultSchema["CompositeTypes"]
+    | { schema: keyof DatabaseWithoutInternals },
+  CompositeTypeName extends (PublicCompositeTypeNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
+    : never) = never,
+> = PublicCompositeTypeNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
+  : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
+    ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
+    : never
+
+export const Constants = {
+  public: {
+    Enums: {
+      company_segment: [
+        "GP",
+        "LP",
+        "FUNDO",
+        "CORPORATIVO",
+        "GOVERNO",
+        "ACADEMIA",
+        "OUTRO",
+      ],
+      coupon_category: [
+        "PATROCINADOR",
+        "APOIADOR",
+        "ESTRATEGICO",
+        "PALESTRANTES",
+        "CONVIDADOS_PALESTRANTES",
+        "IMPRENSA",
+        "VIPS",
+        "CONSELHO_ABVCAP",
+        "PARCEIRO",
+        "LPS",
+        "FINANCEIRO",
+      ],
+      import_status: ["PENDING", "PROCESSING", "COMPLETED", "FAILED"],
+      ticket_membership: ["MEMBRO", "NAO_MEMBRO"],
+    },
+  },
+} as const
+
 // ─── Convenience aliases ───────────────────────────────────────────────────
 
 export type TicketMembership = Database["public"]["Enums"]["ticket_membership"]
@@ -439,6 +775,9 @@ export type Participant = Database["public"]["Tables"]["participants"]["Row"]
 export type Edition = Database["public"]["Tables"]["editions"]["Row"]
 export type ImportJob = Database["public"]["Tables"]["import_jobs"]["Row"]
 export type FormResponse = Database["public"]["Tables"]["form_responses"]["Row"]
+export type VcDayPanel = Database["public"]["Tables"]["vcday_panels"]["Row"]
+export type VcDayQuestion = Database["public"]["Tables"]["vcday_questions"]["Row"]
+export type VcDayEvaluation = Database["public"]["Tables"]["vcday_evaluations"]["Row"]
 
 export interface OverviewStats {
   total: number

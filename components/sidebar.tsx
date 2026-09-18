@@ -7,11 +7,12 @@ import { useState, useEffect, useRef } from 'react'
 import {
   LayoutDashboard, Users, BarChart3, TicketIcon, LogOut, Upload,
   Calendar, Wallet, Tag, UserCog, Activity, PiggyBank, BookOpen,
-  GitCompareArrows, Building2, Pin, PinOff,
+  GitCompareArrows, Building2, Pin, PinOff, MessagesSquare,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { ThemeToggle } from '@/components/theme-toggle'
 import { EditionSelector } from '@/components/edition-selector'
+import { isClosedVcDayEdition } from '@/lib/vcday'
 
 const commonNav = [
   { href: '/dashboard', label: 'Visão Geral', icon: LayoutDashboard },
@@ -71,7 +72,7 @@ export function Sidebar({
   activeEditionId,
   isAdmin,
 }: {
-  editions: { id: string; name: string; year: number }[]
+  editions: { id: string; name: string; year: number; event_date: string | null }[]
   activeEditionId: string
   isAdmin: boolean
 }) {
@@ -82,6 +83,9 @@ export function Sidebar({
   const leaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const collapsed = !pinned && !hovered
+
+  const activeEdition = editions.find(e => e.id === activeEditionId)
+  const showVcDayQa = !!activeEdition && isClosedVcDayEdition(activeEdition)
 
   useEffect(() => {
     const stored = localStorage.getItem('sidebar-pinned')
@@ -192,6 +196,25 @@ export function Sidebar({
         {commonNav.map(({ href, label, icon }) => (
           <NavItem key={href} href={href} label={label} icon={icon} active={pathname === href} collapsed={collapsed} />
         ))}
+
+        {showVcDayQa && (
+          <>
+            {!collapsed ? (
+              <div className="pt-3 pb-1 px-3">
+                <p className="text-[9px] font-mono tracking-[0.25em] text-sidebar-foreground/25 uppercase">Pós-Evento</p>
+              </div>
+            ) : (
+              <div className="my-2 h-px bg-sidebar-border/50" />
+            )}
+            <NavItem
+              href="/dashboard/vcday-qa"
+              label="Q&A e Avaliações"
+              icon={MessagesSquare}
+              active={pathname === '/dashboard/vcday-qa'}
+              collapsed={collapsed}
+            />
+          </>
+        )}
 
         {isAdmin && (
           <>
