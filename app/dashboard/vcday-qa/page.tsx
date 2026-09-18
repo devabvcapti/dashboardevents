@@ -19,8 +19,8 @@ export default async function VcDayQaPage() {
     const edition = await getActiveEdition()
     editionName = edition.name
     isEligible = isClosedVcDayEdition(edition)
-    if (isEligible) {
-      summary = await getVcDayQaSummary()
+    if (isEligible && edition.event_date) {
+      summary = await getVcDayQaSummary(edition.event_date)
     }
   } catch {
     loadError = true

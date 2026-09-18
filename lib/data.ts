@@ -1005,10 +1005,15 @@ export interface VcDayQaSummary {
   comments: VcDayComment[]
 }
 
-export async function getVcDayQaSummary(): Promise<VcDayQaSummary> {
+// A mesma plataforma de Q&A/avaliação é reaproveitada para outros eventos
+// (ex.: Congresso ABVCAP, cujos painéis já estão cadastrados para 22–23/09) —
+// vcday_panels.event_date é o único campo que identifica a qual evento cada
+// painel pertence, então o resultado precisa ser filtrado por essa data para
+// não misturar perguntas/avaliações de eventos diferentes.
+export async function getVcDayQaSummary(eventDate: string): Promise<VcDayQaSummary> {
   const supabase = getSupabase()
   const [panelsRes, questionsRes, evaluationsRes] = await Promise.all([
-    supabase.from('vcday_panels').select('*').order('sort_order', { ascending: true }),
+    supabase.from('vcday_panels').select('*').eq('event_date', eventDate).order('sort_order', { ascending: true }),
     supabase.from('vcday_questions').select('panel_id'),
     supabase.from('vcday_evaluations').select('*'),
   ])
@@ -1017,8 +1022,19 @@ export async function getVcDayQaSummary(): Promise<VcDayQaSummary> {
   if (evaluationsRes.error) throw evaluationsRes.error
 
   const panels = (panelsRes.data ?? []) as VcDayPanel[]
-  const questions = questionsRes.data ?? []
-  const evaluations = evaluationsRes.data ?? []
+  const panelIds = new Set(panels.map(p => p.id))
+  const questions = (questionsRes.data ?? []).filter(q => panelIds.has(q.panel_id))
+  const allEvaluations = evaluationsRes.data ?? []
+
+  // Avaliações "gerais" (sem panel_id) só pertencem a este evento se
+  // compartilharem o event_slug usado pelas avaliações já ligadas aos
+  // painéis deste evento — evita atribuir avaliações gerais do Congresso ao VC Day.
+  const eventSlugs = new Set(
+    allEvaluations.filter(ev => ev.panel_id && panelIds.has(ev.panel_id)).map(ev => ev.event_slug)
+  )
+  const evaluations = allEvaluations.filter(ev =>
+    (ev.panel_id && panelIds.has(ev.panel_id)) || (!ev.panel_id && eventSlugs.has(ev.event_slug))
+  )
 
   const questionCountByPanel = new Map<string, number>()
   for (const q of questions) {
