@@ -59,6 +59,11 @@ export default async function ReceitaPage() {
   }
   const avgTicketGlobal = weightedCount > 0 ? weightedSum / weightedCount : 0
 
+  const naoMembroRow = (analysis.by_membership ?? []).find(r => r.ticket_membership === 'NAO_MEMBRO')
+  const naoMembroRevenue = Number(naoMembroRow?.total_revenue || 0)
+  const naoMembroCount = Number(naoMembroRow?.count || 0)
+  const naoMembroPct = totalRevenue > 0 ? (naoMembroRevenue / totalRevenue) * 100 : 0
+
   return (
     <div className="p-8 space-y-8">
       <div className="flex items-end justify-between border-b border-border pb-6">
@@ -86,8 +91,8 @@ export default async function ReceitaPage() {
 
       {!loadError && (
         <>
-          {/* REV-01 — Receita total + Ticket médio global */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          {/* REV-01 — Receita total + Ticket médio global + Faturamento Não Membros */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             <StatCard
               title="Receita Total"
               value={formatBRL(totalRevenue)}
@@ -98,6 +103,12 @@ export default async function ReceitaPage() {
               value={formatBRLDecimal(avgTicketGlobal)}
               subtitle="Apenas ingressos pagos (> R$0)"
               accent="green"
+            />
+            <StatCard
+              title="Faturamento Não Membros"
+              value={formatBRL(naoMembroRevenue)}
+              subtitle={`${naoMembroCount.toLocaleString('pt-BR')} inscrito${naoMembroCount !== 1 ? 's' : ''} · ${naoMembroPct.toLocaleString('pt-BR', { maximumFractionDigits: 1 })}% da receita`}
+              accent="blue"
             />
           </div>
 
