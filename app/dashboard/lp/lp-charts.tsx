@@ -2,8 +2,9 @@
 
 import { StatCard } from '@/components/stat-card'
 import { LP_CATEGORY_LABELS } from '@/lib/data'
-import type { LpAnalysis } from '@/lib/data'
+import type { LpAnalysis, LpMasterCoverage } from '@/lib/data'
 import { LpCategorySelect } from './lp-category-select'
+import { LpMasterUpload } from './lp-master-upload'
 
 const CHART_COLORS = [
   '#00a99d',
@@ -18,10 +19,11 @@ const CHART_COLORS = [
 
 interface Props {
   analysis: LpAnalysis
+  coverage: LpMasterCoverage
   isAdmin: boolean
 }
 
-export function LpCharts({ analysis, isAdmin }: Props) {
+export function LpCharts({ analysis, coverage, isAdmin }: Props) {
   const {
     totalLpParticipants, pctOfAudience, distinctCompanies, avgParticipantsPerCompany,
     classifiedParticipants, byCategory, unclassified,
@@ -125,6 +127,89 @@ export function LpCharts({ analysis, isAdmin }: Props) {
           </table>
         )}
       </div>
+
+      {/* Cobertura vs. planilha mestre */}
+      {isAdmin && <LpMasterUpload />}
+
+      {coverage.hasMasterList ? (
+        <>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <StatCard
+              title="Penetração da Base Mestre"
+              value={`${coverage.pctConfirmed.toLocaleString('pt-BR', { maximumFractionDigits: 1 })}%`}
+              subtitle={`${coverage.confirmedCompanies} de ${coverage.totalMasterCompanies} LPs confirmados`}
+              accent="teal"
+            />
+            <StatCard
+              title="LPs Fora da Base Mestre"
+              value={coverage.newLpsNotInMaster.length.toLocaleString('pt-BR')}
+              subtitle="empresas LP no evento, ainda não catalogadas"
+              accent="default"
+            />
+          </div>
+
+          {coverage.byCategory.length > 0 && (
+            <div className="bg-card border border-border rounded-lg p-5 shadow-sm">
+              <ChartLabel>% de Confirmação por Categoria (vs. Base Mestre)</ChartLabel>
+              <div className="space-y-3 mt-2">
+                {coverage.byCategory.map((c, i) => (
+                  <div key={c.category} className="flex items-center gap-4">
+                    <span className="text-[10px] font-mono text-muted-foreground/40 w-4 shrink-0 tabular-nums">{i + 1}</span>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex justify-between items-baseline mb-1.5">
+                        <span className="text-sm text-foreground/80 truncate">{LP_CATEGORY_LABELS[c.category]}</span>
+                        <span className="text-[11px] font-mono text-muted-foreground ml-3 shrink-0">
+                          {c.confirmed}/{c.totalInMaster} <span className="text-muted-foreground/40">({c.pctConfirmed.toLocaleString('pt-BR', { maximumFractionDigits: 1 })}%)</span>
+                        </span>
+                      </div>
+                      <div className="h-1 bg-border rounded-full overflow-hidden">
+                        <div className="h-full rounded-full transition-all duration-500"
+                          style={{ width: `${c.pctConfirmed}%`, backgroundColor: CHART_COLORS[i % CHART_COLORS.length] }} />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <div className="bg-card border border-border rounded-lg overflow-hidden">
+            <div className="px-5 py-3 border-b border-border">
+              <p className="text-[10px] font-mono tracking-[0.20em] text-muted-foreground uppercase">
+                LPs da Base Mestre Ainda Não Confirmados ({coverage.unconfirmed.length})
+              </p>
+            </div>
+            {coverage.unconfirmed.length === 0 ? (
+              <div className="p-6 text-center text-sm text-muted-foreground">Todos os LPs da base mestre já confirmaram presença.</div>
+            ) : (
+              <div className="max-h-[400px] overflow-y-auto">
+                <table className="w-full">
+                  <thead className="bg-muted/40 sticky top-0">
+                    <tr>
+                      <th className="text-left text-xs font-semibold p-3">Empresa</th>
+                      <th className="text-left text-xs font-semibold p-3">Categoria</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {coverage.unconfirmed.map(u => (
+                      <tr key={u.companyKey} className="border-t border-border">
+                        <td className="p-3 text-sm">{u.displayName}</td>
+                        <td className="p-3 text-sm text-muted-foreground">{u.category ? LP_CATEGORY_LABELS[u.category] : '—'}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        </>
+      ) : (
+        !isAdmin && (
+          <div className="border border-dashed border-border rounded-lg p-8 text-center">
+            <p className="text-sm text-muted-foreground">Planilha mestre de LPs ainda não cadastrada.</p>
+          </div>
+        )
+      )}
     </div>
   )
 }

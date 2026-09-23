@@ -1149,6 +1149,7 @@ export function normalizeCompanyKey(raw: string): string {
     .trim()
     .toLowerCase()
     .replace(/\s+/g, ' ')
+    .replace(/\s*\/\s*/g, '/')
 }
 
 export interface LpCompanyCategoryRow {
@@ -1214,29 +1215,20 @@ export interface LpAnalysis {
   unclassified: LpUnclassifiedCompany[]
 }
 
-export async function getLpAnalysis(editionId: string): Promise<LpAnalysis> {
-  const supabase = getSupabase()
-  const [{ data: lpParticipants, error: lpErr }, { count: totalAudience, error: totalErr }, categories] = await Promise.all([
-    supabase
-      .from('participants')
-      .select('company')
-      .eq('edition_id', editionId)
-      .eq('company_segment_normalized', 'LP')
-      .not('company', 'is', null)
-      .limit(5000),
-    supabase
-      .from('participants')
-      .select('*', { count: 'exact', head: true })
-      .eq('edition_id', editionId),
-    getLpCompanyCategories(),
-  ])
-  if (lpErr) throw lpErr
-  if (totalErr) throw totalErr
-
-  const categoryByKey = new Map(categories.map(c => [c.companyKey, c.category]))
+// Conta participantes LP por empresa (chave normalizada) numa edição — usado tanto
+// pela classificação por subcategoria quanto pela cobertura vs. planilha mestre.
+async function getLpParticipantCompanyCounts(editionId: string): Promise<Map<string, { displayName: string; count: number }>> {
+  const { data, error } = await getSupabase()
+    .from('participants')
+    .select('company')
+    .eq('edition_id', editionId)
+    .eq('company_segment_normalized', 'LP')
+    .not('company', 'is', null)
+    .limit(5000)
+  if (error) throw error
 
   const companyCounts = new Map<string, { displayName: string; count: number }>()
-  for (const row of lpParticipants ?? []) {
+  for (const row of data ?? []) {
     const raw = (row.company as string).trim()
     if (!raw) continue
     const key = normalizeCompanyKey(raw)
@@ -1244,6 +1236,22 @@ export async function getLpAnalysis(editionId: string): Promise<LpAnalysis> {
     if (existing) existing.count++
     else companyCounts.set(key, { displayName: raw, count: 1 })
   }
+  return companyCounts
+}
+
+export async function getLpAnalysis(editionId: string): Promise<LpAnalysis> {
+  const supabase = getSupabase()
+  const [companyCounts, { count: totalAudience, error: totalErr }, categories] = await Promise.all([
+    getLpParticipantCompanyCounts(editionId),
+    supabase
+      .from('participants')
+      .select('*', { count: 'exact', head: true })
+      .eq('edition_id', editionId),
+    getLpCompanyCategories(),
+  ])
+  if (totalErr) throw totalErr
+
+  const categoryByKey = new Map(categories.map(c => [c.companyKey, c.category]))
 
   const totalLpParticipants = Array.from(companyCounts.values()).reduce((s, c) => s + c.count, 0)
   const distinctCompanies = companyCounts.size
@@ -1281,5 +1289,166 @@ export async function getLpAnalysis(editionId: string): Promise<LpAnalysis> {
     classifiedParticipants,
     byCategory,
     unclassified,
+  }
+}
+
+// ─── LPs — Planilha mestre e cobertura (Fase 2) ────────────────────────────────
+
+// Normaliza texto livre de categoria vindo da planilha mestre (ex. "Fundos de Pensão",
+// "Single Family Office") para o enum lp_category. Reaproveita normalizeCompanyKey
+// (acento/caixa/espaço) — não é fuzzy matching, só variações conhecidas.
+const LP_CATEGORY_TEXT_ALIASES: Record<string, LpCategory> = (() => {
+  const map: Record<string, LpCategory> = {}
+  for (const cat of LP_CATEGORIES) map[normalizeCompanyKey(LP_CATEGORY_LABELS[cat])] = cat
+  map[normalizeCompanyKey('DFI')] = 'AGENCIA_FOMENTO_DFI'
+  map[normalizeCompanyKey('Agência de Fomento')] = 'AGENCIA_FOMENTO_DFI'
+  map[normalizeCompanyKey('Fomento')] = 'AGENCIA_FOMENTO_DFI'
+  map[normalizeCompanyKey('Fundos de Pensão')] = 'FUNDO_PENSAO'
+  map[normalizeCompanyKey('Fundo de Fundo')] = 'FUNDO_DE_FUNDOS'
+  map[normalizeCompanyKey('FoF')] = 'FUNDO_DE_FUNDOS'
+  map[normalizeCompanyKey('Single Family Office')] = 'FAMILY_OFFICE'
+  map[normalizeCompanyKey('Multi Family Office')] = 'FAMILY_OFFICE'
+  map[normalizeCompanyKey('MFO')] = 'FAMILY_OFFICE'
+  map[normalizeCompanyKey('SFO')] = 'FAMILY_OFFICE'
+  return map
+})()
+
+export function parseLpCategoryText(raw: string): LpCategory | null {
+  return LP_CATEGORY_TEXT_ALIASES[normalizeCompanyKey(raw)] ?? null
+}
+
+export interface LpMasterCompany {
+  companyKey: string
+  displayName: string
+  category: LpCategory | null
+  country: string | null
+}
+
+export async function getLpMasterList(): Promise<LpMasterCompany[]> {
+  const { data, error } = await getSupabase()
+    .from('lp_master_companies')
+    .select('company_key, display_name, category, country')
+  if (error) throw error
+  return (data ?? []).map(r => ({
+    companyKey: r.company_key,
+    displayName: r.display_name,
+    category: r.category,
+    country: r.country,
+  }))
+}
+
+export interface LpMasterUploadRow {
+  displayName: string
+  category: LpCategory | null
+  country: string | null
+}
+
+// Substitui a planilha mestre inteira (é um snapshot do universo conhecido de LPs,
+// não um log incremental — cada upload representa "isto é tudo que sabemos hoje").
+export async function replaceLpMasterList(rows: LpMasterUploadRow[]): Promise<{ inserted: number }> {
+  const supabase = getSupabase()
+  const dedup = new Map<string, { company_key: string; display_name: string; category: LpCategory | null; country: string | null }>()
+  for (const r of rows) {
+    const name = r.displayName.trim()
+    if (!name) continue
+    const key = normalizeCompanyKey(name)
+    dedup.set(key, { company_key: key, display_name: name, category: r.category, country: r.country })
+  }
+
+  const { error: delError } = await supabase.from('lp_master_companies').delete().not('id', 'is', null)
+  if (delError) throw delError
+
+  const insertRows = Array.from(dedup.values())
+  if (insertRows.length > 0) {
+    const { error: insError } = await supabase.from('lp_master_companies').insert(insertRows)
+    if (insError) throw insError
+  }
+  return { inserted: insertRows.length }
+}
+
+export interface LpMasterCategoryCoverage {
+  category: LpCategory
+  totalInMaster: number
+  confirmed: number
+  pctConfirmed: number
+}
+
+export interface LpMasterUnconfirmed {
+  companyKey: string
+  displayName: string
+  category: LpCategory | null
+}
+
+export interface LpNewLp {
+  companyKey: string
+  displayName: string
+  participantCount: number
+}
+
+export interface LpMasterCoverage {
+  hasMasterList: boolean
+  totalMasterCompanies: number
+  confirmedCompanies: number
+  pctConfirmed: number
+  byCategory: LpMasterCategoryCoverage[]
+  unconfirmed: LpMasterUnconfirmed[]
+  newLpsNotInMaster: LpNewLp[]
+}
+
+export async function getLpMasterCoverage(editionId: string): Promise<LpMasterCoverage> {
+  const [master, participantCompanies] = await Promise.all([
+    getLpMasterList(),
+    getLpParticipantCompanyCounts(editionId),
+  ])
+
+  if (master.length === 0) {
+    return {
+      hasMasterList: false,
+      totalMasterCompanies: 0,
+      confirmedCompanies: 0,
+      pctConfirmed: 0,
+      byCategory: [],
+      unconfirmed: [],
+      newLpsNotInMaster: [],
+    }
+  }
+
+  const masterKeys = new Set(master.map(m => m.companyKey))
+  const confirmedKeys = new Set(master.filter(m => participantCompanies.has(m.companyKey)).map(m => m.companyKey))
+
+  const byCategoryMap = new Map<LpCategory, { totalInMaster: number; confirmed: number }>()
+  for (const m of master) {
+    if (!m.category) continue
+    const bucket = byCategoryMap.get(m.category) ?? { totalInMaster: 0, confirmed: 0 }
+    bucket.totalInMaster++
+    if (confirmedKeys.has(m.companyKey)) bucket.confirmed++
+    byCategoryMap.set(m.category, bucket)
+  }
+  const byCategory: LpMasterCategoryCoverage[] = LP_CATEGORIES
+    .map(category => {
+      const b = byCategoryMap.get(category)
+      return b ? { category, totalInMaster: b.totalInMaster, confirmed: b.confirmed, pctConfirmed: (b.confirmed / b.totalInMaster) * 100 } : null
+    })
+    .filter((b): b is LpMasterCategoryCoverage => b !== null)
+    .sort((a, b) => b.totalInMaster - a.totalInMaster)
+
+  const unconfirmed: LpMasterUnconfirmed[] = master
+    .filter(m => !confirmedKeys.has(m.companyKey))
+    .map(m => ({ companyKey: m.companyKey, displayName: m.displayName, category: m.category }))
+    .sort((a, b) => a.displayName.localeCompare(b.displayName))
+
+  const newLpsNotInMaster: LpNewLp[] = Array.from(participantCompanies.entries())
+    .filter(([key]) => !masterKeys.has(key))
+    .map(([key, v]) => ({ companyKey: key, displayName: v.displayName, participantCount: v.count }))
+    .sort((a, b) => b.participantCount - a.participantCount)
+
+  return {
+    hasMasterList: true,
+    totalMasterCompanies: master.length,
+    confirmedCompanies: confirmedKeys.size,
+    pctConfirmed: (confirmedKeys.size / master.length) * 100,
+    byCategory,
+    unconfirmed,
+    newLpsNotInMaster,
   }
 }
