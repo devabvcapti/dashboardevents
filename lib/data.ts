@@ -361,7 +361,7 @@ export interface CuponSummaryRow {
   avg_ticket: number | null
   discount_pct_estimate: number | null
   companies: string[]
-  participants: { name: string; company: string | null }[]
+  participants: { name: string; company: string | null; segment: string | null }[]
   category: CouponCategory | null
 }
 
@@ -369,6 +369,7 @@ export interface OfflinePaymentParticipant {
   id: string
   name: string
   company: string | null
+  segment: string | null
   valor_pago_manual: number | null
   valor_efetivo: number
 }
@@ -384,7 +385,7 @@ export interface CategorySummaryGroup {
   category: CouponCategory | 'PAGAMENTO_OFFLINE' | null
   label: string
   count: number
-  participants: { name: string; company: string | null }[]
+  participants: { name: string; company: string | null; segment: string | null }[]
 }
 
 export interface CuponsStats {
@@ -417,7 +418,7 @@ export async function getCuponsSummary(editionId: string): Promise<CuponsStats> 
   const [{ data, error }, categories] = await Promise.all([
     getSupabase()
       .from('participants')
-      .select('id, coupon_code, ticket_value, valor_pago_manual, valor_efetivo, company, full_name')
+      .select('id, coupon_code, ticket_value, valor_pago_manual, valor_efetivo, company, full_name, company_segment_raw')
       .eq('edition_id', editionId)
       .limit(5000),
     getCouponCategories(editionId),
@@ -432,6 +433,7 @@ export async function getCuponsSummary(editionId: string): Promise<CuponsStats> 
     valor_efetivo: number | null
     company: string | null
     full_name: string | null
+    company_segment_raw: string | null
   }[]
 
   const noCouponValues = rows.filter(r => !r.coupon_code && r.ticket_value !== null).map(r => r.ticket_value as number)
@@ -445,7 +447,7 @@ export async function getCuponsSummary(editionId: string): Promise<CuponsStats> 
   const offlineRows = rows.filter(r => r.coupon_code && isOfflinePaymentCoupon(r.coupon_code))
   const withCoupon = rows.filter(r => r.coupon_code && !isOfflinePaymentCoupon(r.coupon_code))
 
-  const byCode: Record<string, { count: number; values: number[]; companies: Set<string>; participants: { name: string; company: string | null }[] }> = {}
+  const byCode: Record<string, { count: number; values: number[]; companies: Set<string>; participants: { name: string; company: string | null; segment: string | null }[] }> = {}
   const companyCounts: Record<string, number> = {}
 
   for (const row of withCoupon) {
@@ -458,7 +460,7 @@ export async function getCuponsSummary(editionId: string): Promise<CuponsStats> 
       companyCounts[row.company] = (companyCounts[row.company] ?? 0) + 1
     }
     if (row.full_name) {
-      byCode[code].participants.push({ name: row.full_name, company: row.company })
+      byCode[code].participants.push({ name: row.full_name, company: row.company, segment: row.company_segment_raw })
     }
   }
 
@@ -504,6 +506,7 @@ export async function getCuponsSummary(editionId: string): Promise<CuponsStats> 
         id: row.id,
         name: row.full_name,
         company: row.company,
+        segment: row.company_segment_raw,
         valor_pago_manual: row.valor_pago_manual,
         valor_efetivo: row.valor_efetivo ?? row.ticket_value ?? 0,
       })
@@ -523,7 +526,7 @@ export async function getCuponsSummary(editionId: string): Promise<CuponsStats> 
     offline_payments.reduce((s, g) => s + g.total_paid, 0) * 100
   ) / 100
 
-  const categoryGroups: Record<string, { name: string; company: string | null }[]> = {}
+  const categoryGroups: Record<string, { name: string; company: string | null; segment: string | null }[]> = {}
   for (const row of by_coupon) {
     const key = row.category ?? 'SEM_CATEGORIA'
     if (!categoryGroups[key]) categoryGroups[key] = []
@@ -533,7 +536,7 @@ export async function getCuponsSummary(editionId: string): Promise<CuponsStats> 
     const key = 'PAGAMENTO_OFFLINE'
     if (!categoryGroups[key]) categoryGroups[key] = []
     for (const g of offline_payments) {
-      for (const p of g.participants) categoryGroups[key].push({ name: p.name, company: p.company })
+      for (const p of g.participants) categoryGroups[key].push({ name: p.name, company: p.company, segment: p.segment })
     }
   }
 

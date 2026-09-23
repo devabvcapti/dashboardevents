@@ -167,6 +167,7 @@ export default async function CuponsPage() {
                                   <li key={j}>
                                     {p.name}
                                     {p.company && <span className="text-muted-foreground/40"> — {p.company}</span>}
+                                    {p.segment && <span className="text-muted-foreground/30"> ({p.segment})</span>}
                                   </li>
                                 ))}
                               </ul>

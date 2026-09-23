@@ -52,6 +52,7 @@ export function CategoryCards({ categories }: { categories: CategorySummaryGroup
               <li key={i} className="text-foreground/80 truncate">
                 {p.name}
                 {p.company && <span className="text-muted-foreground/50"> — {p.company}</span>}
+                {p.segment && <span className="text-muted-foreground/40"> ({p.segment})</span>}
               </li>
             ))}
           </ul>
