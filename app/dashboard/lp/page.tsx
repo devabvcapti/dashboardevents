@@ -1,5 +1,5 @@
 import { requireAuth } from '@/lib/auth'
-import { getLpAnalysis, getLpMasterCoverage } from '@/lib/data'
+import { getLpAnalysis, getLpMasterCoverage, getLpExcludedCompanies } from '@/lib/data'
 import { getActiveEdition } from '@/lib/edition-cookie'
 import { LpCharts } from './lp-charts'
 
@@ -12,14 +12,16 @@ export default async function LpPage() {
   let editionName: string | null = null
   let analysis: Awaited<ReturnType<typeof getLpAnalysis>> | null = null
   let coverage: Awaited<ReturnType<typeof getLpMasterCoverage>> | null = null
+  let excluded: Awaited<ReturnType<typeof getLpExcludedCompanies>> = []
   let loadError = false
 
   try {
     const edition = await getActiveEdition()
     editionName = edition.name
-    ;[analysis, coverage] = await Promise.all([
+    ;[analysis, coverage, excluded] = await Promise.all([
       getLpAnalysis(edition.id),
       getLpMasterCoverage(edition.id),
+      getLpExcludedCompanies(),
     ])
   } catch {
     loadError = true
@@ -47,14 +49,14 @@ export default async function LpPage() {
         </div>
       )}
 
-      {!loadError && analysis && analysis.totalLpParticipants === 0 && (
+      {!loadError && analysis && analysis.totalLpParticipants === 0 && excluded.length === 0 && (
         <div className="border border-dashed border-border rounded-lg p-12 text-center">
           <p className="text-sm text-muted-foreground">Sem participantes LP nesta edição.</p>
         </div>
       )}
 
-      {!loadError && analysis && analysis.totalLpParticipants > 0 && coverage && (
-        <LpCharts analysis={analysis} coverage={coverage} isAdmin={user.isAdmin} />
+      {!loadError && analysis && (analysis.totalLpParticipants > 0 || excluded.length > 0) && coverage && (
+        <LpCharts analysis={analysis} coverage={coverage} excluded={excluded} isAdmin={user.isAdmin} />
       )}
     </div>
   )

@@ -260,6 +260,30 @@ export type Database = {
         }
         Relationships: []
       }
+      lp_excluded_companies: {
+        Row: {
+          company_key: string
+          created_at: string
+          display_name: string
+          id: string
+          reason: string | null
+        }
+        Insert: {
+          company_key: string
+          created_at?: string
+          display_name: string
+          id?: string
+          reason?: string | null
+        }
+        Update: {
+          company_key?: string
+          created_at?: string
+          display_name?: string
+          id?: string
+          reason?: string | null
+        }
+        Relationships: []
+      }
       lp_master_companies: {
         Row: {
           category: Database["public"]["Enums"]["lp_category"] | null
@@ -857,6 +881,7 @@ export type VcDayQuestion = Database["public"]["Tables"]["vcday_questions"]["Row
 export type VcDayEvaluation = Database["public"]["Tables"]["vcday_evaluations"]["Row"]
 export type LpCompanyCategory = Database["public"]["Tables"]["lp_company_categories"]["Row"]
 export type LpMasterCompanyRow = Database["public"]["Tables"]["lp_master_companies"]["Row"]
+export type LpExcludedCompanyRow = Database["public"]["Tables"]["lp_excluded_companies"]["Row"]
 
 export interface OverviewStats {
   total: number

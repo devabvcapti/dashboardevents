@@ -2,9 +2,10 @@
 
 import { StatCard } from '@/components/stat-card'
 import { LP_CATEGORY_LABELS } from '@/lib/data'
-import type { LpAnalysis, LpMasterCoverage } from '@/lib/data'
+import type { LpAnalysis, LpMasterCoverage, LpExcludedCompany } from '@/lib/data'
 import { LpCategorySelect } from './lp-category-select'
 import { LpMasterUpload } from './lp-master-upload'
+import { LpExcludeButton, LpRestoreButton } from './lp-exclude-button'
 
 const CHART_COLORS = [
   '#00a99d',
@@ -20,13 +21,14 @@ const CHART_COLORS = [
 interface Props {
   analysis: LpAnalysis
   coverage: LpMasterCoverage
+  excluded: LpExcludedCompany[]
   isAdmin: boolean
 }
 
-export function LpCharts({ analysis, coverage, isAdmin }: Props) {
+export function LpCharts({ analysis, coverage, excluded, isAdmin }: Props) {
   const {
     totalLpParticipants, pctOfAudience, distinctCompanies, avgParticipantsPerCompany,
-    classifiedParticipants, byCategory, unclassified,
+    classifiedParticipants, byCategory, companies,
   } = analysis
 
   const maxCategoryCount = byCategory[0]?.participantCount ?? 1
@@ -88,45 +90,82 @@ export function LpCharts({ analysis, coverage, isAdmin }: Props) {
         )}
       </div>
 
-      {/* Empresas ainda não classificadas */}
+      {/* Todas as empresas LP — classificação e exclusão */}
       <div className="bg-card border border-border rounded-lg overflow-hidden">
         <div className="px-5 py-3 border-b border-border flex items-center justify-between">
           <p className="text-[10px] font-mono tracking-[0.20em] text-muted-foreground uppercase">
-            Empresas Não Classificadas ({unclassified.length})
+            Todas as Empresas LP ({companies.length})
           </p>
           {!isAdmin && (
-            <span className="text-[10px] font-mono text-muted-foreground/50">apenas admins podem classificar</span>
+            <span className="text-[10px] font-mono text-muted-foreground/50">apenas admins podem classificar/excluir</span>
           )}
         </div>
-        {unclassified.length === 0 ? (
-          <div className="p-6 text-center text-sm text-muted-foreground">Todas as empresas LP desta edição já estão classificadas.</div>
+        {companies.length === 0 ? (
+          <div className="p-6 text-center text-sm text-muted-foreground">Nenhuma empresa LP nesta edição.</div>
         ) : (
+          <div className="max-h-[500px] overflow-y-auto">
+            <table className="w-full">
+              <thead className="bg-muted/40 sticky top-0">
+                <tr>
+                  <th className="text-left text-xs font-semibold p-3">Empresa</th>
+                  <th className="text-right text-xs font-semibold p-3">Participantes</th>
+                  {isAdmin && <th className="text-right text-xs font-semibold p-3">Subcategoria</th>}
+                  {isAdmin && <th className="text-right text-xs font-semibold p-3"></th>}
+                </tr>
+              </thead>
+              <tbody>
+                {companies.map(c => (
+                  <tr key={c.companyKey} className="border-t border-border">
+                    <td className="p-3 text-sm">{c.displayName}</td>
+                    <td className="p-3 text-sm text-right font-mono tabular-nums">{c.participantCount}</td>
+                    {isAdmin && (
+                      <td className="p-3 text-right">
+                        <div className="flex justify-end">
+                          <LpCategorySelect companyName={c.displayName} currentCategory={c.category} />
+                        </div>
+                      </td>
+                    )}
+                    {isAdmin && (
+                      <td className="p-3 text-right">
+                        <LpExcludeButton companyName={c.displayName} />
+                      </td>
+                    )}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
+      {/* Empresas excluídas da contabilização de LPs */}
+      {isAdmin && excluded.length > 0 && (
+        <div className="bg-card border border-border rounded-lg overflow-hidden">
+          <div className="px-5 py-3 border-b border-border">
+            <p className="text-[10px] font-mono tracking-[0.20em] text-muted-foreground uppercase">
+              Empresas Excluídas da Contabilização de LPs ({excluded.length})
+            </p>
+          </div>
           <table className="w-full">
             <thead className="bg-muted/40">
               <tr>
                 <th className="text-left text-xs font-semibold p-3">Empresa</th>
-                <th className="text-right text-xs font-semibold p-3">Participantes</th>
-                {isAdmin && <th className="text-right text-xs font-semibold p-3">Subcategoria</th>}
+                <th className="text-right text-xs font-semibold p-3"></th>
               </tr>
             </thead>
             <tbody>
-              {unclassified.map(u => (
-                <tr key={u.companyKey} className="border-t border-border">
-                  <td className="p-3 text-sm">{u.displayName}</td>
-                  <td className="p-3 text-sm text-right font-mono tabular-nums">{u.participantCount}</td>
-                  {isAdmin && (
-                    <td className="p-3 text-right">
-                      <div className="flex justify-end">
-                        <LpCategorySelect companyName={u.displayName} />
-                      </div>
-                    </td>
-                  )}
+              {excluded.map(e => (
+                <tr key={e.companyKey} className="border-t border-border">
+                  <td className="p-3 text-sm text-muted-foreground">{e.displayName}</td>
+                  <td className="p-3 text-right">
+                    <LpRestoreButton companyKey={e.companyKey} />
+                  </td>
                 </tr>
               ))}
             </tbody>
           </table>
-        )}
-      </div>
+        </div>
+      )}
 
       {/* Cobertura vs. planilha mestre */}
       {isAdmin && <LpMasterUpload />}

@@ -8,9 +8,10 @@ import type { LpCategory } from '@/lib/data'
 
 interface Props {
   companyName: string
+  currentCategory?: LpCategory | null
 }
 
-export function LpCategorySelect({ companyName }: Props) {
+export function LpCategorySelect({ companyName, currentCategory }: Props) {
   const router = useRouter()
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -40,10 +41,10 @@ export function LpCategorySelect({ companyName }: Props) {
 
   return (
     <div>
-      <Select onValueChange={handleChange} disabled={saving}>
+      <Select value={currentCategory ?? undefined} onValueChange={handleChange} disabled={saving}>
         <SelectTrigger size="sm" className="h-7 text-[11px] w-[200px]">
           <SelectValue>
-            <span className="text-muted-foreground/40">classificar</span>
+            {currentCategory ? LP_CATEGORY_LABELS[currentCategory] : <span className="text-muted-foreground/40">classificar</span>}
           </SelectValue>
         </SelectTrigger>
         <SelectContent>

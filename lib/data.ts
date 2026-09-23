@@ -1207,6 +1207,13 @@ export interface LpCategoryBreakdown {
   participantCount: number
 }
 
+export interface LpCompanyRow {
+  companyKey: string
+  displayName: string
+  participantCount: number
+  category: LpCategory | null
+}
+
 export interface LpAnalysis {
   totalLpParticipants: number
   totalAudience: number
@@ -1216,25 +1223,68 @@ export interface LpAnalysis {
   classifiedParticipants: number
   byCategory: LpCategoryBreakdown[]
   unclassified: LpUnclassifiedCompany[]
+  companies: LpCompanyRow[]
+}
+
+export interface LpExcludedCompany {
+  companyKey: string
+  displayName: string
+  reason: string | null
+}
+
+export async function getLpExcludedCompanies(): Promise<LpExcludedCompany[]> {
+  const { data, error } = await getSupabase()
+    .from('lp_excluded_companies')
+    .select('company_key, display_name, reason')
+  if (error) throw error
+  return (data ?? []).map(r => ({ companyKey: r.company_key, displayName: r.display_name, reason: r.reason }))
+}
+
+// Marca uma empresa como "não é LP" — para casos em que company_segment_normalized
+// classificou errado (derivado por regex de texto livre, ver lib/import/segment-mapper.ts).
+// Reversível via restoreLpCompany. Também remove a subcategoria, se houver, para não
+// deixar dado órfão de uma empresa que não conta mais como LP.
+export async function excludeLpCompany(companyName: string, reason: string | null): Promise<void> {
+  const companyKey = normalizeCompanyKey(companyName)
+  const { error } = await getSupabase()
+    .from('lp_excluded_companies')
+    .upsert({ company_key: companyKey, display_name: companyName.trim(), reason }, { onConflict: 'company_key' })
+  if (error) throw error
+  await deleteLpCompanyCategory(companyKey).catch(() => {})
+}
+
+export async function restoreLpCompany(companyKey: string): Promise<void> {
+  const { error } = await getSupabase()
+    .from('lp_excluded_companies')
+    .delete()
+    .eq('company_key', companyKey)
+  if (error) throw error
 }
 
 // Conta participantes LP por empresa (chave normalizada) numa edição — usado tanto
 // pela classificação por subcategoria quanto pela cobertura vs. planilha mestre.
+// Empresas em lp_excluded_companies nunca contam como LP em nenhuma métrica.
 async function getLpParticipantCompanyCounts(editionId: string): Promise<Map<string, { displayName: string; count: number }>> {
-  const { data, error } = await getSupabase()
-    .from('participants')
-    .select('company')
-    .eq('edition_id', editionId)
-    .eq('company_segment_normalized', 'LP')
-    .not('company', 'is', null)
-    .limit(5000)
+  const [{ data, error }, excluded] = await Promise.all([
+    getSupabase()
+      .from('participants')
+      .select('company')
+      .eq('edition_id', editionId)
+      .eq('company_segment_normalized', 'LP')
+      .not('company', 'is', null)
+      .limit(5000),
+    getLpExcludedCompanies(),
+  ])
   if (error) throw error
+
+  const excludedKeys = new Set(excluded.map(e => e.companyKey))
 
   const companyCounts = new Map<string, { displayName: string; count: number }>()
   for (const row of data ?? []) {
     const raw = (row.company as string).trim()
     if (!raw) continue
     const key = normalizeCompanyKey(raw)
+    if (excludedKeys.has(key)) continue
     const existing = companyCounts.get(key)
     if (existing) existing.count++
     else companyCounts.set(key, { displayName: raw, count: 1 })
@@ -1283,6 +1333,15 @@ export async function getLpAnalysis(editionId: string): Promise<LpAnalysis> {
 
   unclassified.sort((a, b) => b.participantCount - a.participantCount)
 
+  const companies: LpCompanyRow[] = Array.from(companyCounts.entries())
+    .map(([key, { displayName, count }]) => ({
+      companyKey: key,
+      displayName,
+      participantCount: count,
+      category: categoryByKey.get(key) ?? null,
+    }))
+    .sort((a, b) => b.participantCount - a.participantCount || a.displayName.localeCompare(b.displayName))
+
   return {
     totalLpParticipants,
     totalAudience: totalAudience ?? 0,
@@ -1292,6 +1351,7 @@ export async function getLpAnalysis(editionId: string): Promise<LpAnalysis> {
     classifiedParticipants,
     byCategory,
     unclassified,
+    companies,
   }
 }
 
