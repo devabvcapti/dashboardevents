@@ -1,9 +1,5 @@
 'use client'
 
-import {
-  Cell, Tooltip, ResponsiveContainer,
-  BarChart, Bar, XAxis, YAxis, LabelList,
-} from 'recharts'
 import type { PublicoAnalysis, RankingItem } from '@/lib/data'
 
 const CHART_COLORS = [
@@ -16,22 +12,6 @@ const CHART_COLORS = [
   'oklch(0.68 0.12 130)',
   'oklch(0.66 0.10 340)',
 ]
-
-const TOOLTIP_STYLE = {
-  backgroundColor: '#ffffff',
-  border: '1px solid oklch(0.89 0.010 240)',
-  borderRadius: '6px',
-  color: '#112468',
-  fontSize: '12px',
-  fontFamily: 'var(--font-ibm-mono)',
-  boxShadow: '0 4px 16px rgba(17, 36, 104, 0.08)',
-}
-
-const AXIS_TICK = {
-  fontSize: 11,
-  fontFamily: 'var(--font-ibm-mono)',
-  fill: 'oklch(0.52 0.04 254)',
-}
 
 const COMPANY_LABELS: Record<string, string> = {
   GP: 'Gestora (GP)',
@@ -62,36 +42,12 @@ export function PublicoCharts({ byCompanyType, total, analise }: Props) {
   return (
     <div className="space-y-6">
 
-      {/* ── Tipo de Empresa ── */}
-      <div className="bg-card border border-border rounded-lg p-5 shadow-sm">
-        <ChartLabel>Percentual por Categoria (Top 10)</ChartLabel>
-        {topCompanyData.length === 0 ? <EmptyChart /> : (
-          <ResponsiveContainer width="100%" height={Math.max(260, topCompanyData.length * 42)}>
-            <BarChart layout="vertical" data={topCompanyData}
-              margin={{ top: 4, right: 48, left: 4, bottom: 4 }}
-              barCategoryGap="30%">
-              <XAxis type="number" hide />
-              <YAxis type="category" dataKey="name" width={200}
-                tick={AXIS_TICK} axisLine={false} tickLine={false} />
-              <Tooltip contentStyle={TOOLTIP_STYLE} formatter={(v) => [`${v}%`, 'Participação']} />
-              <Bar dataKey="pct" name="%" radius={[0, 3, 3, 0]} maxBarSize={26}>
-                {topCompanyData.map((_, i) => (
-                  <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
-                ))}
-                <LabelList dataKey="pct" position="right"
-                  formatter={(v: unknown) => `${v}%`} style={AXIS_TICK} />
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
-        )}
-      </div>
-
       {/* ── Segmento de Atuação (ranking) ── */}
       <div className="bg-card border border-border rounded-lg p-5 shadow-sm">
-        <ChartLabel>Segmento de Atuação</ChartLabel>
-        {companyData.length === 0 ? <EmptyChart height={120} /> : (
+        <ChartLabel>Segmento de Atuação (Top 10)</ChartLabel>
+        {topCompanyData.length === 0 ? <EmptyChart height={120} /> : (
           <div className="space-y-3 mt-2">
-            {[...companyData].sort((a, b) => b.count - a.count).map((d, i) => (
+            {topCompanyData.map((d, i) => (
               <div key={d.type} className="flex items-center gap-4">
                 <span className="text-[10px] font-mono text-muted-foreground/40 w-4 shrink-0 tabular-nums">{i + 1}</span>
                 <div className="flex-1 min-w-0">
