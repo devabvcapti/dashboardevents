@@ -7,9 +7,9 @@ import type { CompanySegment } from '../database.types'
  */
 const RULES: Array<{ patterns: RegExp[]; segment: CompanySegment }> = [
   { patterns: [/private equity/i, /\bgp\b/i, /gestora de pe/i, /gestora de venture/i, /venture capital/i, /\bvc\b/i], segment: 'GP' },
-  { patterns: [/fundo de pens/i, /endowment/i, /investidor institucional/i, /\blp\b/i], segment: 'LP' },
+  { patterns: [/fundo de pens/i, /endowment/i, /investidor institucional/i, /\blp\b/i, /family office/i], segment: 'LP' },
   { patterns: [/fundo de fundos/i, /\bfof\b/i], segment: 'FUNDO' },
-  { patterns: [/banco/i, /seguradora/i, /corporativ/i, /family office/i, /tesouraria/i], segment: 'CORPORATIVO' },
+  { patterns: [/banco/i, /seguradora/i, /corporativ/i, /tesouraria/i], segment: 'CORPORATIVO' },
   { patterns: [/governo/i, /agência regul/i, /agencia regul/i, /regulador/i, /minist[ée]rio/i, /\bbndes\b/i, /\bcvm\b/i], segment: 'GOVERNO' },
   { patterns: [/universidade/i, /academia/i, /pesquisa/i, /faculdade/i], segment: 'ACADEMIA' },
 ]
