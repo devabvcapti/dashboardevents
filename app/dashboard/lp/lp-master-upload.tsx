@@ -8,6 +8,7 @@ interface UploadResult {
   totalRows: number
   inserted: number
   unrecognizedCategories: string[]
+  skippedRows: number
 }
 
 export function LpMasterUpload() {
@@ -47,7 +48,8 @@ export function LpMasterUpload() {
       </p>
       <p className="text-[12px] text-muted-foreground">
         Envie a planilha com o universo conhecido de LPs (colunas: Empresa, Categoria opcional, País opcional).
-        Cada envio substitui a planilha mestre inteira.
+        Cada envio substitui a planilha mestre inteira. Linhas categorizadas como &quot;Universidades&quot; ou
+        &quot;A revisar&quot; são ignoradas — não fazem parte do universo de LPs.
       </p>
       <div className="flex items-center gap-3">
         <input
@@ -74,6 +76,9 @@ export function LpMasterUpload() {
       {result && (
         <div className="text-[11px] font-mono text-muted-foreground space-y-1">
           <p>{result.inserted} empresas carregadas (de {result.totalRows} linhas na planilha).</p>
+          {result.skippedRows > 0 && (
+            <p>{result.skippedRows} linha{result.skippedRows !== 1 ? 's' : ''} ignorada{result.skippedRows !== 1 ? 's' : ''} (Universidades/A revisar).</p>
+          )}
           {result.unrecognizedCategories.length > 0 && (
             <p className="text-amber-600">
               Categorias não reconhecidas (ficaram sem subcategoria): {result.unrecognizedCategories.join(', ')}

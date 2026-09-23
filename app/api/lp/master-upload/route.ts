@@ -50,6 +50,7 @@ export async function POST(req: Request) {
       totalRows: parsed.totalRows,
       inserted,
       unrecognizedCategories: parsed.unrecognizedCategories,
+      skippedRows: parsed.skippedRows,
     })
   } catch (e) {
     return NextResponse.json({ error: e instanceof Error ? e.message : 'Falha ao salvar a planilha mestre.' }, { status: 500 })

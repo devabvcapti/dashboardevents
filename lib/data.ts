@@ -1380,6 +1380,17 @@ export function parseLpCategoryText(raw: string): LpCategory | null {
   return LP_CATEGORY_TEXT_ALIASES[normalizeCompanyKey(raw)] ?? null
 }
 
+// Categorias que existem na planilha mestre mas não fazem parte do universo de
+// LPs (confirmado com o usuário) — linhas com essas categorias não devem contar
+// no total da base mestre, não apenas ficar sem subcategoria.
+const LP_MASTER_SKIP_CATEGORIES = new Set(
+  ['Universidades', 'A revisar'].map(normalizeCompanyKey)
+)
+
+export function isSkippedLpMasterCategoryText(raw: string): boolean {
+  return LP_MASTER_SKIP_CATEGORIES.has(normalizeCompanyKey(raw))
+}
+
 export interface LpMasterCompany {
   companyKey: string
   displayName: string
@@ -1453,16 +1464,20 @@ export interface LpMasterCoverage {
   totalMasterCompanies: number
   confirmedCompanies: number
   pctConfirmed: number
+  confirmedParticipants: number
+  confirmedParticipantsPctOfAudience: number
   byCategory: LpMasterCategoryCoverage[]
   unconfirmed: LpMasterUnconfirmed[]
   newLpsNotInMaster: LpNewLp[]
 }
 
 export async function getLpMasterCoverage(editionId: string): Promise<LpMasterCoverage> {
-  const [master, participantCompanies] = await Promise.all([
+  const [master, participantCompanies, { count: totalAudience, error: totalErr }] = await Promise.all([
     getLpMasterList(),
     getLpParticipantCompanyCounts(editionId),
+    getSupabase().from('participants').select('*', { count: 'exact', head: true }).eq('edition_id', editionId),
   ])
+  if (totalErr) throw totalErr
 
   if (master.length === 0) {
     return {
@@ -1470,6 +1485,8 @@ export async function getLpMasterCoverage(editionId: string): Promise<LpMasterCo
       totalMasterCompanies: 0,
       confirmedCompanies: 0,
       pctConfirmed: 0,
+      confirmedParticipants: 0,
+      confirmedParticipantsPctOfAudience: 0,
       byCategory: [],
       unconfirmed: [],
       newLpsNotInMaster: [],
@@ -1478,6 +1495,8 @@ export async function getLpMasterCoverage(editionId: string): Promise<LpMasterCo
 
   const masterKeys = new Set(master.map(m => m.companyKey))
   const confirmedKeys = new Set(master.filter(m => participantCompanies.has(m.companyKey)).map(m => m.companyKey))
+  const confirmedParticipants = Array.from(confirmedKeys)
+    .reduce((sum, key) => sum + (participantCompanies.get(key)?.count ?? 0), 0)
 
   const byCategoryMap = new Map<LpCategory, { totalInMaster: number; confirmed: number }>()
   for (const m of master) {
@@ -1510,6 +1529,8 @@ export async function getLpMasterCoverage(editionId: string): Promise<LpMasterCo
     totalMasterCompanies: master.length,
     confirmedCompanies: confirmedKeys.size,
     pctConfirmed: (confirmedKeys.size / master.length) * 100,
+    confirmedParticipants,
+    confirmedParticipantsPctOfAudience: (totalAudience ?? 0) > 0 ? (confirmedParticipants / (totalAudience as number)) * 100 : 0,
     byCategory,
     unconfirmed,
     newLpsNotInMaster,

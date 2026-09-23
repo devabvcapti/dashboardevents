@@ -1,5 +1,5 @@
 import ExcelJS from 'exceljs'
-import { normalizeCompanyKey, parseLpCategoryText } from '@/lib/data'
+import { normalizeCompanyKey, parseLpCategoryText, isSkippedLpMasterCategoryText } from '@/lib/data'
 import type { LpMasterUploadRow } from '@/lib/data'
 
 const NAME_HEADER_ALIASES = ['empresa', 'nome', 'company', 'name', 'razao social', 'razão social', 'investidor']
@@ -10,6 +10,7 @@ export interface LpMasterParseResult {
   rows: LpMasterUploadRow[]
   totalRows: number
   unrecognizedCategories: string[]
+  skippedRows: number
 }
 
 function findColumn(headers: string[], aliases: string[]): number {
@@ -42,6 +43,7 @@ export async function parseLpMasterFile(buffer: ArrayBuffer): Promise<LpMasterPa
   const rows: LpMasterUploadRow[] = []
   const unrecognizedCategories = new Set<string>()
   let totalRows = 0
+  let skippedRows = 0
 
   for (let r = 2; r <= ws.rowCount; r++) {
     const values = (ws.getRow(r).values as Array<string | number | null>).slice(1)
@@ -55,6 +57,12 @@ export async function parseLpMasterFile(buffer: ArrayBuffer): Promise<LpMasterPa
     if (categoryIdx !== -1) {
       const rawCategory = String(values[categoryIdx] ?? '').trim()
       if (rawCategory) {
+        // Categorias fora do universo de LP (ex. Universidades, A revisar) — a linha
+        // inteira não entra na base mestre, não é só "sem subcategoria".
+        if (isSkippedLpMasterCategoryText(rawCategory)) {
+          skippedRows++
+          continue
+        }
         category = parseLpCategoryText(rawCategory)
         if (!category) unrecognizedCategories.add(rawCategory)
       }
@@ -65,5 +73,5 @@ export async function parseLpMasterFile(buffer: ArrayBuffer): Promise<LpMasterPa
     rows.push({ displayName, category, country })
   }
 
-  return { rows, totalRows, unrecognizedCategories: Array.from(unrecognizedCategories) }
+  return { rows, totalRows, unrecognizedCategories: Array.from(unrecognizedCategories), skippedRows }
 }

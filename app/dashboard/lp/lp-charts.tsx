@@ -173,12 +173,18 @@ export function LpCharts({ analysis, coverage, excluded, isAdmin }: Props) {
 
       {coverage.hasMasterList ? (
         <>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             <StatCard
               title="Penetração da Base Mestre"
               value={`${coverage.pctConfirmed.toLocaleString('pt-BR', { maximumFractionDigits: 1 })}%`}
               subtitle={`${coverage.confirmedCompanies} de ${coverage.totalMasterCompanies} LPs confirmados`}
               accent="teal"
+            />
+            <StatCard
+              title="% da Audiência — LPs Confirmados"
+              value={`${coverage.confirmedParticipantsPctOfAudience.toLocaleString('pt-BR', { maximumFractionDigits: 1 })}%`}
+              subtitle={`${coverage.confirmedParticipants} participantes de LPs confirmados`}
+              accent="green"
             />
             <StatCard
               title="LPs Fora da Base Mestre"
