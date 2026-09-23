@@ -240,6 +240,25 @@ export interface PublicoAnalysis {
   vcDayTopics: RankingItem[]
 }
 
+// Normaliza variações de grafia/gênero/idioma do cargo para exibição/agrupamento
+// nos rankings — o valor gravado em participants.job_title nunca é alterado.
+const JOB_TITLE_ALIASES: Record<string, string> = {
+  'sócio': 'Sócio(a) / Partner',
+  'sócia': 'Sócio(a) / Partner',
+  'socio': 'Sócio(a) / Partner',
+  'socia': 'Sócio(a) / Partner',
+  'partner': 'Sócio(a) / Partner',
+  'diretor': 'Diretor(a)',
+  'diretora': 'Diretor(a)',
+  'analista': 'Analista',
+  'analyst': 'Analista',
+}
+
+function normalizeJobTitle(raw: string): string {
+  const trimmed = raw.trim()
+  return JOB_TITLE_ALIASES[trimmed.toLowerCase()] ?? trimmed
+}
+
 function countArray(items: string[]): Record<string, number> {
   const counts: Record<string, number> = {}
   for (const item of items) {
@@ -272,7 +291,7 @@ export async function getPublicoAnalysis(editionId: string): Promise<PublicoAnal
 
   for (const row of data ?? []) {
     if (row.job_title) {
-      const t = row.job_title.trim()
+      const t = normalizeJobTitle(row.job_title)
       if (t) jobCounts[t] = (jobCounts[t] ?? 0) + 1
     }
     const fr = Array.isArray(row.form_responses) ? row.form_responses[0] : row.form_responses
@@ -806,7 +825,7 @@ export async function getAllEditionsComparison(): Promise<EditionComparison[]> {
       // Job title counts
       const jobCounts: Record<string, number> = {}
       for (const row of jobResult.data ?? []) {
-        const job = (row.job_title as string).trim()
+        const job = normalizeJobTitle(row.job_title as string)
         if (job) jobCounts[job] = (jobCounts[job] ?? 0) + 1
       }
       const jobTotal = Object.values(jobCounts).reduce((s, n) => s + n, 0) || 1
