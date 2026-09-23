@@ -233,6 +233,33 @@ export type Database = {
           },
         ]
       }
+      lp_company_categories: {
+        Row: {
+          category: Database["public"]["Enums"]["lp_category"]
+          company_key: string
+          created_at: string
+          display_name: string
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          category: Database["public"]["Enums"]["lp_category"]
+          company_key: string
+          created_at?: string
+          display_name: string
+          id?: string
+          updated_at?: string
+        }
+        Update: {
+          category?: Database["public"]["Enums"]["lp_category"]
+          company_key?: string
+          created_at?: string
+          display_name?: string
+          id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       marketing_communications: {
         Row: {
           channel: string
@@ -460,6 +487,7 @@ export type Database = {
           id: string
           name: string
           name_en: string | null
+          qa_enabled: boolean
           sort_order: number
           speakers: string | null
           starts_at: string
@@ -472,6 +500,7 @@ export type Database = {
           id: string
           name: string
           name_en?: string | null
+          qa_enabled?: boolean
           sort_order?: number
           speakers?: string | null
           starts_at: string
@@ -484,6 +513,7 @@ export type Database = {
           id?: string
           name?: string
           name_en?: string | null
+          qa_enabled?: boolean
           sort_order?: number
           speakers?: string | null
           starts_at?: string
@@ -609,6 +639,15 @@ export type Database = {
         | "LPS"
         | "FINANCEIRO"
       import_status: "PENDING" | "PROCESSING" | "COMPLETED" | "FAILED"
+      lp_category:
+        | "AGENCIA_FOMENTO_DFI"
+        | "FAMILY_OFFICE"
+        | "FUNDO_PENSAO"
+        | "FUNDO_DE_FUNDOS"
+        | "RPPS"
+        | "WEALTH_MANAGEMENT"
+        | "ASSET_MANAGER"
+        | "HNI"
       ticket_membership: "MEMBRO" | "NAO_MEMBRO"
     }
     CompositeTypes: {
@@ -760,6 +799,16 @@ export const Constants = {
         "FINANCEIRO",
       ],
       import_status: ["PENDING", "PROCESSING", "COMPLETED", "FAILED"],
+      lp_category: [
+        "AGENCIA_FOMENTO_DFI",
+        "FAMILY_OFFICE",
+        "FUNDO_PENSAO",
+        "FUNDO_DE_FUNDOS",
+        "RPPS",
+        "WEALTH_MANAGEMENT",
+        "ASSET_MANAGER",
+        "HNI",
+      ],
       ticket_membership: ["MEMBRO", "NAO_MEMBRO"],
     },
   },
@@ -770,6 +819,7 @@ export const Constants = {
 export type TicketMembership = Database["public"]["Enums"]["ticket_membership"]
 export type CompanySegment = Database["public"]["Enums"]["company_segment"]
 export type ImportStatus = Database["public"]["Enums"]["import_status"]
+export type LpCategory = Database["public"]["Enums"]["lp_category"]
 
 export type Participant = Database["public"]["Tables"]["participants"]["Row"]
 export type Edition = Database["public"]["Tables"]["editions"]["Row"]
@@ -778,6 +828,7 @@ export type FormResponse = Database["public"]["Tables"]["form_responses"]["Row"]
 export type VcDayPanel = Database["public"]["Tables"]["vcday_panels"]["Row"]
 export type VcDayQuestion = Database["public"]["Tables"]["vcday_questions"]["Row"]
 export type VcDayEvaluation = Database["public"]["Tables"]["vcday_evaluations"]["Row"]
+export type LpCompanyCategory = Database["public"]["Tables"]["lp_company_categories"]["Row"]
 
 export interface OverviewStats {
   total: number

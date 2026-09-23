@@ -11,6 +11,7 @@ import type {
   ParticipantWithState,
   Database,
   VcDayPanel,
+  LpCategory,
 } from './database.types'
 
 export type {
@@ -1116,5 +1117,169 @@ export async function getVcDayQaSummary(eventDate: string): Promise<VcDayQaSumma
     totalEvaluations: evaluations.length,
     overallAvgRating: allRatings.length > 0 ? allRatings.reduce((a, b) => a + b, 0) / allRatings.length : null,
     comments,
+  }
+}
+
+// ─── LPs — Classificação por subcategoria e análise por evento ────────────────
+
+export type { LpCategory }
+
+export const LP_CATEGORY_LABELS: Record<LpCategory, string> = {
+  AGENCIA_FOMENTO_DFI: 'Agência de Fomento / DFI',
+  FAMILY_OFFICE: 'Family Office',
+  FUNDO_PENSAO: 'Fundo de Pensão',
+  FUNDO_DE_FUNDOS: 'Fundo de Fundos',
+  RPPS: 'RPPS',
+  WEALTH_MANAGEMENT: 'Wealth Management',
+  ASSET_MANAGER: 'Asset Manager',
+  HNI: 'HNI',
+}
+
+export const LP_CATEGORIES = Object.keys(LP_CATEGORY_LABELS) as LpCategory[]
+
+// Empresas LP se repetem entre eventos e chegam com pequenas variações de grafia
+// entre importações (acento, maiúscula, travessão vs hífen) — normaliza antes de
+// comparar/gravar para que a mesma empresa não vire duas linhas no cadastro.
+// Não resolve variações mais distantes (abreviação, nome fantasia x razão social);
+// isso fica para o matching com a planilha mestre (fase 2).
+export function normalizeCompanyKey(raw: string): string {
+  return raw
+    .normalize('NFD').replace(/[̀-ͯ]/g, '')
+    .replace(/[‐-―]/g, '-')
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, ' ')
+}
+
+export interface LpCompanyCategoryRow {
+  companyKey: string
+  displayName: string
+  category: LpCategory
+}
+
+export async function getLpCompanyCategories(): Promise<LpCompanyCategoryRow[]> {
+  const { data, error } = await getSupabase()
+    .from('lp_company_categories')
+    .select('company_key, display_name, category')
+  if (error) throw error
+  return (data ?? []).map(r => ({
+    companyKey: r.company_key,
+    displayName: r.display_name,
+    category: r.category,
+  }))
+}
+
+export async function upsertLpCompanyCategory(
+  companyName: string,
+  category: LpCategory
+): Promise<void> {
+  const companyKey = normalizeCompanyKey(companyName)
+  const { error } = await getSupabase()
+    .from('lp_company_categories')
+    .upsert(
+      { company_key: companyKey, display_name: companyName.trim(), category, updated_at: new Date().toISOString() },
+      { onConflict: 'company_key' }
+    )
+  if (error) throw error
+}
+
+export async function deleteLpCompanyCategory(companyKey: string): Promise<void> {
+  const { error } = await getSupabase()
+    .from('lp_company_categories')
+    .delete()
+    .eq('company_key', companyKey)
+  if (error) throw error
+}
+
+export interface LpUnclassifiedCompany {
+  companyKey: string
+  displayName: string
+  participantCount: number
+}
+
+export interface LpCategoryBreakdown {
+  category: LpCategory
+  companyCount: number
+  participantCount: number
+}
+
+export interface LpAnalysis {
+  totalLpParticipants: number
+  totalAudience: number
+  pctOfAudience: number
+  distinctCompanies: number
+  avgParticipantsPerCompany: number
+  classifiedParticipants: number
+  byCategory: LpCategoryBreakdown[]
+  unclassified: LpUnclassifiedCompany[]
+}
+
+export async function getLpAnalysis(editionId: string): Promise<LpAnalysis> {
+  const supabase = getSupabase()
+  const [{ data: lpParticipants, error: lpErr }, { count: totalAudience, error: totalErr }, categories] = await Promise.all([
+    supabase
+      .from('participants')
+      .select('company')
+      .eq('edition_id', editionId)
+      .eq('company_segment_normalized', 'LP')
+      .not('company', 'is', null)
+      .limit(5000),
+    supabase
+      .from('participants')
+      .select('*', { count: 'exact', head: true })
+      .eq('edition_id', editionId),
+    getLpCompanyCategories(),
+  ])
+  if (lpErr) throw lpErr
+  if (totalErr) throw totalErr
+
+  const categoryByKey = new Map(categories.map(c => [c.companyKey, c.category]))
+
+  const companyCounts = new Map<string, { displayName: string; count: number }>()
+  for (const row of lpParticipants ?? []) {
+    const raw = (row.company as string).trim()
+    if (!raw) continue
+    const key = normalizeCompanyKey(raw)
+    const existing = companyCounts.get(key)
+    if (existing) existing.count++
+    else companyCounts.set(key, { displayName: raw, count: 1 })
+  }
+
+  const totalLpParticipants = Array.from(companyCounts.values()).reduce((s, c) => s + c.count, 0)
+  const distinctCompanies = companyCounts.size
+
+  const byCategoryMap = new Map<LpCategory, { companyCount: number; participantCount: number }>()
+  let classifiedParticipants = 0
+  const unclassified: LpUnclassifiedCompany[] = []
+
+  for (const [key, { displayName, count }] of companyCounts) {
+    const category = categoryByKey.get(key)
+    if (!category) {
+      unclassified.push({ companyKey: key, displayName, participantCount: count })
+      continue
+    }
+    classifiedParticipants += count
+    const bucket = byCategoryMap.get(category) ?? { companyCount: 0, participantCount: 0 }
+    bucket.companyCount++
+    bucket.participantCount += count
+    byCategoryMap.set(category, bucket)
+  }
+
+  const byCategory: LpCategoryBreakdown[] = LP_CATEGORIES
+    .map(category => ({ category, ...(byCategoryMap.get(category) ?? { companyCount: 0, participantCount: 0 }) }))
+    .filter(b => b.companyCount > 0)
+    .sort((a, b) => b.participantCount - a.participantCount)
+
+  unclassified.sort((a, b) => b.participantCount - a.participantCount)
+
+  return {
+    totalLpParticipants,
+    totalAudience: totalAudience ?? 0,
+    pctOfAudience: (totalAudience ?? 0) > 0 ? (totalLpParticipants / (totalAudience as number)) * 100 : 0,
+    distinctCompanies,
+    avgParticipantsPerCompany: distinctCompanies > 0 ? totalLpParticipants / distinctCompanies : 0,
+    classifiedParticipants,
+    byCategory,
+    unclassified,
   }
 }

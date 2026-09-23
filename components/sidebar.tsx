@@ -7,7 +7,7 @@ import { useState, useEffect, useRef } from 'react'
 import {
   LayoutDashboard, Users, BarChart3, TicketIcon, LogOut, Upload,
   Calendar, Wallet, Tag, UserCog, Activity, PiggyBank, BookOpen,
-  GitCompareArrows, Building2, Pin, PinOff, MessagesSquare,
+  GitCompareArrows, Building2, Pin, PinOff, MessagesSquare, Landmark,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { ThemeToggle } from '@/components/theme-toggle'
@@ -24,6 +24,7 @@ const commonNav = [
   { href: '/dashboard/receita', label: 'Análise de Receita', icon: Wallet },
   { href: '/dashboard/comparativo', label: 'Comparativo', icon: GitCompareArrows },
   { href: '/dashboard/empresas', label: 'Empresas', icon: Building2 },
+  { href: '/dashboard/lp', label: 'Análise de LPs', icon: Landmark },
   { href: '/dashboard/manual', label: 'Manual', icon: BookOpen },
 ]
 
