@@ -260,6 +260,8 @@ const JOB_TITLE_ALIASES: Record<string, string> = {
   'diretora': 'Diretor(a)',
   'analista': 'Analista',
   'analyst': 'Analista',
+  '.': 'Outros',
+  '-': 'Outros',
 }
 
 function normalizeJobTitle(raw: string): string {
