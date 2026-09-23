@@ -27,7 +27,7 @@ interface Props {
 
 export function LpCharts({ analysis, coverage, excluded, isAdmin }: Props) {
   const {
-    totalLpParticipants, pctOfAudience, distinctCompanies, avgParticipantsPerCompany,
+    totalLpParticipants, pctOfAudience, distinctCompanies, audiencePerLpParticipant,
     classifiedParticipants, byCategory, companies,
   } = analysis
 
@@ -50,8 +50,9 @@ export function LpCharts({ analysis, coverage, excluded, isAdmin }: Props) {
           accent="blue"
         />
         <StatCard
-          title="Média de Participantes por LP"
-          value={avgParticipantsPerCompany.toLocaleString('pt-BR', { maximumFractionDigits: 1 })}
+          title="Participantes por LP"
+          value={audiencePerLpParticipant.toLocaleString('pt-BR', { maximumFractionDigits: 1 })}
+          subtitle="total de participantes p/ cada 1 LP"
           accent="green"
         />
         <StatCard

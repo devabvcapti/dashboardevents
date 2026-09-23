@@ -1219,7 +1219,7 @@ export interface LpAnalysis {
   totalAudience: number
   pctOfAudience: number
   distinctCompanies: number
-  avgParticipantsPerCompany: number
+  audiencePerLpParticipant: number
   classifiedParticipants: number
   byCategory: LpCategoryBreakdown[]
   unclassified: LpUnclassifiedCompany[]
@@ -1347,7 +1347,7 @@ export async function getLpAnalysis(editionId: string): Promise<LpAnalysis> {
     totalAudience: totalAudience ?? 0,
     pctOfAudience: (totalAudience ?? 0) > 0 ? (totalLpParticipants / (totalAudience as number)) * 100 : 0,
     distinctCompanies,
-    avgParticipantsPerCompany: distinctCompanies > 0 ? totalLpParticipants / distinctCompanies : 0,
+    audiencePerLpParticipant: totalLpParticipants > 0 ? (totalAudience ?? 0) / totalLpParticipants : 0,
     classifiedParticipants,
     byCategory,
     unclassified,
