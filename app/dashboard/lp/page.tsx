@@ -2,6 +2,9 @@ import { requireAuth } from '@/lib/auth'
 import { getLpAnalysis, getLpMasterCoverage, getLpExcludedCompanies } from '@/lib/data'
 import { getActiveEdition } from '@/lib/edition-cookie'
 import { LpCharts } from './lp-charts'
+import { buttonVariants } from '@/components/ui/button'
+import { Download } from 'lucide-react'
+import { cn } from '@/lib/utils'
 
 export const dynamic = 'force-dynamic'
 export const metadata = { title: 'Análise de LPs — Dashboard ABVCAP' }
@@ -41,6 +44,15 @@ export default async function LpPage() {
             Perfil dos investidores (LPs) presentes no evento, por subcategoria.
           </p>
         </div>
+        {user.isAdmin && analysis && analysis.companies.length > 0 && (
+          <a
+            href="/api/export/lp-companies"
+            className={cn(buttonVariants({ variant: 'outline', size: 'sm' }))}
+          >
+            <Download className="w-3.5 h-3.5" />
+            Exportar planilha
+          </a>
+        )}
       </div>
 
       {loadError && (
