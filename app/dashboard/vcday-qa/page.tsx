@@ -1,11 +1,11 @@
 import { requireAuth } from '@/lib/auth'
 import { getVcDayQaSummary } from '@/lib/data'
 import { getActiveEdition } from '@/lib/edition-cookie'
-import { isClosedVcDayEdition } from '@/lib/vcday'
+import { isClosedEventWithQaPlatform } from '@/lib/vcday'
 import { VcDayQaCharts } from './vcday-qa-charts'
 
 export const dynamic = 'force-dynamic'
-export const metadata = { title: 'Q&A e Avaliações — VC Day — Dashboard ABVCAP' }
+export const metadata = { title: 'Q&A e Avaliações — Dashboard ABVCAP' }
 
 export default async function VcDayQaPage() {
   await requireAuth()
@@ -18,7 +18,7 @@ export default async function VcDayQaPage() {
   try {
     const edition = await getActiveEdition()
     editionName = edition.name
-    isEligible = isClosedVcDayEdition(edition)
+    isEligible = isClosedEventWithQaPlatform(edition)
     if (isEligible && edition.event_date) {
       summary = await getVcDayQaSummary(edition.event_date)
     }
@@ -51,7 +51,7 @@ export default async function VcDayQaPage() {
       {!loadError && !isEligible && (
         <div className="border border-dashed border-border rounded-lg p-12 text-center">
           <p className="text-sm text-muted-foreground">
-            Esta área fica disponível somente para edições do VC Day já realizadas. Selecione uma edição encerrada no menu lateral.
+            Esta área fica disponível somente para edições já realizadas. Selecione uma edição encerrada no menu lateral.
           </p>
         </div>
       )}

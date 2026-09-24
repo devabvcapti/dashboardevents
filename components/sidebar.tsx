@@ -12,7 +12,7 @@ import {
 import { cn } from '@/lib/utils'
 import { ThemeToggle } from '@/components/theme-toggle'
 import { EditionSelector } from '@/components/edition-selector'
-import { isClosedVcDayEdition } from '@/lib/vcday'
+import { isClosedEventWithQaPlatform } from '@/lib/vcday'
 
 const commonNav = [
   { href: '/dashboard', label: 'Visão Geral', icon: LayoutDashboard },
@@ -86,7 +86,7 @@ export function Sidebar({
   const collapsed = !pinned && !hovered
 
   const activeEdition = editions.find(e => e.id === activeEditionId)
-  const showVcDayQa = !!activeEdition && isClosedVcDayEdition(activeEdition)
+  const showQaMenu = !!activeEdition && isClosedEventWithQaPlatform(activeEdition)
 
   useEffect(() => {
     const stored = localStorage.getItem('sidebar-pinned')
@@ -198,7 +198,7 @@ export function Sidebar({
           <NavItem key={href} href={href} label={label} icon={icon} active={pathname === href} collapsed={collapsed} />
         ))}
 
-        {showVcDayQa && (
+        {showQaMenu && (
           <>
             {!collapsed ? (
               <div className="pt-3 pb-1 px-3">

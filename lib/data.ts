@@ -1043,10 +1043,11 @@ export interface VcDayQaSummary {
 // vcday_panels.event_date é o único campo que identifica a qual evento cada
 // painel pertence, então o resultado precisa ser filtrado por essa data para
 // não misturar perguntas/avaliações de eventos diferentes.
-export async function getVcDayQaSummary(eventDate: string): Promise<VcDayQaSummary> {
+export async function getVcDayQaSummary(startDate: string): Promise<VcDayQaSummary> {
   const supabase = getSupabase()
   const [panelsRes, questionsRes, evaluationsRes] = await Promise.all([
-    supabase.from('vcday_panels').select('*').eq('event_date', eventDate).order('sort_order', { ascending: true }),
+    supabase.from('vcday_panels').select('*').gte('event_date', startDate)
+      .order('event_date', { ascending: true }).order('sort_order', { ascending: true }),
     supabase.from('vcday_questions').select('panel_id'),
     supabase.from('vcday_evaluations').select('*'),
   ])
@@ -1054,7 +1055,20 @@ export async function getVcDayQaSummary(eventDate: string): Promise<VcDayQaSumma
   if (questionsRes.error) throw questionsRes.error
   if (evaluationsRes.error) throw evaluationsRes.error
 
-  const panels = (panelsRes.data ?? []) as VcDayPanel[]
+  const allPanels = (panelsRes.data ?? []) as VcDayPanel[]
+
+  // A edição só guarda uma data (event_date), mas o evento pode durar mais de
+  // um dia (ex. Congresso 2 dias) — inclui painéis de todos os dias
+  // consecutivos a partir de startDate, parando no primeiro dia sem painéis.
+  const datesWithPanels = new Set(allPanels.map(p => p.event_date))
+  const eventDates = new Set<string>()
+  const cursor = new Date(startDate)
+  while (datesWithPanels.has(cursor.toISOString().slice(0, 10))) {
+    eventDates.add(cursor.toISOString().slice(0, 10))
+    cursor.setUTCDate(cursor.getUTCDate() + 1)
+  }
+
+  const panels = allPanels.filter(p => eventDates.has(p.event_date))
   const panelIds = new Set(panels.map(p => p.id))
   const questions = (questionsRes.data ?? []).filter(q => panelIds.has(q.panel_id))
   const allEvaluations = evaluationsRes.data ?? []
