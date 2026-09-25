@@ -23,6 +23,7 @@ export type TargetField =
   | 'ticket_value'            // detectado por header
   | 'payment_status'          // detectado por header
   | 'registered_at'           // col BM — data real de inscrição
+  | 'checked_in'              // "Fez check-in" — detectado por header, só existe pós-evento
 
 export interface ParticipantRow {
   excel_row: number               // 1-based, primeira linha de DADOS é tipicamente 3
@@ -42,6 +43,7 @@ export interface ParticipantRow {
   ticket_value: number | null
   payment_status: string | null
   registered_at: Date | null
+  checked_in: boolean | null
   // form-related (vão para form_responses no commit)
   topics_of_interest: string[]
   interested_in_events: string[]

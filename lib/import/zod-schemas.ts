@@ -25,6 +25,7 @@ export const ParticipantRowSchema = z.object({
   dietary_restrictions: z.enum(['Sim', 'Não']).nullable(),
   dietary_details: z.string().nullable(),
   registered_at: z.date().nullable(),
+  checked_in: z.boolean().nullable(),
 })
 
 export type ParticipantRowValidated = z.infer<typeof ParticipantRowSchema>

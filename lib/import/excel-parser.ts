@@ -127,6 +127,8 @@ export function buildDefaultMapping(headerRow1: string[]): ColumnMapping {
       h === 'inscrito em' || h === 'registered at' || h === 'registration date' || h === 'order date'
     ) {
       map[i] = 'registered_at'
+    } else if (h === 'fez check-in' || h === 'fez check in') {
+      map[i] = 'checked_in'
     }
   }
 
@@ -255,6 +257,11 @@ function buildRow(
   const dietary_restrictions: 'Sim' | 'Não' | null =
     dietRaw === 'sim' ? 'Sim' : (dietRaw === 'não' || dietRaw === 'nao') ? 'Não' : null
 
+  const ciCol = findCol('checked_in')
+  const ciRaw = ciCol !== null ? str(cell(ciCol)).toLowerCase() : ''
+  const checked_in: boolean | null =
+    ciRaw === 'sim' ? true : (ciRaw === 'não' || ciRaw === 'nao') ? false : null
+
   // ticket_name, coupon_code e registered_at: colunas detectadas dinamicamente por header
   let ticket_name: string | null = null
   let coupon_code: string | null = null
@@ -297,6 +304,7 @@ function buildRow(
     coupon_code,
     ticket_value,
     registered_at,
+    checked_in,
     payment_status: (() => { const c = findCol('payment_status'); return c !== null ? str(cell(c)) || null : null })(),
     topics_of_interest: collectMulti([], 'topics_of_interest'),
     interested_in_events: collectMulti([], 'interested_in_events'),

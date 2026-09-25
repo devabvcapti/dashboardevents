@@ -348,6 +348,7 @@ export type Database = {
       }
       participants: {
         Row: {
+          checked_in: boolean | null
           company: string | null
           company_segment_normalized:
             | Database["public"]["Enums"]["company_segment"]
@@ -374,6 +375,7 @@ export type Database = {
           valor_pago_manual: number | null
         }
         Insert: {
+          checked_in?: boolean | null
           company?: string | null
           company_segment_normalized?:
             | Database["public"]["Enums"]["company_segment"]
@@ -400,6 +402,7 @@ export type Database = {
           valor_pago_manual?: number | null
         }
         Update: {
+          checked_in?: boolean | null
           company?: string | null
           company_segment_normalized?:
             | Database["public"]["Enums"]["company_segment"]

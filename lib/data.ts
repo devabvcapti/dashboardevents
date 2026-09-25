@@ -1570,3 +1570,62 @@ export async function deleteParticipant(participantId: string): Promise<void> {
     .eq('id', participantId)
   if (participantErr) throw participantErr
 }
+
+// ─── Presença (check-in) — pós-evento ──────────────────────────────────────────
+
+export interface AttendanceByMembership {
+  membership: TicketMembership
+  total: number
+  checkedIn: number
+  pctAttendance: number
+}
+
+export interface AttendanceStats {
+  totalParticipants: number
+  checkedIn: number
+  notCheckedIn: number
+  pctAttendance: number
+  // false enquanto nenhum participante desta edição tiver checked_in preenchido
+  // (planilha pós-evento com a coluna "Fez check-in" ainda não foi importada).
+  hasData: boolean
+  byMembership: AttendanceByMembership[]
+}
+
+export async function getAttendanceStats(editionId: string): Promise<AttendanceStats> {
+  const { data, error } = await getSupabase()
+    .from('participants')
+    .select('ticket_membership, checked_in')
+    .eq('edition_id', editionId)
+    .limit(5000)
+  if (error) throw error
+
+  const rows = data ?? []
+  const totalParticipants = rows.length
+  const hasData = rows.some(r => r.checked_in !== null)
+  const checkedIn = rows.filter(r => r.checked_in === true).length
+
+  const byMembershipMap = new Map<TicketMembership, { total: number; checkedIn: number }>()
+  for (const r of rows) {
+    const bucket = byMembershipMap.get(r.ticket_membership) ?? { total: 0, checkedIn: 0 }
+    bucket.total++
+    if (r.checked_in === true) bucket.checkedIn++
+    byMembershipMap.set(r.ticket_membership, bucket)
+  }
+  const byMembership: AttendanceByMembership[] = Array.from(byMembershipMap.entries())
+    .map(([membership, b]) => ({
+      membership,
+      total: b.total,
+      checkedIn: b.checkedIn,
+      pctAttendance: b.total > 0 ? (b.checkedIn / b.total) * 100 : 0,
+    }))
+    .sort((a, b) => b.total - a.total)
+
+  return {
+    totalParticipants,
+    checkedIn,
+    notCheckedIn: totalParticipants - checkedIn,
+    pctAttendance: totalParticipants > 0 ? (checkedIn / totalParticipants) * 100 : 0,
+    hasData,
+    byMembership,
+  }
+}

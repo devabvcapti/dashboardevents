@@ -7,7 +7,7 @@ import { useState, useEffect, useRef } from 'react'
 import {
   LayoutDashboard, Users, BarChart3, TicketIcon, LogOut, Upload,
   Calendar, Wallet, Tag, UserCog, Activity, PiggyBank, BookOpen,
-  GitCompareArrows, Building2, Pin, PinOff, MessagesSquare, Landmark,
+  GitCompareArrows, Building2, Pin, PinOff, MessagesSquare, Landmark, UserCheck,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { ThemeToggle } from '@/components/theme-toggle'
@@ -212,6 +212,13 @@ export function Sidebar({
               label="Q&A e Avaliações"
               icon={MessagesSquare}
               active={pathname === '/dashboard/vcday-qa'}
+              collapsed={collapsed}
+            />
+            <NavItem
+              href="/dashboard/presenca"
+              label="Presença"
+              icon={UserCheck}
+              active={pathname === '/dashboard/presenca'}
               collapsed={collapsed}
             />
           </>
