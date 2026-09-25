@@ -55,7 +55,7 @@ export default async function InscricoesPage({
 }: {
   searchParams: Promise<SearchParams>
 }) {
-  await requireAuth()
+  const user = await requireAuth()
 
   let editionId: string | null = null
   let editionName: string | null = null
@@ -135,6 +135,7 @@ export default async function InscricoesPage({
           totalCount={count}
           currentPage={page}
           pageSize={pageSize}
+          isAdmin={user.isAdmin}
           filters={{
             search: params.search ?? '',
             membership: filters.membership ?? '',

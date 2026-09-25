@@ -1550,3 +1550,23 @@ export async function getLpMasterCoverage(editionId: string): Promise<LpMasterCo
     newLpsNotInMaster,
   }
 }
+
+// ─── Cancelamento de inscrição ─────────────────────────────────────────────────
+
+// Cancela/remove uma inscrição (ex.: ingresso comprado por engano, duplicado).
+// form_responses referencia participants sem ON DELETE CASCADE, então a resposta
+// do formulário (se houver) precisa ser removida antes do participante.
+export async function deleteParticipant(participantId: string): Promise<void> {
+  const supabase = getSupabase()
+  const { error: formErr } = await supabase
+    .from('form_responses')
+    .delete()
+    .eq('participant_id', participantId)
+  if (formErr) throw formErr
+
+  const { error: participantErr } = await supabase
+    .from('participants')
+    .delete()
+    .eq('id', participantId)
+  if (participantErr) throw participantErr
+}

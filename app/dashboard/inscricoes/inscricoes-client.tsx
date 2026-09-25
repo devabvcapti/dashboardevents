@@ -11,6 +11,7 @@ import { ChevronLeft, ChevronRight, ArrowUpDown } from 'lucide-react'
 import type { Participant, TicketMembership, CompanySegment } from '@/lib/database.types'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
+import { CancelRegistrationButton } from './cancel-registration-button'
 
 interface Filters {
   search: string
@@ -27,6 +28,7 @@ interface Props {
   currentPage: number
   pageSize: 25 | 50 | 100
   filters: Filters
+  isAdmin: boolean
 }
 
 const SEGMENT_LABELS: Record<string, string> = {
@@ -47,7 +49,7 @@ const SORTABLE_COLUMNS: Array<{ key: string; label: string }> = [
   { key: 'created_at', label: 'Inscrição' },
 ]
 
-export function InscricoesClient({ participants, totalCount, currentPage, pageSize, filters }: Props) {
+export function InscricoesClient({ participants, totalCount, currentPage, pageSize, filters, isAdmin }: Props) {
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
@@ -156,12 +158,13 @@ export function InscricoesClient({ participants, totalCount, currentPage, pageSi
                   </TableHead>
                 )
               })}
+              {isAdmin && <TableHead className="text-right font-semibold">Ações</TableHead>}
             </TableRow>
           </TableHeader>
           <TableBody>
             {participants.length === 0 && (
               <TableRow>
-                <TableCell colSpan={SORTABLE_COLUMNS.length} className="text-center text-muted-foreground py-12">
+                <TableCell colSpan={SORTABLE_COLUMNS.length + (isAdmin ? 1 : 0)} className="text-center text-muted-foreground py-12">
                   Nenhum participante encontrado.
                 </TableCell>
               </TableRow>
@@ -186,6 +189,11 @@ export function InscricoesClient({ participants, totalCount, currentPage, pageSi
                     ? format(new Date((p.registered_at ?? p.created_at)!), 'dd/MM/yy - HH:mm', { locale: ptBR })
                     : '—'}
                 </TableCell>
+                {isAdmin && (
+                  <TableCell className="text-right">
+                    <CancelRegistrationButton participantId={p.id} />
+                  </TableCell>
+                )}
               </TableRow>
             ))}
           </TableBody>
