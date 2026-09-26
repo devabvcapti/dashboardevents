@@ -1827,6 +1827,12 @@ function npsQuestionResult(
       }
     }
   } else if (q.type === 'single' || q.type === 'multi') {
+    const resolveLabel = (value: string): string => {
+      if (q.optionsSource === 'panels') return panelNameById.get(value) ?? value
+      const normalized = value.trim().toLowerCase()
+      const match = q.options?.find(o => o.value.trim().toLowerCase() === normalized)
+      return match?.label ?? value
+    }
     const counts = new Map<string, number>()
     let total = 0
     for (const r of responses) {
@@ -1835,17 +1841,13 @@ function npsQuestionResult(
       total++
       const values = Array.isArray(val) ? val : [val]
       for (const v of values) {
-        const key = String(v)
-        counts.set(key, (counts.get(key) ?? 0) + 1)
+        const label = resolveLabel(String(v))
+        counts.set(label, (counts.get(label) ?? 0) + 1)
       }
     }
     base.responseCount = total
-    const resolveLabel = (value: string): string => {
-      if (q.optionsSource === 'panels') return panelNameById.get(value) ?? value
-      return q.options?.find(o => o.value === value)?.label ?? value
-    }
     base.choiceCounts = Array.from(counts.entries())
-      .map(([value, count]) => ({ label: resolveLabel(value), count, pct: total > 0 ? (count / total) * 100 : 0 }))
+      .map(([label, count]) => ({ label, count, pct: total > 0 ? (count / total) * 100 : 0 }))
       .sort((a, b) => b.count - a.count)
   } else if (q.type === 'text') {
     base.textAnswers = responses
