@@ -1830,7 +1830,9 @@ function npsQuestionResult(
     const resolveLabel = (value: string): string => {
       if (q.optionsSource === 'panels') return panelNameById.get(value) ?? value
       const normalized = value.trim().toLowerCase()
-      const match = q.options?.find(o => o.value.trim().toLowerCase() === normalized)
+      const match = q.options?.find(o =>
+        o.value.trim().toLowerCase() === normalized || o.label.trim().toLowerCase() === normalized
+      )
       return match?.label ?? value
     }
     const counts = new Map<string, number>()
