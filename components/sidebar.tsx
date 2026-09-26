@@ -7,7 +7,7 @@ import { useState, useEffect, useRef } from 'react'
 import {
   LayoutDashboard, Users, BarChart3, TicketIcon, LogOut, Upload,
   Calendar, Wallet, Tag, UserCog, Activity, PiggyBank, BookOpen,
-  GitCompareArrows, Building2, Pin, PinOff, MessagesSquare, Landmark, UserCheck,
+  GitCompareArrows, Building2, Pin, PinOff, MessagesSquare, Landmark, UserCheck, ClipboardList,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { ThemeToggle } from '@/components/theme-toggle'
@@ -223,6 +223,21 @@ export function Sidebar({
             />
           </>
         )}
+
+        {!collapsed ? (
+          <div className="pt-3 pb-1 px-3">
+            <p className="text-[9px] font-mono tracking-[0.25em] text-sidebar-foreground/25 uppercase">ABVCAP Experience</p>
+          </div>
+        ) : (
+          <div className="my-2 h-px bg-sidebar-border/50" />
+        )}
+        <NavItem
+          href="/dashboard/nps"
+          label="Pesquisas NPS"
+          icon={ClipboardList}
+          active={pathname === '/dashboard/nps'}
+          collapsed={collapsed}
+        />
 
         {isAdmin && (
           <>

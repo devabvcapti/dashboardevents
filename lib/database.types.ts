@@ -533,6 +533,33 @@ export type Database = {
           },
         ]
       }
+      vcday_nps_responses: {
+        Row: {
+          answers: Json
+          created_at: string
+          event_slug: string
+          id: string
+          nps_score: number | null
+          survey_slug: string
+        }
+        Insert: {
+          answers?: Json
+          created_at?: string
+          event_slug?: string
+          id?: string
+          nps_score?: number | null
+          survey_slug: string
+        }
+        Update: {
+          answers?: Json
+          created_at?: string
+          event_slug?: string
+          id?: string
+          nps_score?: number | null
+          survey_slug?: string
+        }
+        Relationships: []
+      }
       vcday_panels: {
         Row: {
           created_at: string
@@ -644,6 +671,23 @@ export type Database = {
         SetofOptions: {
           from: "*"
           to: "vcday_evaluations"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      vcday_admin_list_nps_responses: {
+        Args: { p_event_slug?: string; p_passcode: string }
+        Returns: {
+          answers: Json
+          created_at: string
+          event_slug: string
+          id: string
+          nps_score: number | null
+          survey_slug: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "vcday_nps_responses"
           isOneToOne: false
           isSetofReturn: true
         }

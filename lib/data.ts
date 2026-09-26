@@ -1629,3 +1629,268 @@ export async function getAttendanceStats(editionId: string): Promise<AttendanceS
     byMembership,
   }
 }
+
+// ─── Pesquisas NPS pós-evento (ABVCAP Experience) ──────────────────────────────
+//
+// Fonte: vcday_nps_responses, alimentada por um site externo
+// (congresso2026.abvcap.com.br/nps-*.html) que já tem seu próprio dashboard
+// ao vivo protegido por senha (nps-dashboard.html) — mantido em paralelo.
+// O que falta lá e existe aqui: histórico comparável entre edições do
+// Experience (event_slug tipo "experience-2026", "experience-2027"...).
+// Perguntas/opções abaixo replicam nps.js daquele site (só em PT — o
+// dashboard interno, como o de lá, não precisa ser bilíngue).
+
+export type NpsQuestionType = 'nps' | 'scale' | 'single' | 'multi' | 'text'
+
+interface NpsQuestionOption { value: string; label: string }
+
+interface NpsQuestionDef {
+  id: string
+  type: NpsQuestionType
+  primary?: boolean
+  text: string
+  options?: NpsQuestionOption[]
+  optionsSource?: 'panels'
+}
+
+interface NpsSurveyDef {
+  slug: string
+  title: string
+  questions: NpsQuestionDef[]
+}
+
+const FREQ_OPTIONS: NpsQuestionOption[] = [
+  { value: 'nenhuma', label: 'Nenhuma' },
+  { value: '1-2', label: '1 a 2' },
+  { value: '3-5', label: '3 a 5' },
+  { value: '6-10', label: '6 a 10' },
+  { value: 'mais-de-10', label: 'Mais de 10' },
+]
+
+const DEAL_PROGRESS_OPTIONS: NpsQuestionOption[] = [
+  { value: 'sim-andamento', label: 'Sim, já há conversa em andamento' },
+  { value: 'talvez', label: 'Talvez, é cedo para dizer' },
+  { value: 'nao', label: 'Não' },
+]
+
+const ATTEND_2027_OPTIONS: NpsQuestionOption[] = [
+  { value: 'sim-certeza', label: 'Sim, com certeza' },
+  { value: 'provavelmente-sim', label: 'Provavelmente sim' },
+  { value: 'nao-sei', label: 'Ainda não sei' },
+  { value: 'provavelmente-nao', label: 'Provavelmente não' },
+]
+
+const NPS_SURVEYS: Record<string, NpsSurveyDef> = {
+  participantes: {
+    slug: 'participantes',
+    title: 'Participantes',
+    questions: [
+      { id: 'q1', type: 'nps', primary: true, text: 'De 0 a 10, qual a probabilidade de você recomendar o Congresso ABVCAP a um colega?' },
+      { id: 'q2', type: 'scale', text: 'Como você avalia o Congresso de forma geral?' },
+      { id: 'q3', type: 'scale', text: 'Como você avalia a qualidade do conteúdo dos painéis?' },
+      { id: 'q4', type: 'multi', text: 'Quais painéis foram os mais relevantes para você?', optionsSource: 'panels' },
+      { id: 'q5', type: 'single', text: 'Quantas conversas profissionalmente relevantes você teve durante o evento?', options: FREQ_OPTIONS },
+      { id: 'q6', type: 'single', text: 'Alguma dessas conversas deve evoluir para negócio, parceria ou investimento?', options: DEAL_PROGRESS_OPTIONS },
+      { id: 'q7', type: 'scale', text: 'Como você avalia a estrutura do evento — local, sinalização, alimentação e credenciamento?' },
+      { id: 'q8', type: 'single', text: 'Você pretende participar da edição de 2027?', options: ATTEND_2027_OPTIONS },
+      { id: 'q9', type: 'text', text: 'O que mais funcionou e o que faríamos diferente?' },
+    ],
+  },
+  'painelistas-moderadores': {
+    slug: 'painelistas-moderadores',
+    title: 'Painelistas e Moderadores',
+    questions: [
+      { id: 'q1', type: 'single', text: 'Qual foi sua participação no Congresso?', options: [{ value: 'painelista', label: 'Painelista' }, { value: 'moderador', label: 'Moderador' }] },
+      { id: 'q2', type: 'nps', primary: true, text: 'De 0 a 10, qual a probabilidade de você participar novamente em 2027?' },
+      { id: 'q3', type: 'scale', text: 'Como você avalia a experiência de participar do Congresso?' },
+      { id: 'q4', type: 'scale', text: 'Como você avalia o processo de alinhamento prévio — convite, calls e comunicação da equipe?' },
+      { id: 'q5', type: 'single', text: 'O material de briefing do painel foi útil para sua preparação?', options: [
+        { value: 'muito-util', label: 'Muito útil' }, { value: 'util', label: 'Útil' },
+        { value: 'pouco-util', label: 'Pouco útil' }, { value: 'nao-recebi', label: 'Não recebi ou não utilizei' },
+      ] },
+      { id: 'q6', type: 'single', text: 'Como você avalia o formato e a duração do painel de que participou?', options: [
+        { value: 'adequados', label: 'Adequados' },
+        { value: 'tempo-curto', label: 'O tempo foi curto para o número de participantes' },
+        { value: 'tempo-longo', label: 'O tempo foi longo demais' },
+        { value: 'recorte-especifico', label: 'O recorte do tema poderia ser mais específico' },
+      ] },
+      { id: 'q7', type: 'scale', text: 'Como você avalia o apoio da equipe no dia do evento?' },
+      { id: 'q8', type: 'text', text: 'Somente para moderadores: o que ajudaria a conduzir melhor da próxima vez?' },
+      { id: 'q9', type: 'text', text: 'Algum comentário ou sugestão para 2027?' },
+    ],
+  },
+  patrocinadores: {
+    slug: 'patrocinadores',
+    title: 'Patrocinadores e Apoiadores',
+    questions: [
+      { id: 'q1', type: 'multi', text: 'Qual frente sua empresa patrocinou?', options: [
+        { value: 'congresso', label: 'Congresso' }, { value: 'vc-day', label: 'VC Day' },
+        { value: 'lp-day', label: 'LP Day' }, { value: 'women-connection', label: 'Women Connection' },
+      ] },
+      { id: 'q2', type: 'nps', primary: true, text: 'De 0 a 10, qual a probabilidade de sua empresa patrocinar o Experience em 2027?' },
+      { id: 'q3', type: 'scale', text: 'Como você avalia o retorno obtido frente ao investimento?' },
+      { id: 'q4', type: 'scale', text: 'Como você avalia a visibilidade da marca durante o evento?' },
+      { id: 'q5', type: 'single', text: 'A cota contratada entregou o que foi prometido?', options: [
+        { value: 'sim-integralmente', label: 'Sim, integralmente' }, { value: 'sim-maior-parte', label: 'Sim, na maior parte' },
+        { value: 'parcialmente', label: 'Parcialmente' }, { value: 'nao', label: 'Não' },
+      ] },
+      { id: 'q6', type: 'single', text: 'Quantos contatos qualificados sua empresa gerou no evento?', options: [
+        { value: 'nenhum', label: 'Nenhum' }, { value: '1-5', label: '1 a 5' }, { value: '6-15', label: '6 a 15' },
+        { value: '16-30', label: '16 a 30' }, { value: 'mais-de-30', label: 'Mais de 30' },
+      ] },
+      { id: 'q7', type: 'single', text: 'Algum contato deve evoluir para negócio?', options: DEAL_PROGRESS_OPTIONS },
+      { id: 'q8', type: 'scale', text: 'Como você avalia o relacionamento com a equipe da ABVCAP ao longo do processo?' },
+      { id: 'q9', type: 'text', text: 'Que contrapartida faria diferença em 2027 e hoje não existe?' },
+      { id: 'q10', type: 'text', text: 'Algum comentário ou sugestão?' },
+    ],
+  },
+  'women-connection': {
+    slug: 'women-connection',
+    title: 'Women Connection',
+    questions: [
+      { id: 'q1', type: 'nps', primary: true, text: 'De 0 a 10, qual a probabilidade de você recomendar o Women Connection a uma colega?' },
+      { id: 'q2', type: 'scale', text: 'Como você avalia o encontro de forma geral?' },
+      { id: 'q3', type: 'single', text: 'Quantas conversas profissionalmente relevantes você teve?', options: FREQ_OPTIONS },
+      { id: 'q4', type: 'single', text: 'Quantas pessoas que você não conhecia antes você conheceu?', options: FREQ_OPTIONS },
+      { id: 'q5', type: 'single', text: 'Alguma dessas conversas deve evoluir para negócio, parceria ou oportunidade profissional?', options: DEAL_PROGRESS_OPTIONS },
+      { id: 'q6', type: 'single', text: 'O formato do encontro favoreceu as conexões?', options: [
+        { value: 'sim-plenamente', label: 'Sim, plenamente' }, { value: 'sim-em-parte', label: 'Sim, em parte' },
+        { value: 'nao-muito', label: 'Não muito — faltou dinâmica que estimulasse a circulação' }, { value: 'nao', label: 'Não' },
+      ] },
+      { id: 'q7', type: 'single', text: 'Como você avalia a duração e o tamanho do grupo?', options: [
+        { value: 'ambos-adequados', label: 'Ambos adequados' }, { value: 'tempo-curto', label: 'O tempo foi curto' },
+        { value: 'grupo-maior', label: 'O grupo poderia ser maior' }, { value: 'grupo-menor', label: 'O grupo poderia ser menor' },
+      ] },
+      { id: 'q8', type: 'single', text: 'Você pretende participar em 2027?', options: ATTEND_2027_OPTIONS },
+      { id: 'q9', type: 'text', text: 'O que tornaria o encontro mais produtivo para você?' },
+    ],
+  },
+}
+
+export interface NpsChoiceCount {
+  label: string
+  count: number
+  pct: number
+}
+
+export interface NpsQuestionResult {
+  id: string
+  text: string
+  type: NpsQuestionType
+  responseCount: number
+  average: number | null
+  npsScore: number | null // só preenchido para a pergunta primary
+  promoters: number
+  passives: number
+  detractors: number
+  choiceCounts: NpsChoiceCount[]
+  textAnswers: string[]
+}
+
+export interface NpsSurveyResult {
+  slug: string
+  title: string
+  responseCount: number
+  questions: NpsQuestionResult[]
+}
+
+export interface NpsYearResult {
+  eventSlug: string
+  year: string
+  surveys: NpsSurveyResult[]
+}
+
+function npsQuestionResult(
+  q: NpsQuestionDef,
+  responses: { answers: Record<string, unknown> }[],
+  panelNameById: Map<string, string>
+): NpsQuestionResult {
+  const base: NpsQuestionResult = {
+    id: q.id, text: q.text, type: q.type,
+    responseCount: 0, average: null, npsScore: null,
+    promoters: 0, passives: 0, detractors: 0,
+    choiceCounts: [], textAnswers: [],
+  }
+
+  if (q.type === 'nps' || q.type === 'scale') {
+    const scores = responses.map(r => r.answers[q.id]).filter((v): v is number => typeof v === 'number')
+    base.responseCount = scores.length
+    if (scores.length > 0) {
+      base.average = scores.reduce((a, b) => a + b, 0) / scores.length
+      if (q.primary) {
+        const promoters = scores.filter(s => s >= 9).length
+        const detractors = scores.filter(s => s <= 6).length
+        base.promoters = promoters
+        base.detractors = detractors
+        base.passives = scores.length - promoters - detractors
+        base.npsScore = Math.round(((promoters - detractors) / scores.length) * 100)
+      }
+    }
+  } else if (q.type === 'single' || q.type === 'multi') {
+    const counts = new Map<string, number>()
+    let total = 0
+    for (const r of responses) {
+      const val = r.answers[q.id]
+      if (val === undefined || val === null) continue
+      total++
+      const values = Array.isArray(val) ? val : [val]
+      for (const v of values) {
+        const key = String(v)
+        counts.set(key, (counts.get(key) ?? 0) + 1)
+      }
+    }
+    base.responseCount = total
+    const resolveLabel = (value: string): string => {
+      if (q.optionsSource === 'panels') return panelNameById.get(value) ?? value
+      return q.options?.find(o => o.value === value)?.label ?? value
+    }
+    base.choiceCounts = Array.from(counts.entries())
+      .map(([value, count]) => ({ label: resolveLabel(value), count, pct: total > 0 ? (count / total) * 100 : 0 }))
+      .sort((a, b) => b.count - a.count)
+  } else if (q.type === 'text') {
+    base.textAnswers = responses
+      .map(r => r.answers[q.id])
+      .filter((v): v is string => typeof v === 'string' && v.trim() !== '')
+    base.responseCount = base.textAnswers.length
+  }
+
+  return base
+}
+
+export async function getNpsHistory(): Promise<NpsYearResult[]> {
+  const supabase = getSupabase()
+  const [{ data: responsesData, error: respErr }, { data: panelsData, error: panelsErr }] = await Promise.all([
+    supabase.from('vcday_nps_responses').select('survey_slug, event_slug, answers'),
+    supabase.from('vcday_panels').select('id, name'),
+  ])
+  if (respErr) throw respErr
+  if (panelsErr) throw panelsErr
+
+  const panelNameById = new Map((panelsData ?? []).map(p => [p.id, p.name]))
+  const responses = (responsesData ?? []) as { survey_slug: string; event_slug: string; answers: Record<string, unknown> }[]
+
+  const byEventSlug = new Map<string, typeof responses>()
+  for (const r of responses) {
+    const arr = byEventSlug.get(r.event_slug) ?? []
+    arr.push(r)
+    byEventSlug.set(r.event_slug, arr)
+  }
+
+  const years: NpsYearResult[] = Array.from(byEventSlug.entries())
+    .map(([eventSlug, yearResponses]) => {
+      const surveys: NpsSurveyResult[] = Object.values(NPS_SURVEYS).map(survey => {
+        const surveyResponses = yearResponses.filter(r => r.survey_slug === survey.slug)
+        return {
+          slug: survey.slug,
+          title: survey.title,
+          responseCount: surveyResponses.length,
+          questions: survey.questions.map(q => npsQuestionResult(q, surveyResponses, panelNameById)),
+        }
+      })
+      const yearMatch = eventSlug.match(/(\d{4})/)
+      return { eventSlug, year: yearMatch ? yearMatch[1] : eventSlug, surveys }
+    })
+    .sort((a, b) => b.year.localeCompare(a.year))
+
+  return years
+}
