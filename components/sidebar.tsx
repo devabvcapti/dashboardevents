@@ -226,14 +226,14 @@ export function Sidebar({
 
         {!collapsed ? (
           <div className="pt-3 pb-1 px-3">
-            <p className="text-[9px] font-mono tracking-[0.25em] text-sidebar-foreground/25 uppercase">ABVCAP Experience</p>
+            <p className="text-[9px] font-mono tracking-[0.25em] text-sidebar-foreground/25 uppercase">Pesquisa NPS</p>
           </div>
         ) : (
           <div className="my-2 h-px bg-sidebar-border/50" />
         )}
         <NavItem
           href="/dashboard/nps"
-          label="Pesquisas NPS"
+          label="ABVCAP Experience 2026"
           icon={ClipboardList}
           active={pathname === '/dashboard/nps'}
           collapsed={collapsed}
