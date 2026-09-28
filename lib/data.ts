@@ -1696,6 +1696,21 @@ const NPS_SURVEYS: Record<string, NpsSurveyDef> = {
       { id: 'q9', type: 'text', text: 'O que mais funcionou e o que faríamos diferente?' },
     ],
   },
+  'participantes-vcday': {
+    slug: 'participantes-vcday',
+    title: 'Participantes VC Day',
+    questions: [
+      { id: 'q1', type: 'nps', primary: true, text: 'De 0 a 10, qual a probabilidade de você recomendar o VC Day ABVCAP a um colega?' },
+      { id: 'q2', type: 'scale', text: 'Como você avalia o Congresso de forma geral?' },
+      { id: 'q3', type: 'scale', text: 'Como você avalia a qualidade do conteúdo dos painéis?' },
+      { id: 'q4', type: 'multi', text: 'Quais painéis foram os mais relevantes para você?', optionsSource: 'panels' },
+      { id: 'q5', type: 'single', text: 'Quantas conversas profissionalmente relevantes você teve durante o evento?', options: FREQ_OPTIONS },
+      { id: 'q6', type: 'single', text: 'Alguma dessas conversas deve evoluir para negócio, parceria ou investimento?', options: DEAL_PROGRESS_OPTIONS },
+      { id: 'q7', type: 'scale', text: 'Como você avalia a estrutura do evento — local, sinalização, alimentação e credenciamento?' },
+      { id: 'q8', type: 'single', text: 'Você pretende participar da edição de 2027?', options: ATTEND_2027_OPTIONS },
+      { id: 'q9', type: 'text', text: 'O que mais funcionou e o que faríamos diferente?' },
+    ],
+  },
   'painelistas-moderadores': {
     slug: 'painelistas-moderadores',
     title: 'Painelistas e Moderadores',
