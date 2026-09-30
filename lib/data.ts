@@ -1802,11 +1802,17 @@ export interface NpsQuestionResult {
   textAnswers: string[]
 }
 
+export interface NpsContact {
+  name: string | null
+  email: string | null
+}
+
 export interface NpsSurveyResult {
   slug: string
   title: string
   responseCount: number
   questions: NpsQuestionResult[]
+  contacts: NpsContact[]
 }
 
 export interface NpsYearResult {
@@ -1899,11 +1905,21 @@ export async function getNpsHistory(): Promise<NpsYearResult[]> {
     .map(([eventSlug, yearResponses]) => {
       const surveys: NpsSurveyResult[] = Object.values(NPS_SURVEYS).map(survey => {
         const surveyResponses = yearResponses.filter(r => r.survey_slug === survey.slug)
+        // "nome"/"email" são campos de identificação opcionais (fora das perguntas
+        // da pesquisa) — quem preenche autoriza contato para cupom de desconto e
+        // acesso antecipado na próxima edição.
+        const contacts: NpsContact[] = surveyResponses
+          .map(r => ({
+            name: typeof r.answers.nome === 'string' && r.answers.nome.trim() ? r.answers.nome.trim() : null,
+            email: typeof r.answers.email === 'string' && r.answers.email.trim() ? r.answers.email.trim() : null,
+          }))
+          .filter(c => c.name !== null || c.email !== null)
         return {
           slug: survey.slug,
           title: survey.title,
           responseCount: surveyResponses.length,
           questions: survey.questions.map(q => npsQuestionResult(q, surveyResponses, panelNameById)),
+          contacts,
         }
       })
       const yearMatch = eventSlug.match(/(\d{4})/)

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import type { NpsYearResult, NpsQuestionResult } from '@/lib/data'
+import type { NpsYearResult, NpsQuestionResult, NpsContact } from '@/lib/data'
 
 interface Props {
   years: NpsYearResult[]
@@ -52,9 +52,55 @@ export function NpsCharts({ years }: Props) {
         {survey.responseCount} resposta{survey.responseCount !== 1 ? 's' : ''} recebida{survey.responseCount !== 1 ? 's' : ''}
       </p>
 
+      {survey.contacts.length > 0 && (
+        <ContactsCard eventSlug={year.eventSlug} surveySlug={survey.slug} contacts={survey.contacts} />
+      )}
+
       <div className="space-y-4">
         {survey.questions.map(q => <QuestionCard key={q.id} q={q} />)}
       </div>
+    </div>
+  )
+}
+
+function ContactsCard({ eventSlug, surveySlug, contacts }: { eventSlug: string; surveySlug: string; contacts: NpsContact[] }) {
+  return (
+    <div className="bg-card border border-border rounded-lg p-5 shadow-sm">
+      <div className="flex items-center justify-between gap-3 mb-3 flex-wrap">
+        <div>
+          <p className="text-sm font-medium text-foreground">Contatos para cupom</p>
+          <p className="text-[11px] text-muted-foreground/70 mt-0.5">
+            Deixaram nome e/ou e-mail para receber cupom de desconto e acesso antecipado na próxima edição.
+          </p>
+        </div>
+        <a
+          href={`/api/export/nps-contacts?event_slug=${encodeURIComponent(eventSlug)}&survey_slug=${encodeURIComponent(surveySlug)}`}
+          className="shrink-0 text-[11px] font-mono px-3 py-1.5 rounded-md border border-border text-foreground/80 hover:bg-muted transition-colors"
+        >
+          Baixar planilha (.xlsx)
+        </a>
+      </div>
+      <div className="max-h-72 overflow-y-auto -mx-1">
+        <table className="w-full text-[13px]">
+          <thead>
+            <tr className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground/60">
+              <th className="text-left px-1 py-1.5">Nome</th>
+              <th className="text-left px-1 py-1.5">Email</th>
+            </tr>
+          </thead>
+          <tbody>
+            {contacts.map((c, i) => (
+              <tr key={i} className="border-t border-border/60">
+                <td className="px-1 py-1.5 text-foreground/80">{c.name ?? <span className="text-muted-foreground/40">—</span>}</td>
+                <td className="px-1 py-1.5 text-foreground/80">{c.email ?? <span className="text-muted-foreground/40">—</span>}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <p className="text-[10px] font-mono text-muted-foreground/50 mt-2">
+        {contacts.length} contato{contacts.length !== 1 ? 's' : ''}
+      </p>
     </div>
   )
 }
