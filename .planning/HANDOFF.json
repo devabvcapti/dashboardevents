@@ -1,6 +1,6 @@
 {
   "version": "1.0",
-  "timestamp": "2026-07-15T17:53:46.267Z",
+  "timestamp": "2026-10-06T19:42:06.900Z",
   "phase": null,
   "phase_name": null,
   "phase_dir": null,
@@ -9,28 +9,34 @@
   "total_tasks": null,
   "status": "paused",
   "completed_tasks": [
-    {"id": 1, "name": "Revisar status do repositório (git status/log/diff)", "status": "done"},
-    {"id": 2, "name": "git pull origin/main (fast-forward 375d21d..5ba0375, 40 commits)", "status": "done"}
+    {"id": 1, "name": "Pesquisar schema de participants e constraints (email NOT NULL+UNIQUE por edição, ticket_membership NOT NULL, ticket_id NULL-ável)", "status": "done"},
+    {"id": 2, "name": "Checar preços/ticket_name já usados em VC Day 2026 pra validar a sugestão 'Ingresso na Porta'", "status": "done"},
+    {"id": 3, "name": "Checar se Camila Garavello e Artur Leal já existem no banco (edição VC Day 2026)", "status": "done"}
   ],
   "remaining_tasks": [
-    {"id": 3, "name": "Decidir o que fazer com mudanças locais não commitadas (.planning/config.json, submódulo abvcap-congress)", "status": "not_started"},
-    {"id": 4, "name": "Triar arquivos não versionados na raiz (.claude/, memory/, Excel Participantes/, Orçamento.xlsx, logos, arquivos temporários ~$)", "status": "not_started"},
-    {"id": 5, "name": "Reconciliar .planning/ROADMAP.md e STATE.md com o estado real do código (ver blocker abaixo)", "status": "not_started"},
-    {"id": 6, "name": "Planejar/iniciar Phase 4: Analytics Depth (formulário, mapa geográfico, export, histórico de imports) via GSD, se ainda desejado", "status": "not_started"}
+    {"id": 4, "name": "Decidir com o usuário: Camila Garavello já tem registro existente (Cortesia, R$0, checked_in=true) — UPDATE desse registro pra R$350/pago, ou é algo separado?", "status": "not_started"},
+    {"id": 5, "name": "Coletar email + ticket_membership (MEMBRO/NAO_MEMBRO) de Camila Garavello e Artur Leal — campos NOT NULL, não dá pra inserir sem isso", "status": "not_started"},
+    {"id": 6, "name": "Inserir/atualizar os 2 registros em participants (edition_id VC Day 2026 = 1768f9b2-66a8-4472-a0de-d25baf40377b), ticket_value=350, ticket_name='Ingresso na Porta' (ou equivalente combinado com o usuário)", "status": "not_started"}
   ],
   "blockers": [
     {
-      "description": "STATE.md e ROADMAP.md descrevem o projeto como tendo completado apenas a Phase 3 (Dashboard Core), com Phase 4 'Analytics Depth' not started. Porém o código real (origin/main) já contém páginas e features muito além disso, aparentemente desenvolvidas fora do fluxo GSD: Cupons, Orçamento, Comparativo, Empresas, Ritmo, além de migrations 013-017 (vc_day_topics, budget_items, RLS, registered_at, valor_pago_manual).",
-      "type": "external",
-      "workaround": "Antes de retomar planejamento via GSD (ex. /gsd-plan-phase para Phase 4), rodar /gsd-map-codebase ou /gsd-progress para reconciliar o roadmap com o código atual, evitando replanejar trabalho que já existe."
+      "description": "Faltam dados obrigatórios (email, ticket_membership) para os 2 ingressos que o usuário quer lançar. Além disso, Camila Garavello já tem um registro existente na mesma edição com status Cortesia/R$0/checked_in=true, o que contradiz 'ingresso vendido por R$350' — precisa decisão do usuário antes de gravar qualquer coisa.",
+      "type": "human_action",
+      "workaround": "Perguntar ao usuário ao retomar: (a) o que fazer com o registro existente da Camila, (b) email de cada pessoa, (c) se são Membro ou Não Membro ABVCAP."
     }
   ],
-  "human_actions_pending": [],
-  "decisions": [],
-  "uncommitted_files": [
-    ".planning/config.json (adicionado _auto_chain_active: false)",
-    "abvcap-congress (submódulo apontando para commit mais antigo que o remoto)"
+  "human_actions_pending": [
+    {"action": "Responder: Camila Garavello é correção do registro existente (Cortesia -> Pago R$350) ou outra coisa?", "context": "Registro existente: email camila.garavello@liscapital.com.br, ticket_name 'INGRESSO VC DAY (NÃO MEMBRO)', ticket_value 0, payment_status 'Cortesia', checked_in true, id 0bcd81cd-8b6d-4977-8eab-85c67827f23e", "blocking": true},
+    {"action": "Fornecer email de Camila Garavello (se for um registro novo/separado) e de Artur Leal", "context": "email é NOT NULL + UNIQUE(email, edition_id) na tabela participants — obrigatório pra inserir", "blocking": true},
+    {"action": "Informar se Camila Garavello e Artur Leal são Membro ou Não Membro ABVCAP", "context": "ticket_membership é NOT NULL (enum MEMBRO/NAO_MEMBRO) — afeta diretamente as métricas de receita e adesão do dashboard", "blocking": true}
   ],
-  "next_action": "Rodar /gsd-progress ou /gsd-map-codebase para reconciliar STATE.md/ROADMAP.md com o código atual antes de planejar a próxima fase.",
-  "context_notes": "Sessão foi só de checagem de status e sincronização: usuário pediu 'Como estamos?', revisamos git status/log, e após confirmação fizemos git pull (fast-forward, sem conflitos). Nenhum código foi alterado nesta sessão. Usuário pediu para pausar e salvar o estado para continuar depois."
+  "decisions": [
+    {"decision": "Usar 'Ingresso na Porta' como valor de ticket_name (campo texto livre) em vez de criar um novo enum/categoria", "rationale": "ticket_name já é texto livre na tabela (ex.: 'INGRESSO VC DAY 2026 (MEMBRO)', 'VIPS VC DAY'); não exige migration nem muda ticket_membership; aparece nas quebras por tipo de ingresso do dashboard", "phase": null}
+  ],
+  "uncommitted_files": [
+    ".planning/config.json (pré-existente, não relacionado a esta sessão)",
+    "abvcap-congress (submódulo, pré-existente, não relacionado a esta sessão)"
+  ],
+  "next_action": "Perguntar ao usuário os 3 pontos em human_actions_pending antes de gravar qualquer coisa em participants. Depois de respondido, inserir Artur Leal (INSERT novo) e tratar Camila conforme decisão (UPDATE do registro existente 0bcd81cd-8b6d-4977-8eab-85c67827f23e, ou INSERT separado se for caso diferente).",
+  "context_notes": "Sessão trabalhou em vários itens avulsos do dashboard antes deste (import de LPs classificados, correção de .env.local, import de check-in do VC Day 2026, gráfico de presença, correção de rótulo NPS). O pedido de inserir 2 ingressos manuais (Camila Garavello e Artur Leal, R$350 cada, edição VC Day 2026) ficou bloqueado assim que descobri que Camila já tem registro no banco com perfil incompatível (cortesia/grátis, já check-in feito) — não dá pra simplesmente inserir sem contradizer o dado existente. Usuário pediu para salvar o estado e retomar depois; nenhuma escrita foi feita em participants ainda."
 }
