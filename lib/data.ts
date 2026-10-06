@@ -12,6 +12,7 @@ import type {
   Database,
   VcDayPanel,
   LpCategory,
+  LpSubcategory,
 } from './database.types'
 
 export type {
@@ -1139,20 +1140,83 @@ export async function getVcDayQaSummary(startDate: string): Promise<VcDayQaSumma
 
 // ─── LPs — Classificação por subcategoria e análise por evento ────────────────
 
-export type { LpCategory }
+export type { LpCategory, LpSubcategory }
 
+// Taxonomia de 2 níveis (padrão de mercado para tipos de Limited Partner,
+// a mesma usada na planilha de classificação do Congresso ABVCAP 2026):
+// 6 Categorias agrupando 26 Subcategorias. Só "subcategory" é gravado no
+// banco (por empresa); "category" é sempre derivado via LP_SUBCATEGORY_CATEGORY,
+// para não duplicar dado que possa dessincronizar.
 export const LP_CATEGORY_LABELS: Record<LpCategory, string> = {
-  AGENCIA_FOMENTO_DFI: 'Agência de Fomento / DFI',
-  FAMILY_OFFICE: 'Family Office',
-  FUNDO_PENSAO: 'Fundo de Pensão',
-  FUNDO_DE_FUNDOS: 'Fundo de Fundos',
-  RPPS: 'RPPS',
-  WEALTH_MANAGEMENT: 'Wealth Management',
-  ASSET_MANAGER: 'Asset Manager',
-  HNI: 'HNI',
+  PENSION: 'Previdência',
+  FAMILY_OFFICES: 'Family Offices',
+  INVESTMENT_FIRMS: 'Empresas de Investimento',
+  PHILANTHROPY_AGENCIES: 'Filantropia e Agências',
+  ADVISORS: 'Consultores/Assessores',
+  OTHER_LIMITED_PARTNERS: 'Outros Limited Partners',
 }
 
 export const LP_CATEGORIES = Object.keys(LP_CATEGORY_LABELS) as LpCategory[]
+
+export const LP_SUBCATEGORY_LABELS: Record<LpSubcategory, string> = {
+  CORPORATE_PENSION: 'Fundo de Pensão Corporativo (Patrocinado por Empresa)',
+  PUBLIC_PENSION_FUND: 'Fundo de Pensão Público',
+  UNION_PENSION_FUND: 'Fundo de Pensão Sindical',
+  FAMILY_OFFICE_SINGLE: 'Single Family Office',
+  FAMILY_OFFICE_MULTI: 'Multi Family Office',
+  DIRECT_INVESTMENT: 'Investimento Direto',
+  FUND_OF_FUNDS: 'Fundo de Fundos',
+  INSURANCE_COMPANY: 'Seguradora',
+  MUTUAL_FUND_COMPANY: 'Gestora de Fundos Mútuos',
+  PRIVATE_INVESTMENT_FUND: 'Fundo de Investimento Privado',
+  REAL_ESTATE_INVESTMENT_COMPANY: 'Empresa de Investimento Imobiliário',
+  SECONDARY_LP: 'LP de Mercado Secundário',
+  ECONOMIC_DEVELOPMENT_AGENCY: 'Agência de Desenvolvimento Econômico',
+  ENDOWMENT: 'Fundo Patrimonial (Endowment)',
+  UNIVERSITY_NON_ENDOWMENT: 'Universidade (exceto Fundo Patrimonial)',
+  FOUNDATION: 'Fundação',
+  GOVERNMENT_AGENCY: 'Agência Governamental',
+  SOVEREIGN_WEALTH_FUND: 'Fundo Soberano',
+  DISCRETIONARY_ADVISOR: 'Gestor com Mandato Discricionário',
+  INVESTMENT_ADVISOR: 'Consultor de Investimentos',
+  MONEY_MANAGEMENT_FIRM: 'Gestora de Recursos',
+  WEALTH_MANAGEMENT_FIRM: 'Gestora de Patrimônio (Wealth Management)',
+  BANKING_INSTITUTION: 'Instituição Bancária',
+  CORPORATION: 'Empresa (Corporação)',
+  HIGH_NET_WORTH_INVESTOR: 'Investidor de Alta Renda (HNWI)',
+  OTHER_LIMITED_PARTNER: 'Outro Limited Partner',
+}
+
+export const LP_SUBCATEGORIES = Object.keys(LP_SUBCATEGORY_LABELS) as LpSubcategory[]
+
+export const LP_SUBCATEGORY_CATEGORY: Record<LpSubcategory, LpCategory> = {
+  CORPORATE_PENSION: 'PENSION',
+  PUBLIC_PENSION_FUND: 'PENSION',
+  UNION_PENSION_FUND: 'PENSION',
+  FAMILY_OFFICE_SINGLE: 'FAMILY_OFFICES',
+  FAMILY_OFFICE_MULTI: 'FAMILY_OFFICES',
+  DIRECT_INVESTMENT: 'INVESTMENT_FIRMS',
+  FUND_OF_FUNDS: 'INVESTMENT_FIRMS',
+  INSURANCE_COMPANY: 'INVESTMENT_FIRMS',
+  MUTUAL_FUND_COMPANY: 'INVESTMENT_FIRMS',
+  PRIVATE_INVESTMENT_FUND: 'INVESTMENT_FIRMS',
+  REAL_ESTATE_INVESTMENT_COMPANY: 'INVESTMENT_FIRMS',
+  SECONDARY_LP: 'INVESTMENT_FIRMS',
+  ECONOMIC_DEVELOPMENT_AGENCY: 'PHILANTHROPY_AGENCIES',
+  ENDOWMENT: 'PHILANTHROPY_AGENCIES',
+  UNIVERSITY_NON_ENDOWMENT: 'PHILANTHROPY_AGENCIES',
+  FOUNDATION: 'PHILANTHROPY_AGENCIES',
+  GOVERNMENT_AGENCY: 'PHILANTHROPY_AGENCIES',
+  SOVEREIGN_WEALTH_FUND: 'PHILANTHROPY_AGENCIES',
+  DISCRETIONARY_ADVISOR: 'ADVISORS',
+  INVESTMENT_ADVISOR: 'ADVISORS',
+  MONEY_MANAGEMENT_FIRM: 'ADVISORS',
+  WEALTH_MANAGEMENT_FIRM: 'ADVISORS',
+  BANKING_INSTITUTION: 'OTHER_LIMITED_PARTNERS',
+  CORPORATION: 'OTHER_LIMITED_PARTNERS',
+  HIGH_NET_WORTH_INVESTOR: 'OTHER_LIMITED_PARTNERS',
+  OTHER_LIMITED_PARTNER: 'OTHER_LIMITED_PARTNERS',
+}
 
 // Empresas LP se repetem entre eventos e chegam com pequenas variações de grafia
 // entre importações (acento, maiúscula, travessão vs hífen) — normaliza antes de
@@ -1172,30 +1236,30 @@ export function normalizeCompanyKey(raw: string): string {
 export interface LpCompanyCategoryRow {
   companyKey: string
   displayName: string
-  category: LpCategory
+  subcategory: LpSubcategory
 }
 
 export async function getLpCompanyCategories(): Promise<LpCompanyCategoryRow[]> {
   const { data, error } = await getSupabase()
     .from('lp_company_categories')
-    .select('company_key, display_name, category')
+    .select('company_key, display_name, subcategory')
   if (error) throw error
   return (data ?? []).map(r => ({
     companyKey: r.company_key,
     displayName: r.display_name,
-    category: r.category,
+    subcategory: r.subcategory,
   }))
 }
 
 export async function upsertLpCompanyCategory(
   companyName: string,
-  category: LpCategory
+  subcategory: LpSubcategory
 ): Promise<void> {
   const companyKey = normalizeCompanyKey(companyName)
   const { error } = await getSupabase()
     .from('lp_company_categories')
     .upsert(
-      { company_key: companyKey, display_name: companyName.trim(), category, updated_at: new Date().toISOString() },
+      { company_key: companyKey, display_name: companyName.trim(), subcategory, updated_at: new Date().toISOString() },
       { onConflict: 'company_key' }
     )
   if (error) throw error
@@ -1221,11 +1285,17 @@ export interface LpCategoryBreakdown {
   participantCount: number
 }
 
+export interface LpSubcategoryBreakdown {
+  subcategory: LpSubcategory
+  companyCount: number
+  participantCount: number
+}
+
 export interface LpCompanyRow {
   companyKey: string
   displayName: string
   participantCount: number
-  category: LpCategory | null
+  subcategory: LpSubcategory | null
 }
 
 export interface LpAnalysis {
@@ -1236,6 +1306,7 @@ export interface LpAnalysis {
   audiencePerLpParticipant: number
   classifiedParticipants: number
   byCategory: LpCategoryBreakdown[]
+  bySubcategory: LpSubcategoryBreakdown[]
   unclassified: LpUnclassifiedCompany[]
   companies: LpCompanyRow[]
 }
@@ -1318,28 +1389,41 @@ export async function getLpAnalysis(editionId: string): Promise<LpAnalysis> {
   ])
   if (totalErr) throw totalErr
 
-  const categoryByKey = new Map(categories.map(c => [c.companyKey, c.category]))
+  const subcategoryByKey = new Map(categories.map(c => [c.companyKey, c.subcategory]))
 
   const totalLpParticipants = Array.from(companyCounts.values()).reduce((s, c) => s + c.count, 0)
   const distinctCompanies = companyCounts.size
 
-  const byCategoryMap = new Map<LpCategory, { companyCount: number; participantCount: number }>()
+  const bySubcategoryMap = new Map<LpSubcategory, { companyCount: number; participantCount: number }>()
   let classifiedParticipants = 0
   const unclassified: LpUnclassifiedCompany[] = []
 
   for (const [key, { displayName, count }] of companyCounts) {
-    const category = categoryByKey.get(key)
-    if (!category) {
+    const subcategory = subcategoryByKey.get(key)
+    if (!subcategory) {
       unclassified.push({ companyKey: key, displayName, participantCount: count })
       continue
     }
     classifiedParticipants += count
-    const bucket = byCategoryMap.get(category) ?? { companyCount: 0, participantCount: 0 }
+    const bucket = bySubcategoryMap.get(subcategory) ?? { companyCount: 0, participantCount: 0 }
     bucket.companyCount++
     bucket.participantCount += count
-    byCategoryMap.set(category, bucket)
+    bySubcategoryMap.set(subcategory, bucket)
   }
 
+  const bySubcategory: LpSubcategoryBreakdown[] = LP_SUBCATEGORIES
+    .map(subcategory => ({ subcategory, ...(bySubcategoryMap.get(subcategory) ?? { companyCount: 0, participantCount: 0 }) }))
+    .filter(b => b.companyCount > 0)
+    .sort((a, b) => b.participantCount - a.participantCount)
+
+  const byCategoryMap = new Map<LpCategory, { companyCount: number; participantCount: number }>()
+  for (const b of bySubcategory) {
+    const category = LP_SUBCATEGORY_CATEGORY[b.subcategory]
+    const bucket = byCategoryMap.get(category) ?? { companyCount: 0, participantCount: 0 }
+    bucket.companyCount += b.companyCount
+    bucket.participantCount += b.participantCount
+    byCategoryMap.set(category, bucket)
+  }
   const byCategory: LpCategoryBreakdown[] = LP_CATEGORIES
     .map(category => ({ category, ...(byCategoryMap.get(category) ?? { companyCount: 0, participantCount: 0 }) }))
     .filter(b => b.companyCount > 0)
@@ -1352,7 +1436,7 @@ export async function getLpAnalysis(editionId: string): Promise<LpAnalysis> {
       companyKey: key,
       displayName,
       participantCount: count,
-      category: categoryByKey.get(key) ?? null,
+      subcategory: subcategoryByKey.get(key) ?? null,
     }))
     .sort((a, b) => b.participantCount - a.participantCount || a.displayName.localeCompare(b.displayName))
 
@@ -1364,6 +1448,7 @@ export async function getLpAnalysis(editionId: string): Promise<LpAnalysis> {
     audiencePerLpParticipant: totalLpParticipants > 0 ? (totalAudience ?? 0) / totalLpParticipants : 0,
     classifiedParticipants,
     byCategory,
+    bySubcategory,
     unclassified,
     companies,
   }
@@ -1371,27 +1456,59 @@ export async function getLpAnalysis(editionId: string): Promise<LpAnalysis> {
 
 // ─── LPs — Planilha mestre e cobertura (Fase 2) ────────────────────────────────
 
-// Normaliza texto livre de categoria vindo da planilha mestre (ex. "Fundos de Pensão",
-// "Single Family Office") para o enum lp_category. Reaproveita normalizeCompanyKey
-// (acento/caixa/espaço) — não é fuzzy matching, só variações conhecidas.
-const LP_CATEGORY_TEXT_ALIASES: Record<string, LpCategory> = (() => {
-  const map: Record<string, LpCategory> = {}
-  for (const cat of LP_CATEGORIES) map[normalizeCompanyKey(LP_CATEGORY_LABELS[cat])] = cat
-  map[normalizeCompanyKey('DFI')] = 'AGENCIA_FOMENTO_DFI'
-  map[normalizeCompanyKey('Agência de Fomento')] = 'AGENCIA_FOMENTO_DFI'
-  map[normalizeCompanyKey('Fomento')] = 'AGENCIA_FOMENTO_DFI'
-  map[normalizeCompanyKey('Fundos de Pensão')] = 'FUNDO_PENSAO'
-  map[normalizeCompanyKey('Fundo de Fundo')] = 'FUNDO_DE_FUNDOS'
-  map[normalizeCompanyKey('FoF')] = 'FUNDO_DE_FUNDOS'
-  map[normalizeCompanyKey('Single Family Office')] = 'FAMILY_OFFICE'
-  map[normalizeCompanyKey('Multi Family Office')] = 'FAMILY_OFFICE'
-  map[normalizeCompanyKey('MFO')] = 'FAMILY_OFFICE'
-  map[normalizeCompanyKey('SFO')] = 'FAMILY_OFFICE'
+// Normaliza texto livre de subcategoria vindo da planilha mestre ou de uma
+// planilha de classificação (ex. "Fundos de Pensão Público", "Single Family
+// Office", "Economic Development Agency") para o enum lp_subcategory.
+// Reaproveita normalizeCompanyKey (acento/caixa/espaço) — não é fuzzy
+// matching, só variações conhecidas (inclui os dois idiomas da planilha de
+// taxonomia: Subcategoria (EN) e Subcategoria (PT)).
+// Texto do nível "Categoria" (ex. "Family Offices" sem indicar Single/Multi)
+// é ambíguo demais pra resolver uma subcategoria específica — fica de fora
+// de propósito, pra não adivinhar.
+const LP_SUBCATEGORY_TEXT_ALIASES: Record<string, LpSubcategory> = (() => {
+  const map: Record<string, LpSubcategory> = {}
+  for (const sub of LP_SUBCATEGORIES) map[normalizeCompanyKey(LP_SUBCATEGORY_LABELS[sub])] = sub
+  const EN_LABELS: Record<LpSubcategory, string> = {
+    CORPORATE_PENSION: 'Corporate Pension',
+    PUBLIC_PENSION_FUND: 'Public Pension Fund',
+    UNION_PENSION_FUND: 'Union Pension Fund',
+    FAMILY_OFFICE_SINGLE: 'Family Office (Single)',
+    FAMILY_OFFICE_MULTI: 'Family Office (Multi)',
+    DIRECT_INVESTMENT: 'Direct Investment',
+    FUND_OF_FUNDS: 'Fund of Funds',
+    INSURANCE_COMPANY: 'Insurance Company',
+    MUTUAL_FUND_COMPANY: 'Mutual Fund Company',
+    PRIVATE_INVESTMENT_FUND: 'Private Investment Fund',
+    REAL_ESTATE_INVESTMENT_COMPANY: 'Real Estate Investment Company',
+    SECONDARY_LP: 'Secondary LP',
+    ECONOMIC_DEVELOPMENT_AGENCY: 'Economic Development Agency',
+    ENDOWMENT: 'Endowment',
+    UNIVERSITY_NON_ENDOWMENT: 'University (Non-Endowment)',
+    FOUNDATION: 'Foundation',
+    GOVERNMENT_AGENCY: 'Government Agency',
+    SOVEREIGN_WEALTH_FUND: 'Sovereign Wealth Fund',
+    DISCRETIONARY_ADVISOR: 'Discretionary Advisor',
+    INVESTMENT_ADVISOR: 'Investment Advisor',
+    MONEY_MANAGEMENT_FIRM: 'Money Management Firm',
+    WEALTH_MANAGEMENT_FIRM: 'Wealth Management Firm',
+    BANKING_INSTITUTION: 'Banking Institution',
+    CORPORATION: 'Corporation',
+    HIGH_NET_WORTH_INVESTOR: 'High-net-worth investor',
+    OTHER_LIMITED_PARTNER: 'Other Limited Partner',
+  }
+  for (const sub of LP_SUBCATEGORIES) map[normalizeCompanyKey(EN_LABELS[sub])] = sub
+  map[normalizeCompanyKey('DFI')] = 'ECONOMIC_DEVELOPMENT_AGENCY'
+  map[normalizeCompanyKey('Agência de Fomento')] = 'ECONOMIC_DEVELOPMENT_AGENCY'
+  map[normalizeCompanyKey('Fomento')] = 'ECONOMIC_DEVELOPMENT_AGENCY'
+  map[normalizeCompanyKey('MFO')] = 'FAMILY_OFFICE_MULTI'
+  map[normalizeCompanyKey('SFO')] = 'FAMILY_OFFICE_SINGLE'
+  map[normalizeCompanyKey('FoF')] = 'FUND_OF_FUNDS'
+  map[normalizeCompanyKey('HNWI')] = 'HIGH_NET_WORTH_INVESTOR'
   return map
 })()
 
-export function parseLpCategoryText(raw: string): LpCategory | null {
-  return LP_CATEGORY_TEXT_ALIASES[normalizeCompanyKey(raw)] ?? null
+export function parseLpSubcategoryText(raw: string): LpSubcategory | null {
+  return LP_SUBCATEGORY_TEXT_ALIASES[normalizeCompanyKey(raw)] ?? null
 }
 
 // Categorias que existem na planilha mestre mas não fazem parte do universo de
@@ -1408,26 +1525,26 @@ export function isSkippedLpMasterCategoryText(raw: string): boolean {
 export interface LpMasterCompany {
   companyKey: string
   displayName: string
-  category: LpCategory | null
+  subcategory: LpSubcategory | null
   country: string | null
 }
 
 export async function getLpMasterList(): Promise<LpMasterCompany[]> {
   const { data, error } = await getSupabase()
     .from('lp_master_companies')
-    .select('company_key, display_name, category, country')
+    .select('company_key, display_name, subcategory, country')
   if (error) throw error
   return (data ?? []).map(r => ({
     companyKey: r.company_key,
     displayName: r.display_name,
-    category: r.category,
+    subcategory: r.subcategory,
     country: r.country,
   }))
 }
 
 export interface LpMasterUploadRow {
   displayName: string
-  category: LpCategory | null
+  subcategory: LpSubcategory | null
   country: string | null
 }
 
@@ -1435,12 +1552,12 @@ export interface LpMasterUploadRow {
 // não um log incremental — cada upload representa "isto é tudo que sabemos hoje").
 export async function replaceLpMasterList(rows: LpMasterUploadRow[]): Promise<{ inserted: number }> {
   const supabase = getSupabase()
-  const dedup = new Map<string, { company_key: string; display_name: string; category: LpCategory | null; country: string | null }>()
+  const dedup = new Map<string, { company_key: string; display_name: string; subcategory: LpSubcategory | null; country: string | null }>()
   for (const r of rows) {
     const name = r.displayName.trim()
     if (!name) continue
     const key = normalizeCompanyKey(name)
-    dedup.set(key, { company_key: key, display_name: name, category: r.category, country: r.country })
+    dedup.set(key, { company_key: key, display_name: name, subcategory: r.subcategory, country: r.country })
   }
 
   const { error: delError } = await supabase.from('lp_master_companies').delete().not('id', 'is', null)
@@ -1454,8 +1571,8 @@ export async function replaceLpMasterList(rows: LpMasterUploadRow[]): Promise<{ 
   return { inserted: insertRows.length }
 }
 
-export interface LpMasterCategoryCoverage {
-  category: LpCategory
+export interface LpMasterSubcategoryCoverage {
+  subcategory: LpSubcategory
   totalInMaster: number
   confirmed: number
   pctConfirmed: number
@@ -1464,7 +1581,7 @@ export interface LpMasterCategoryCoverage {
 export interface LpMasterUnconfirmed {
   companyKey: string
   displayName: string
-  category: LpCategory | null
+  subcategory: LpSubcategory | null
 }
 
 export interface LpNewLp {
@@ -1480,7 +1597,7 @@ export interface LpMasterCoverage {
   pctConfirmed: number
   confirmedParticipants: number
   confirmedParticipantsPctOfAudience: number
-  byCategory: LpMasterCategoryCoverage[]
+  bySubcategory: LpMasterSubcategoryCoverage[]
   unconfirmed: LpMasterUnconfirmed[]
   newLpsNotInMaster: LpNewLp[]
 }
@@ -1501,7 +1618,7 @@ export async function getLpMasterCoverage(editionId: string): Promise<LpMasterCo
       pctConfirmed: 0,
       confirmedParticipants: 0,
       confirmedParticipantsPctOfAudience: 0,
-      byCategory: [],
+      bySubcategory: [],
       unconfirmed: [],
       newLpsNotInMaster: [],
     }
@@ -1512,25 +1629,25 @@ export async function getLpMasterCoverage(editionId: string): Promise<LpMasterCo
   const confirmedParticipants = Array.from(confirmedKeys)
     .reduce((sum, key) => sum + (participantCompanies.get(key)?.count ?? 0), 0)
 
-  const byCategoryMap = new Map<LpCategory, { totalInMaster: number; confirmed: number }>()
+  const bySubcategoryMap = new Map<LpSubcategory, { totalInMaster: number; confirmed: number }>()
   for (const m of master) {
-    if (!m.category) continue
-    const bucket = byCategoryMap.get(m.category) ?? { totalInMaster: 0, confirmed: 0 }
+    if (!m.subcategory) continue
+    const bucket = bySubcategoryMap.get(m.subcategory) ?? { totalInMaster: 0, confirmed: 0 }
     bucket.totalInMaster++
     if (confirmedKeys.has(m.companyKey)) bucket.confirmed++
-    byCategoryMap.set(m.category, bucket)
+    bySubcategoryMap.set(m.subcategory, bucket)
   }
-  const byCategory: LpMasterCategoryCoverage[] = LP_CATEGORIES
-    .map(category => {
-      const b = byCategoryMap.get(category)
-      return b ? { category, totalInMaster: b.totalInMaster, confirmed: b.confirmed, pctConfirmed: (b.confirmed / b.totalInMaster) * 100 } : null
+  const bySubcategory: LpMasterSubcategoryCoverage[] = LP_SUBCATEGORIES
+    .map(subcategory => {
+      const b = bySubcategoryMap.get(subcategory)
+      return b ? { subcategory, totalInMaster: b.totalInMaster, confirmed: b.confirmed, pctConfirmed: (b.confirmed / b.totalInMaster) * 100 } : null
     })
-    .filter((b): b is LpMasterCategoryCoverage => b !== null)
+    .filter((b): b is LpMasterSubcategoryCoverage => b !== null)
     .sort((a, b) => b.totalInMaster - a.totalInMaster)
 
   const unconfirmed: LpMasterUnconfirmed[] = master
     .filter(m => !confirmedKeys.has(m.companyKey))
-    .map(m => ({ companyKey: m.companyKey, displayName: m.displayName, category: m.category }))
+    .map(m => ({ companyKey: m.companyKey, displayName: m.displayName, subcategory: m.subcategory }))
     .sort((a, b) => a.displayName.localeCompare(b.displayName))
 
   const newLpsNotInMaster: LpNewLp[] = Array.from(participantCompanies.entries())
@@ -1545,7 +1662,7 @@ export async function getLpMasterCoverage(editionId: string): Promise<LpMasterCo
     pctConfirmed: (confirmedKeys.size / master.length) * 100,
     confirmedParticipants,
     confirmedParticipantsPctOfAudience: (totalAudience ?? 0) > 0 ? (confirmedParticipants / (totalAudience as number)) * 100 : 0,
-    byCategory,
+    bySubcategory,
     unconfirmed,
     newLpsNotInMaster,
   }

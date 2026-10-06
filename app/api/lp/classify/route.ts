@@ -1,17 +1,17 @@
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
 import { requireAdmin } from '@/lib/auth'
-import { upsertLpCompanyCategory, deleteLpCompanyCategory, LP_CATEGORIES } from '@/lib/data'
-import type { LpCategory } from '@/lib/database.types'
+import { upsertLpCompanyCategory, deleteLpCompanyCategory, LP_SUBCATEGORIES } from '@/lib/data'
+import type { LpSubcategory } from '@/lib/database.types'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
-const CATEGORY_VALUES = LP_CATEGORIES as [LpCategory, ...LpCategory[]]
+const SUBCATEGORY_VALUES = LP_SUBCATEGORIES as [LpSubcategory, ...LpSubcategory[]]
 
 const Body = z.object({
   companyName: z.string().trim().min(1),
-  category: z.enum(CATEGORY_VALUES),
+  subcategory: z.enum(SUBCATEGORY_VALUES),
 })
 
 export async function POST(req: Request) {
@@ -23,7 +23,7 @@ export async function POST(req: Request) {
   if (!parsed.success) return NextResponse.json({ error: 'Payload inválido' }, { status: 400 })
 
   try {
-    await upsertLpCompanyCategory(parsed.data.companyName, parsed.data.category)
+    await upsertLpCompanyCategory(parsed.data.companyName, parsed.data.subcategory)
   } catch (e) {
     return NextResponse.json({ error: e instanceof Error ? e.message : 'Erro ao classificar' }, { status: 500 })
   }

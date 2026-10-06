@@ -1,5 +1,5 @@
 import ExcelJS from 'exceljs'
-import { normalizeCompanyKey, parseLpCategoryText, isSkippedLpMasterCategoryText } from '@/lib/data'
+import { normalizeCompanyKey, parseLpSubcategoryText, isSkippedLpMasterCategoryText } from '@/lib/data'
 import type { LpMasterUploadRow } from '@/lib/data'
 
 const NAME_HEADER_ALIASES = ['empresa', 'nome', 'company', 'name', 'razao social', 'razão social', 'investidor']
@@ -53,7 +53,7 @@ export async function parseLpMasterFile(buffer: ArrayBuffer): Promise<LpMasterPa
     const displayName = String(values[nameIdx] ?? '').trim()
     if (!displayName) continue
 
-    let category = null
+    let subcategory = null
     if (categoryIdx !== -1) {
       const rawCategory = String(values[categoryIdx] ?? '').trim()
       if (rawCategory) {
@@ -63,14 +63,14 @@ export async function parseLpMasterFile(buffer: ArrayBuffer): Promise<LpMasterPa
           skippedRows++
           continue
         }
-        category = parseLpCategoryText(rawCategory)
-        if (!category) unrecognizedCategories.add(rawCategory)
+        subcategory = parseLpSubcategoryText(rawCategory)
+        if (!subcategory) unrecognizedCategories.add(rawCategory)
       }
     }
 
     const country = countryIdx !== -1 ? (String(values[countryIdx] ?? '').trim() || null) : null
 
-    rows.push({ displayName, category, country })
+    rows.push({ displayName, subcategory, country })
   }
 
   return { rows, totalRows, unrecognizedCategories: Array.from(unrecognizedCategories), skippedRows }

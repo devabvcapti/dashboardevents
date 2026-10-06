@@ -235,7 +235,7 @@ export type Database = {
       }
       lp_company_categories: {
         Row: {
-          category: Database["public"]["Enums"]["lp_category"]
+          subcategory: Database["public"]["Enums"]["lp_subcategory"]
           company_key: string
           created_at: string
           display_name: string
@@ -243,7 +243,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
-          category: Database["public"]["Enums"]["lp_category"]
+          subcategory: Database["public"]["Enums"]["lp_subcategory"]
           company_key: string
           created_at?: string
           display_name: string
@@ -251,7 +251,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
-          category?: Database["public"]["Enums"]["lp_category"]
+          subcategory?: Database["public"]["Enums"]["lp_subcategory"]
           company_key?: string
           created_at?: string
           display_name?: string
@@ -286,7 +286,7 @@ export type Database = {
       }
       lp_master_companies: {
         Row: {
-          category: Database["public"]["Enums"]["lp_category"] | null
+          subcategory: Database["public"]["Enums"]["lp_subcategory"] | null
           company_key: string
           country: string | null
           created_at: string
@@ -294,7 +294,7 @@ export type Database = {
           id: string
         }
         Insert: {
-          category?: Database["public"]["Enums"]["lp_category"] | null
+          subcategory?: Database["public"]["Enums"]["lp_subcategory"] | null
           company_key: string
           country?: string | null
           created_at?: string
@@ -302,7 +302,7 @@ export type Database = {
           id?: string
         }
         Update: {
-          category?: Database["public"]["Enums"]["lp_category"] | null
+          subcategory?: Database["public"]["Enums"]["lp_subcategory"] | null
           company_key?: string
           country?: string | null
           created_at?: string
@@ -738,14 +738,39 @@ export type Database = {
         | "FINANCEIRO"
       import_status: "PENDING" | "PROCESSING" | "COMPLETED" | "FAILED"
       lp_category:
-        | "AGENCIA_FOMENTO_DFI"
-        | "FAMILY_OFFICE"
-        | "FUNDO_PENSAO"
-        | "FUNDO_DE_FUNDOS"
-        | "RPPS"
-        | "WEALTH_MANAGEMENT"
-        | "ASSET_MANAGER"
-        | "HNI"
+        | "PENSION"
+        | "FAMILY_OFFICES"
+        | "INVESTMENT_FIRMS"
+        | "PHILANTHROPY_AGENCIES"
+        | "ADVISORS"
+        | "OTHER_LIMITED_PARTNERS"
+      lp_subcategory:
+        | "CORPORATE_PENSION"
+        | "PUBLIC_PENSION_FUND"
+        | "UNION_PENSION_FUND"
+        | "FAMILY_OFFICE_SINGLE"
+        | "FAMILY_OFFICE_MULTI"
+        | "DIRECT_INVESTMENT"
+        | "FUND_OF_FUNDS"
+        | "INSURANCE_COMPANY"
+        | "MUTUAL_FUND_COMPANY"
+        | "PRIVATE_INVESTMENT_FUND"
+        | "REAL_ESTATE_INVESTMENT_COMPANY"
+        | "SECONDARY_LP"
+        | "ECONOMIC_DEVELOPMENT_AGENCY"
+        | "ENDOWMENT"
+        | "UNIVERSITY_NON_ENDOWMENT"
+        | "FOUNDATION"
+        | "GOVERNMENT_AGENCY"
+        | "SOVEREIGN_WEALTH_FUND"
+        | "DISCRETIONARY_ADVISOR"
+        | "INVESTMENT_ADVISOR"
+        | "MONEY_MANAGEMENT_FIRM"
+        | "WEALTH_MANAGEMENT_FIRM"
+        | "BANKING_INSTITUTION"
+        | "CORPORATION"
+        | "HIGH_NET_WORTH_INVESTOR"
+        | "OTHER_LIMITED_PARTNER"
       ticket_membership: "MEMBRO" | "NAO_MEMBRO"
     }
     CompositeTypes: {
@@ -898,14 +923,40 @@ export const Constants = {
       ],
       import_status: ["PENDING", "PROCESSING", "COMPLETED", "FAILED"],
       lp_category: [
-        "AGENCIA_FOMENTO_DFI",
-        "FAMILY_OFFICE",
-        "FUNDO_PENSAO",
-        "FUNDO_DE_FUNDOS",
-        "RPPS",
-        "WEALTH_MANAGEMENT",
-        "ASSET_MANAGER",
-        "HNI",
+        "PENSION",
+        "FAMILY_OFFICES",
+        "INVESTMENT_FIRMS",
+        "PHILANTHROPY_AGENCIES",
+        "ADVISORS",
+        "OTHER_LIMITED_PARTNERS",
+      ],
+      lp_subcategory: [
+        "CORPORATE_PENSION",
+        "PUBLIC_PENSION_FUND",
+        "UNION_PENSION_FUND",
+        "FAMILY_OFFICE_SINGLE",
+        "FAMILY_OFFICE_MULTI",
+        "DIRECT_INVESTMENT",
+        "FUND_OF_FUNDS",
+        "INSURANCE_COMPANY",
+        "MUTUAL_FUND_COMPANY",
+        "PRIVATE_INVESTMENT_FUND",
+        "REAL_ESTATE_INVESTMENT_COMPANY",
+        "SECONDARY_LP",
+        "ECONOMIC_DEVELOPMENT_AGENCY",
+        "ENDOWMENT",
+        "UNIVERSITY_NON_ENDOWMENT",
+        "FOUNDATION",
+        "GOVERNMENT_AGENCY",
+        "SOVEREIGN_WEALTH_FUND",
+        "DISCRETIONARY_ADVISOR",
+        "INVESTMENT_ADVISOR",
+        "MONEY_MANAGEMENT_FIRM",
+        "WEALTH_MANAGEMENT_FIRM",
+        "BANKING_INSTITUTION",
+        "CORPORATION",
+        "HIGH_NET_WORTH_INVESTOR",
+        "OTHER_LIMITED_PARTNER",
       ],
       ticket_membership: ["MEMBRO", "NAO_MEMBRO"],
     },
@@ -918,6 +969,7 @@ export type TicketMembership = Database["public"]["Enums"]["ticket_membership"]
 export type CompanySegment = Database["public"]["Enums"]["company_segment"]
 export type ImportStatus = Database["public"]["Enums"]["import_status"]
 export type LpCategory = Database["public"]["Enums"]["lp_category"]
+export type LpSubcategory = Database["public"]["Enums"]["lp_subcategory"]
 
 export type Participant = Database["public"]["Tables"]["participants"]["Row"]
 export type Edition = Database["public"]["Tables"]["editions"]["Row"]

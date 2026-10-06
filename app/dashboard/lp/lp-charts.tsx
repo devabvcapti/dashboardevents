@@ -1,7 +1,7 @@
 'use client'
 
 import { StatCard } from '@/components/stat-card'
-import { LP_CATEGORY_LABELS } from '@/lib/data'
+import { LP_CATEGORY_LABELS, LP_SUBCATEGORY_LABELS } from '@/lib/data'
 import type { LpAnalysis, LpMasterCoverage, LpExcludedCompany } from '@/lib/data'
 import { LpCategorySelect } from './lp-category-select'
 import { LpMasterUpload } from './lp-master-upload'
@@ -28,10 +28,11 @@ interface Props {
 export function LpCharts({ analysis, coverage, excluded, isAdmin }: Props) {
   const {
     totalLpParticipants, pctOfAudience, distinctCompanies, audiencePerLpParticipant,
-    classifiedParticipants, byCategory, companies,
+    classifiedParticipants, byCategory, bySubcategory, companies,
   } = analysis
 
   const maxCategoryCount = byCategory[0]?.participantCount ?? 1
+  const maxSubcategoryCount = bySubcategory[0]?.participantCount ?? 1
   const classifiedPct = totalLpParticipants > 0 ? Math.round((classifiedParticipants / totalLpParticipants) * 100) : 0
 
   return (
@@ -63,9 +64,9 @@ export function LpCharts({ analysis, coverage, excluded, isAdmin }: Props) {
         />
       </div>
 
-      {/* Ranking por subcategoria */}
+      {/* Resumo por categoria */}
       <div className="bg-card border border-border rounded-lg p-5 shadow-sm">
-        <ChartLabel>Participantes por Subcategoria de LP</ChartLabel>
+        <ChartLabel>Participantes por Categoria de LP</ChartLabel>
         {byCategory.length === 0 ? (
           <EmptyChart height={120} />
         ) : (
@@ -83,6 +84,34 @@ export function LpCharts({ analysis, coverage, excluded, isAdmin }: Props) {
                   <div className="h-1 bg-border rounded-full overflow-hidden">
                     <div className="h-full rounded-full transition-all duration-500"
                       style={{ width: `${Math.round((c.participantCount / maxCategoryCount) * 100)}%`, backgroundColor: CHART_COLORS[i % CHART_COLORS.length] }} />
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Detalhe por subcategoria */}
+      <div className="bg-card border border-border rounded-lg p-5 shadow-sm">
+        <ChartLabel>Participantes por Subcategoria de LP</ChartLabel>
+        {bySubcategory.length === 0 ? (
+          <EmptyChart height={120} />
+        ) : (
+          <div className="space-y-3 mt-2">
+            {bySubcategory.map((c, i) => (
+              <div key={c.subcategory} className="flex items-center gap-4">
+                <span className="text-[10px] font-mono text-muted-foreground/40 w-4 shrink-0 tabular-nums">{i + 1}</span>
+                <div className="flex-1 min-w-0">
+                  <div className="flex justify-between items-baseline mb-1.5">
+                    <span className="text-sm text-foreground/80 truncate">{LP_SUBCATEGORY_LABELS[c.subcategory]}</span>
+                    <span className="text-[11px] font-mono text-muted-foreground ml-3 shrink-0">
+                      {c.participantCount} <span className="text-muted-foreground/40">({c.companyCount} empresa{c.companyCount !== 1 ? 's' : ''})</span>
+                    </span>
+                  </div>
+                  <div className="h-1 bg-border rounded-full overflow-hidden">
+                    <div className="h-full rounded-full transition-all duration-500"
+                      style={{ width: `${Math.round((c.participantCount / maxSubcategoryCount) * 100)}%`, backgroundColor: CHART_COLORS[i % CHART_COLORS.length] }} />
                   </div>
                 </div>
               </div>
@@ -122,7 +151,7 @@ export function LpCharts({ analysis, coverage, excluded, isAdmin }: Props) {
                     {isAdmin && (
                       <td className="p-3 text-right">
                         <div className="flex justify-end">
-                          <LpCategorySelect companyName={c.displayName} currentCategory={c.category} />
+                          <LpCategorySelect companyName={c.displayName} currentSubcategory={c.subcategory} />
                         </div>
                       </td>
                     )}
@@ -194,16 +223,16 @@ export function LpCharts({ analysis, coverage, excluded, isAdmin }: Props) {
             />
           </div>
 
-          {coverage.byCategory.length > 0 && (
+          {coverage.bySubcategory.length > 0 && (
             <div className="bg-card border border-border rounded-lg p-5 shadow-sm">
-              <ChartLabel>% de Confirmação por Categoria (vs. Base Mestre)</ChartLabel>
+              <ChartLabel>% de Confirmação por Subcategoria (vs. Base Mestre)</ChartLabel>
               <div className="space-y-3 mt-2">
-                {coverage.byCategory.map((c, i) => (
-                  <div key={c.category} className="flex items-center gap-4">
+                {coverage.bySubcategory.map((c, i) => (
+                  <div key={c.subcategory} className="flex items-center gap-4">
                     <span className="text-[10px] font-mono text-muted-foreground/40 w-4 shrink-0 tabular-nums">{i + 1}</span>
                     <div className="flex-1 min-w-0">
                       <div className="flex justify-between items-baseline mb-1.5">
-                        <span className="text-sm text-foreground/80 truncate">{LP_CATEGORY_LABELS[c.category]}</span>
+                        <span className="text-sm text-foreground/80 truncate">{LP_SUBCATEGORY_LABELS[c.subcategory]}</span>
                         <span className="text-[11px] font-mono text-muted-foreground ml-3 shrink-0">
                           {c.confirmed}/{c.totalInMaster} <span className="text-muted-foreground/40">({c.pctConfirmed.toLocaleString('pt-BR', { maximumFractionDigits: 1 })}%)</span>
                         </span>
@@ -240,7 +269,7 @@ export function LpCharts({ analysis, coverage, excluded, isAdmin }: Props) {
                     {coverage.unconfirmed.map(u => (
                       <tr key={u.companyKey} className="border-t border-border">
                         <td className="p-3 text-sm">{u.displayName}</td>
-                        <td className="p-3 text-sm text-muted-foreground">{u.category ? LP_CATEGORY_LABELS[u.category] : '—'}</td>
+                        <td className="p-3 text-sm text-muted-foreground">{u.subcategory ? LP_SUBCATEGORY_LABELS[u.subcategory] : '—'}</td>
                       </tr>
                     ))}
                   </tbody>

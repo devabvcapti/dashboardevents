@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import ExcelJS from 'exceljs'
 import { requireAdmin } from '@/lib/auth'
-import { getLpAnalysis, LP_CATEGORY_LABELS } from '@/lib/data'
+import { getLpAnalysis, LP_SUBCATEGORY_LABELS } from '@/lib/data'
 import { getActiveEdition } from '@/lib/edition-cookie'
 
 export const runtime = 'nodejs'
@@ -36,7 +36,7 @@ export async function GET() {
   for (const c of analysis.companies) {
     ws.addRow({
       company: c.displayName,
-      category: c.category ? LP_CATEGORY_LABELS[c.category] : 'Não classificada',
+      category: c.subcategory ? LP_SUBCATEGORY_LABELS[c.subcategory] : 'Não classificada',
       count: c.participantCount,
     })
   }

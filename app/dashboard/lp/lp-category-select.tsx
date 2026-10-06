@@ -2,16 +2,16 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { LP_CATEGORIES, LP_CATEGORY_LABELS } from '@/lib/data'
-import type { LpCategory } from '@/lib/data'
+import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { LP_CATEGORIES, LP_CATEGORY_LABELS, LP_SUBCATEGORIES, LP_SUBCATEGORY_LABELS, LP_SUBCATEGORY_CATEGORY } from '@/lib/data'
+import type { LpSubcategory } from '@/lib/data'
 
 interface Props {
   companyName: string
-  currentCategory?: LpCategory | null
+  currentSubcategory?: LpSubcategory | null
 }
 
-export function LpCategorySelect({ companyName, currentCategory }: Props) {
+export function LpCategorySelect({ companyName, currentSubcategory }: Props) {
   const router = useRouter()
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -24,7 +24,7 @@ export function LpCategorySelect({ companyName, currentCategory }: Props) {
       const res = await fetch('/api/lp/classify', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ companyName, category: value }),
+        body: JSON.stringify({ companyName, subcategory: value }),
       })
       if (!res.ok) {
         const json = await res.json().catch(() => null)
@@ -41,15 +41,24 @@ export function LpCategorySelect({ companyName, currentCategory }: Props) {
 
   return (
     <div>
-      <Select value={currentCategory ?? undefined} onValueChange={handleChange} disabled={saving}>
-        <SelectTrigger size="sm" className="h-7 text-[11px] w-[200px]">
+      <Select value={currentSubcategory ?? undefined} onValueChange={handleChange} disabled={saving}>
+        <SelectTrigger size="sm" className="h-7 text-[11px] w-[260px]">
           <SelectValue>
-            {currentCategory ? LP_CATEGORY_LABELS[currentCategory] : <span className="text-muted-foreground/40">classificar</span>}
+            {currentSubcategory ? LP_SUBCATEGORY_LABELS[currentSubcategory] : <span className="text-muted-foreground/40">classificar</span>}
           </SelectValue>
         </SelectTrigger>
         <SelectContent>
-          {LP_CATEGORIES.map((c: LpCategory) => (
-            <SelectItem key={c} value={c}>{LP_CATEGORY_LABELS[c]}</SelectItem>
+          {LP_CATEGORIES.map((category) => (
+            <SelectGroup key={category}>
+              <SelectLabel className="text-[10px] uppercase tracking-wider text-muted-foreground/60">
+                {LP_CATEGORY_LABELS[category]}
+              </SelectLabel>
+              {LP_SUBCATEGORIES
+                .filter((s) => LP_SUBCATEGORY_CATEGORY[s] === category)
+                .map((s) => (
+                  <SelectItem key={s} value={s}>{LP_SUBCATEGORY_LABELS[s]}</SelectItem>
+                ))}
+            </SelectGroup>
           ))}
         </SelectContent>
       </Select>
