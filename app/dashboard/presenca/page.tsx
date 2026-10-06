@@ -3,14 +3,10 @@ import { getAttendanceStats } from '@/lib/data'
 import { getActiveEdition } from '@/lib/edition-cookie'
 import { isClosedEventWithQaPlatform } from '@/lib/vcday'
 import { StatCard } from '@/components/stat-card'
+import { PresencaCharts } from './presenca-charts'
 
 export const dynamic = 'force-dynamic'
 export const metadata = { title: 'Presença — Dashboard ABVCAP' }
-
-const MEMBERSHIP_LABEL: Record<string, string> = {
-  MEMBRO: 'Membro',
-  NAO_MEMBRO: 'Não Membro',
-}
 
 export default async function PresencaPage() {
   await requireAuth()
@@ -91,29 +87,7 @@ export default async function PresencaPage() {
             />
           </div>
 
-          <div className="bg-card border border-border rounded-lg p-5 shadow-sm">
-            <p className="text-[10px] font-mono tracking-[0.20em] text-muted-foreground uppercase mb-4">
-              Presença por Tipo de Ingresso
-            </p>
-            <div className="space-y-3">
-              {stats.byMembership.map(m => (
-                <div key={m.membership} className="flex items-center gap-4">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex justify-between items-baseline mb-1.5">
-                      <span className="text-sm text-foreground/80 truncate">{MEMBERSHIP_LABEL[m.membership] ?? m.membership}</span>
-                      <span className="text-[11px] font-mono text-muted-foreground ml-3 shrink-0">
-                        {m.checkedIn} de {m.total} <span className="text-muted-foreground/40">({m.pctAttendance.toLocaleString('pt-BR', { maximumFractionDigits: 1 })}%)</span>
-                      </span>
-                    </div>
-                    <div className="h-1 bg-border rounded-full overflow-hidden">
-                      <div className="h-full rounded-full bg-primary transition-all duration-500"
-                        style={{ width: `${m.pctAttendance}%` }} />
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
+          <PresencaCharts stats={stats} />
         </div>
       )}
     </div>
