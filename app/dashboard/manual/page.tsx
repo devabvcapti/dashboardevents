@@ -3,6 +3,7 @@ import {
   BookOpen, LogIn, LayoutDashboard, Users, TicketIcon, Tag,
   BarChart3, Activity, Wallet, PiggyBank, Calendar, Upload,
   UserCog, ShieldCheck, FileSpreadsheet, AlertTriangle,
+  GitCompareArrows, Building2, Landmark, MessagesSquare, UserCheck, ClipboardList,
 } from 'lucide-react'
 
 export const metadata = { title: 'Manual — Dashboard ABVCAP' }
@@ -159,6 +160,24 @@ export default async function ManualPage() {
             description="Visão financeira: receita por tipo de membro, histograma de distribuição de valores e comparativo de ticket médio."
           />
           <ModuleCard
+            icon={GitCompareArrows}
+            label="Comparativo"
+            path="/dashboard/comparativo"
+            description="Evolução histórica de inscrições, receita e ticket médio entre todas as edições do evento."
+          />
+          <ModuleCard
+            icon={Building2}
+            label="Empresas"
+            path="/dashboard/empresas"
+            description="Concentração, ranking e perfil das empresas participantes da edição ativa."
+          />
+          <ModuleCard
+            icon={Landmark}
+            label="Análise de LPs"
+            path="/dashboard/lp"
+            description="Perfil dos investidores (LPs — Limited Partners) presentes no evento, por categoria e subcategoria. Permite classificar manualmente as empresas ainda não categorizadas."
+          />
+          <ModuleCard
             icon={Calendar}
             label="Eventos"
             path="/dashboard/eventos"
@@ -189,8 +208,39 @@ export default async function ManualPage() {
         </div>
       </Section>
 
+      {/* Módulos pós-evento */}
+      <Section title="3. Módulos Pós-Evento">
+        <p className="text-sm text-muted-foreground">
+          Aparecem no menu lateral (seção <strong>Pós-Evento</strong>) somente quando a edição ativa já foi realizada — não ficam visíveis para edições futuras/em andamento.
+        </p>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <ModuleCard
+            icon={MessagesSquare}
+            label="Q&A e Avaliações"
+            path="/dashboard/vcday-qa"
+            description="Perguntas enviadas e avaliações de satisfação por painel, coletadas na plataforma do evento."
+          />
+          <ModuleCard
+            icon={UserCheck}
+            label="Presença"
+            path="/dashboard/presenca"
+            description="Comparecimento real dos inscritos (check-in no local): % de presença geral e quebra por tipo de ingresso. Requer a importação da planilha pós-evento com a coluna 'Fez check-in'."
+          />
+        </div>
+      </Section>
+
+      {/* Pesquisa NPS */}
+      <Section title="4. Pesquisa NPS">
+        <ModuleCard
+          icon={ClipboardList}
+          label="ABVCAP Experience 2026"
+          path="/dashboard/nps"
+          description="Pesquisas pós-evento por público (Participantes, Participantes VC Day, Painelistas e Moderadores, Patrocinadores e Apoiadores, Women Connection), comparáveis entre edições do Experience. Mostra NPS, notas médias e contatos de quem deixou email/telefone para cupom."
+        />
+      </Section>
+
       {/* Importar planilha */}
-      <Section title="3. Como Importar a Planilha de Inscrições">
+      <Section title="5. Como Importar a Planilha de Inscrições">
         <p className="text-sm text-muted-foreground">
           A importação lê o arquivo Excel exportado da plataforma de inscrições e popula os dados da edição ativa.
         </p>
@@ -211,7 +261,7 @@ export default async function ManualPage() {
       </Section>
 
       {/* Importar orçamento */}
-      <Section title="4. Como Importar a Planilha de Orçamento">
+      <Section title="6. Como Importar a Planilha de Orçamento">
         <p className="text-sm text-muted-foreground">
           O módulo de Orçamento aceita um Excel com colunas de categoria, subcategoria, valor orçado e valor realizado.
         </p>
@@ -232,7 +282,7 @@ export default async function ManualPage() {
       </Section>
 
       {/* Perfis */}
-      <Section title="5. Perfis de Acesso">
+      <Section title="7. Perfis de Acesso">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="border border-border rounded-lg p-4 bg-card space-y-2">
             <div className="flex items-center gap-2">
