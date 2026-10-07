@@ -1,6 +1,6 @@
 {
   "version": "1.0",
-  "timestamp": "2026-10-06T19:42:06.900Z",
+  "timestamp": "2026-10-07T02:14:56.336Z",
   "phase": null,
   "phase_name": null,
   "phase_dir": null,
@@ -9,34 +9,29 @@
   "total_tasks": null,
   "status": "paused",
   "completed_tasks": [
-    {"id": 1, "name": "Pesquisar schema de participants e constraints (email NOT NULL+UNIQUE por edição, ticket_membership NOT NULL, ticket_id NULL-ável)", "status": "done"},
-    {"id": 2, "name": "Checar preços/ticket_name já usados em VC Day 2026 pra validar a sugestão 'Ingresso na Porta'", "status": "done"},
-    {"id": 3, "name": "Checar se Camila Garavello e Artur Leal já existem no banco (edição VC Day 2026)", "status": "done"}
+    {"id": 1, "name": "Inserir ingressos manuais 'na porta': Camila Garavello (UPDATE do registro existente, Cortesia->Pago R$350), Artur Leal (INSERT, VC Day) e Alexandre Werneck (INSERT, Congresso, R$2.750)", "status": "done"},
+    {"id": 2, "name": "Atualizar /dashboard/manual com os 6 módulos que faltavam (Comparativo, Empresas, Análise de LPs, Q&A e Avaliações, Presença, NPS)", "status": "done"},
+    {"id": 3, "name": "Importar atualização de cadastro dos participantes do Congresso (612 linhas, sem mexer em check-in) via 'Participantes Congresso 2026 (sem VC Day) 06.10.26_v2.xlsx'", "status": "done"},
+    {"id": 4, "name": "Descobrir e corrigir bug de fonte de check-in: 'Fez check-in' é pouco confiável, 'Status de check-in da localização principal' é a correta — corrigido em scripts/rebuild-import-sheets.mjs (commit ce6c7b8)", "status": "done"},
+    {"id": 5, "name": "Importar check-in do Congresso 2026 com a fonte corrigida: 502 de 614 confirmados (81,8%)", "status": "done"},
+    {"id": 6, "name": "Explicar ao usuário, em detalhe, a metodologia da Análise de LPs (segmentação, agrupamento por empresa, taxonomia categoria/subcategoria, fórmulas dos 4 KPIs) para ele usar na apresentação", "status": "done"}
   ],
   "remaining_tasks": [
-    {"id": 4, "name": "Decidir com o usuário: Camila Garavello já tem registro existente (Cortesia, R$0, checked_in=true) — UPDATE desse registro pra R$350/pago, ou é algo separado?", "status": "not_started"},
-    {"id": 5, "name": "Coletar email + ticket_membership (MEMBRO/NAO_MEMBRO) de Camila Garavello e Artur Leal — campos NOT NULL, não dá pra inserir sem isso", "status": "not_started"},
-    {"id": 6, "name": "Inserir/atualizar os 2 registros em participants (edition_id VC Day 2026 = 1768f9b2-66a8-4472-a0de-d25baf40377b), ticket_value=350, ticket_name='Ingresso na Porta' (ou equivalente combinado com o usuário)", "status": "not_started"}
+    {"id": 7, "name": "(Opcional, não bloqueante) VC Day tem 286 checked_in no banco vs 288 que a fonte corrigida indicaria — diferença de 2 pessoas; usuário disse que pode ficar pra depois", "status": "not_started"},
+    {"id": 8, "name": "(Opcional) 3 empresas LP do Congresso 2026 ainda não classificadas na taxonomia (apareceram em imports recentes, depois da classificação original de 58 empresas)", "status": "not_started"},
+    {"id": 9, "name": "Apresentação do dashboard é hoje/amanhã (contexto da sessão) — nenhuma ação pendente conhecida além do acima", "status": "not_started"}
   ],
-  "blockers": [
-    {
-      "description": "Faltam dados obrigatórios (email, ticket_membership) para os 2 ingressos que o usuário quer lançar. Além disso, Camila Garavello já tem um registro existente na mesma edição com status Cortesia/R$0/checked_in=true, o que contradiz 'ingresso vendido por R$350' — precisa decisão do usuário antes de gravar qualquer coisa.",
-      "type": "human_action",
-      "workaround": "Perguntar ao usuário ao retomar: (a) o que fazer com o registro existente da Camila, (b) email de cada pessoa, (c) se são Membro ou Não Membro ABVCAP."
-    }
-  ],
-  "human_actions_pending": [
-    {"action": "Responder: Camila Garavello é correção do registro existente (Cortesia -> Pago R$350) ou outra coisa?", "context": "Registro existente: email camila.garavello@liscapital.com.br, ticket_name 'INGRESSO VC DAY (NÃO MEMBRO)', ticket_value 0, payment_status 'Cortesia', checked_in true, id 0bcd81cd-8b6d-4977-8eab-85c67827f23e", "blocking": true},
-    {"action": "Fornecer email de Camila Garavello (se for um registro novo/separado) e de Artur Leal", "context": "email é NOT NULL + UNIQUE(email, edition_id) na tabela participants — obrigatório pra inserir", "blocking": true},
-    {"action": "Informar se Camila Garavello e Artur Leal são Membro ou Não Membro ABVCAP", "context": "ticket_membership é NOT NULL (enum MEMBRO/NAO_MEMBRO) — afeta diretamente as métricas de receita e adesão do dashboard", "blocking": true}
-  ],
+  "blockers": [],
+  "human_actions_pending": [],
   "decisions": [
-    {"decision": "Usar 'Ingresso na Porta' como valor de ticket_name (campo texto livre) em vez de criar um novo enum/categoria", "rationale": "ticket_name já é texto livre na tabela (ex.: 'INGRESSO VC DAY 2026 (MEMBRO)', 'VIPS VC DAY'); não exige migration nem muda ticket_membership; aparece nas quebras por tipo de ingresso do dashboard", "phase": null}
+    {"decision": "Ingressos manuais 'na porta' usam ticket_name='Ingresso na Porta' e payment_status='Pago na Porta (Maquininha ABVCAP)' em vez de categoria/enum nova", "rationale": "ticket_name já é texto livre, aparece nas quebras por tipo de ingresso sem precisar de migration", "phase": null},
+    {"decision": "Para participante já existente com registro conflitante (Camila Garavello: Cortesia/R$0), usar UPDATE com valor_pago_manual em vez de criar um segundo registro com email fictício", "rationale": "evita contar a mesma pessoa duas vezes nas métricas de receita/audiência; valor_pago_manual é exatamente o campo que o sistema já tem pra esse tipo de correção manual (ver migration 017)", "phase": null},
+    {"decision": "scripts/rebuild-import-sheets.mjs agora prioriza 'Status de check-in da localização principal' sobre 'Fez check-in' como fonte do campo de presença, sempre que a primeira existir no arquivo de origem", "rationale": "validado comparando contra o VC Day já confirmado em produção (288 vs 286 já importado, contra só 53 que 'Fez check-in' indicava) — 'Fez check-in' parece rastrear um check-in secundário via app/QR pouco usado", "phase": null}
   ],
   "uncommitted_files": [
     ".planning/config.json (pré-existente, não relacionado a esta sessão)",
     "abvcap-congress (submódulo, pré-existente, não relacionado a esta sessão)"
   ],
-  "next_action": "Perguntar ao usuário os 3 pontos em human_actions_pending antes de gravar qualquer coisa em participants. Depois de respondido, inserir Artur Leal (INSERT novo) e tratar Camila conforme decisão (UPDATE do registro existente 0bcd81cd-8b6d-4977-8eab-85c67827f23e, ou INSERT separado se for caso diferente).",
-  "context_notes": "Sessão trabalhou em vários itens avulsos do dashboard antes deste (import de LPs classificados, correção de .env.local, import de check-in do VC Day 2026, gráfico de presença, correção de rótulo NPS). O pedido de inserir 2 ingressos manuais (Camila Garavello e Artur Leal, R$350 cada, edição VC Day 2026) ficou bloqueado assim que descobri que Camila já tem registro no banco com perfil incompatível (cortesia/grátis, já check-in feito) — não dá pra simplesmente inserir sem contradizer o dado existente. Usuário pediu para salvar o estado e retomar depois; nenhuma escrita foi feita em participants ainda."
+  "next_action": "Nenhuma ação obrigatória pendente. Se o usuário retomar, perguntar se quer tratar os itens opcionais (ajustar os 2 check-ins do VC Day, classificar as 3 empresas LP novas do Congresso) ou se tem algo novo.",
+  "context_notes": "Sessão longa cobrindo vários itens operacionais soltos do dashboard, todos concluídos e já em produção (main, via push direto — preferência do usuário registrada em memória): import de LPs classificados, fix de .env.local (credenciais 'Sensitive' do Vercel), import de check-in do VC Day, gráfico de Presença, fix de rótulo NPS, manual atualizado, 3 ingressos manuais 'na porta' inseridos, import de cadastro + check-in do Congresso (com bug de fonte de check-in descoberto e corrigido no processo), e explicação detalhada da metodologia de Análise de LPs. Nada ficou bloqueado — é uma pausa de checkpoint, não por impedimento."
 }
