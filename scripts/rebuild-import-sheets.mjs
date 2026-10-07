@@ -146,6 +146,19 @@ async function main() {
     console.warn(`\n>>> ${missing} campo(s) não localizado(s) — confira os avisos acima antes de usar o resultado. <<<\n`)
   }
 
+  // "Fez check-in" é pouco confiável (parece rastrear um check-in secundário via
+  // app/QR que quase ninguém usa) — "Status de check-in da localização principal"
+  // é o controle de entrada física real e bate com os números já confirmados em
+  // produção (validado em 2026-10-07: 288 nesta coluna vs 286 já importados pro
+  // VC Day via "Fez check-in", contra só 53 que "Fez check-in" mostra nesta mesma
+  // planilha). Sempre que essa coluna existir na origem, ela tem prioridade sobre
+  // "Fez check-in" como fonte do campo checked_in de destino.
+  const checkedInTargetIdx = 75
+  const statusCheckinSrcIdx = srcRow1.findIndex(v => v === 'Status de check-in da localização principal')
+  if (statusCheckinSrcIdx !== -1) {
+    console.log('Usando "Status de check-in da localização principal" (coluna', statusCheckinSrcIdx, ') como fonte de "Fez check-in" — mais confiável que a coluna homônima.')
+  }
+
   const nomeIngressoTargetIdx = 56
   const nomeIngressoSrcIdx = Number(Object.entries(SRC_TO_DST).find(([, dst]) => dst === nomeIngressoTargetIdx)?.[0])
 
@@ -161,6 +174,9 @@ async function main() {
     const target = new Array(TARGET_LEN).fill(null)
     for (const [srcIdxStr, dstIdx] of Object.entries(SRC_TO_DST)) {
       target[dstIdx] = cellVal(values[Number(srcIdxStr)])
+    }
+    if (statusCheckinSrcIdx !== -1) {
+      target[checkedInTargetIdx] = cellVal(values[statusCheckinSrcIdx])
     }
 
     const ticketName = String(cellVal(values[nomeIngressoSrcIdx]) ?? '')
