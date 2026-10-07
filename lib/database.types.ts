@@ -771,6 +771,7 @@ export type Database = {
         | "CORPORATION"
         | "HIGH_NET_WORTH_INVESTOR"
         | "OTHER_LIMITED_PARTNER"
+        | "PLACEMENT_AGENT"
       ticket_membership: "MEMBRO" | "NAO_MEMBRO"
     }
     CompositeTypes: {

@@ -1181,6 +1181,7 @@ export const LP_SUBCATEGORY_LABELS: Record<LpSubcategory, string> = {
   INVESTMENT_ADVISOR: 'Consultor de Investimentos',
   MONEY_MANAGEMENT_FIRM: 'Gestora de Recursos',
   WEALTH_MANAGEMENT_FIRM: 'Gestora de Patrimônio (Wealth Management)',
+  PLACEMENT_AGENT: 'Placement Agent / Capital Advisory',
   BANKING_INSTITUTION: 'Instituição Bancária',
   CORPORATION: 'Empresa (Corporação)',
   HIGH_NET_WORTH_INVESTOR: 'Investidor de Alta Renda (HNWI)',
@@ -1212,6 +1213,7 @@ export const LP_SUBCATEGORY_CATEGORY: Record<LpSubcategory, LpCategory> = {
   INVESTMENT_ADVISOR: 'ADVISORS',
   MONEY_MANAGEMENT_FIRM: 'ADVISORS',
   WEALTH_MANAGEMENT_FIRM: 'ADVISORS',
+  PLACEMENT_AGENT: 'ADVISORS',
   BANKING_INSTITUTION: 'OTHER_LIMITED_PARTNERS',
   CORPORATION: 'OTHER_LIMITED_PARTNERS',
   HIGH_NET_WORTH_INVESTOR: 'OTHER_LIMITED_PARTNERS',
@@ -1491,6 +1493,7 @@ const LP_SUBCATEGORY_TEXT_ALIASES: Record<string, LpSubcategory> = (() => {
     INVESTMENT_ADVISOR: 'Investment Advisor',
     MONEY_MANAGEMENT_FIRM: 'Money Management Firm',
     WEALTH_MANAGEMENT_FIRM: 'Wealth Management Firm',
+    PLACEMENT_AGENT: 'Placement Agent / Capital Advisory',
     BANKING_INSTITUTION: 'Banking Institution',
     CORPORATION: 'Corporation',
     HIGH_NET_WORTH_INVESTOR: 'High-net-worth investor',
@@ -1504,6 +1507,8 @@ const LP_SUBCATEGORY_TEXT_ALIASES: Record<string, LpSubcategory> = (() => {
   map[normalizeCompanyKey('SFO')] = 'FAMILY_OFFICE_SINGLE'
   map[normalizeCompanyKey('FoF')] = 'FUND_OF_FUNDS'
   map[normalizeCompanyKey('HNWI')] = 'HIGH_NET_WORTH_INVESTOR'
+  map[normalizeCompanyKey('Placement Agent')] = 'PLACEMENT_AGENT'
+  map[normalizeCompanyKey('Capital Advisory')] = 'PLACEMENT_AGENT'
   return map
 })()
 

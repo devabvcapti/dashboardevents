@@ -68,6 +68,8 @@ const EN_TO_ENUM = {
   'Investment Advisor': 'INVESTMENT_ADVISOR',
   'Money Management Firm': 'MONEY_MANAGEMENT_FIRM',
   'Wealth Management Firm': 'WEALTH_MANAGEMENT_FIRM',
+  'Placement Agent / Capital Advisory': 'PLACEMENT_AGENT',
+  'Placement Agent': 'PLACEMENT_AGENT',
   'Banking Institution': 'BANKING_INSTITUTION',
   'Corporation': 'CORPORATION',
   'High-net-worth investor': 'HIGH_NET_WORTH_INVESTOR',
