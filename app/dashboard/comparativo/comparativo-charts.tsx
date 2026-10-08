@@ -3,7 +3,7 @@
 import { useMemo, useState } from 'react'
 import {
   BarChart, Bar, LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer,
-  CartesianGrid, LabelList, Cell, Legend,
+  CartesianGrid, LabelList, Cell, Legend, PieChart, Pie,
 } from 'recharts'
 import { useTheme } from 'next-themes'
 import type { EditionComparison, EditionCountdown, NewAudienceStat } from '@/lib/data'
@@ -162,13 +162,6 @@ export function ComparativoCharts({ data, countdownData, newAudienceData }: {
   const revData = filtered.map(d => ({ name: d.edition.name, value: Math.round(d.stats.total_revenue) }))
 
   const filteredNewAudience = newAudienceData.filter(s => selectedIds.has(s.edition.id))
-  const newAudienceChartData = filteredNewAudience.map(s => ({
-    name: s.edition.name,
-    Novos: s.newParticipants,
-    Recorrentes: s.returningParticipants,
-    total: s.totalParticipants,
-    label: s.isFirstInSeries ? 'primeira edição' : (s.pctNew != null ? `${s.pctNew.toFixed(0)}% novos` : ''),
-  }))
 
   const tooltipStyle = {
     backgroundColor: 'hsl(var(--popover))',
@@ -352,7 +345,7 @@ export function ComparativoCharts({ data, countdownData, newAudienceData }: {
       )}
 
       {/* Novos vs. Recorrentes entre edições da mesma série (congresso, vcday, ...) */}
-      {newAudienceChartData.length > 0 && (
+      {filteredNewAudience.length > 0 && (
         <div className="border border-border rounded-lg bg-card p-5 space-y-4">
           <div>
             <p className="text-[10px] font-mono tracking-[0.18em] text-muted-foreground uppercase">
@@ -364,27 +357,74 @@ export function ComparativoCharts({ data, countdownData, newAudienceData }: {
             </p>
           </div>
 
-          <ResponsiveContainer width="100%" height={240}>
-            <BarChart data={newAudienceChartData} margin={{ top: 24, right: 8, left: 0, bottom: 0 }}>
-              <CartesianGrid vertical={false} stroke={GRID_COLOR} strokeOpacity={0.5} />
-              <XAxis dataKey="name" tick={AXIS_STYLE} axisLine={false} tickLine={false} />
-              <YAxis tick={AXIS_STYLE} axisLine={false} tickLine={false} width={40} allowDecimals={false} />
-              <Tooltip
-                contentStyle={tooltipStyle}
-                cursor={{ fill: 'hsl(var(--muted))', opacity: 0.4 }}
-                formatter={(v, name) => [`${v} participantes`, name as string]}
-              />
-              <Legend wrapperStyle={{ fontSize: 11, fontFamily: 'var(--font-mono)' }} />
-              <Bar dataKey="Recorrentes" stackId="audience" fill={bar} fillOpacity={0.55} />
-              <Bar dataKey="Novos" stackId="audience" fill={teal} radius={[4, 4, 0, 0]}>
-                <LabelList
-                  dataKey="label"
-                  position="top"
-                  style={{ ...AXIS_STYLE, fill: 'hsl(var(--foreground))' }}
-                />
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+            {filteredNewAudience.map(s => {
+              const pieData = s.isFirstInSeries
+                ? [{ key: 'first', name: 'Primeira edição', value: s.totalParticipants }]
+                : [
+                    { key: 'new', name: 'Novos', value: s.newParticipants },
+                    { key: 'returning', name: 'Recorrentes', value: s.returningParticipants },
+                  ]
+              return (
+                <div key={s.edition.id} className="flex flex-col items-center text-center">
+                  <div className="relative w-full">
+                    <ResponsiveContainer width="100%" height={160}>
+                      <PieChart>
+                        <Pie
+                          data={pieData}
+                          dataKey="value"
+                          nameKey="name"
+                          cx="50%" cy="50%"
+                          innerRadius={48}
+                          outerRadius={70}
+                          paddingAngle={2}
+                          stroke="transparent"
+                        >
+                          {pieData.map(d => (
+                            <Cell key={d.key} fill={d.key === 'returning' ? bar : teal} fillOpacity={d.key === 'returning' ? 0.55 : 1} />
+                          ))}
+                        </Pie>
+                        <Tooltip
+                          contentStyle={tooltipStyle}
+                          formatter={(v, name) => [`${v} participantes`, name as string]}
+                        />
+                      </PieChart>
+                    </ResponsiveContainer>
+                    <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                      {s.isFirstInSeries ? (
+                        <p className="text-[11px] font-mono text-muted-foreground uppercase tracking-wider leading-tight px-2">
+                          Primeira<br />edição
+                        </p>
+                      ) : (
+                        <>
+                          <p className="font-display tabular-nums text-2xl text-foreground leading-none">
+                            {s.pctNew!.toFixed(0)}%
+                          </p>
+                          <p className="text-[9px] font-mono text-muted-foreground uppercase tracking-wider mt-1">novos</p>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                  <p className="text-sm text-foreground/80 mt-1">{s.edition.name}</p>
+                  <p className="text-[11px] font-mono text-muted-foreground">
+                    {s.totalParticipants.toLocaleString('pt-BR')} participantes
+                    {!s.isFirstInSeries && ` · ${s.newParticipants.toLocaleString('pt-BR')} novos`}
+                  </p>
+                </div>
+              )
+            })}
+          </div>
+
+          <div className="flex items-center gap-4 pt-2 border-t border-border text-[11px] font-mono text-muted-foreground">
+            <span className="inline-flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-sm" style={{ backgroundColor: teal }} />
+              Novos
+            </span>
+            <span className="inline-flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-sm opacity-55" style={{ backgroundColor: bar }} />
+              Recorrentes
+            </span>
+          </div>
         </div>
       )}
 
