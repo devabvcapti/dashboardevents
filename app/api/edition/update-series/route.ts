@@ -7,12 +7,11 @@ export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
 const Body = z.object({
-  name: z.string().min(1).max(200),
-  year: z.number().int().min(2000).max(2100),
-  eventSeries: z.string().trim().toLowerCase().regex(/^[a-z0-9-]+$/).max(50).nullable().optional(),
+  id: z.string().uuid(),
+  eventSeries: z.string().trim().toLowerCase().regex(/^[a-z0-9-]+$/).max(50).nullable(),
 })
 
-export async function POST(req: Request) {
+export async function PATCH(req: Request) {
   try { await requireAdmin() } catch { return NextResponse.json({ error: 'Forbidden' }, { status: 403 }) }
 
   let raw: unknown
@@ -20,11 +19,11 @@ export async function POST(req: Request) {
   const parsed = Body.safeParse(raw)
   if (!parsed.success) return NextResponse.json({ error: 'Payload inválido', details: parsed.error.issues }, { status: 400 })
 
-  const { data, error } = await getSupabase()
+  const { error } = await getSupabase()
     .from('editions')
-    .insert({ name: parsed.data.name, year: parsed.data.year, event_series: parsed.data.eventSeries || null })
-    .select('id, name, year, event_series, created_at')
-    .single()
-  if (error) return NextResponse.json({ error: 'Falha ao criar edição', details: error.message }, { status: 500 })
-  return NextResponse.json(data, { status: 201 })
+    .update({ event_series: parsed.data.eventSeries })
+    .eq('id', parsed.data.id)
+
+  if (error) return NextResponse.json({ error: 'Falha ao salvar série do evento', details: error.message }, { status: 500 })
+  return NextResponse.json({ ok: true })
 }

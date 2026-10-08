@@ -855,6 +855,77 @@ export async function getAllEditionsComparison(): Promise<EditionComparison[]> {
   return results.filter((r): r is EditionComparison => r !== null && r.stats.total >= 20)
 }
 
+// ─── Novos vs. Recorrentes entre edições da mesma série ──────────────────────
+//
+// event_series agrupa edições do mesmo evento (ex. "congresso", "vcday"),
+// independente do ano/nome — permite comparar "quantos participantes desta
+// edição não estavam em NENHUMA edição anterior da mesma série" (base
+// cumulativa: 2027 compara contra a união de 2025+2026, não só o ano anterior).
+// Edições sem event_series definido (ou sem outras edições na mesma série)
+// ficam de fora dessa análise.
+
+export interface NewAudienceStat {
+  edition: Edition
+  totalParticipants: number
+  newParticipants: number
+  returningParticipants: number
+  // null quando é a primeira edição conhecida da série — não há base anterior
+  // pra comparar (mostrar "primeira edição" na UI, não 0% nem 100%).
+  pctNew: number | null
+  isFirstInSeries: boolean
+}
+
+export async function getNewAudienceComparison(): Promise<NewAudienceStat[]> {
+  const supabase = getSupabase()
+  const { data: editions, error } = await supabase
+    .from('editions')
+    .select('*')
+    .not('event_series', 'is', null)
+    .order('year', { ascending: true })
+  if (error) throw error
+  if (!editions || editions.length === 0) return []
+
+  const bySeries = new Map<string, Edition[]>()
+  for (const e of editions as Edition[]) {
+    const key = e.event_series as string
+    const arr = bySeries.get(key) ?? []
+    arr.push(e)
+    bySeries.set(key, arr)
+  }
+
+  const results: NewAudienceStat[] = []
+  for (const seriesEditions of bySeries.values()) {
+    const priorEmails = new Set<string>()
+    for (const edition of seriesEditions) {
+      const { data: rows, error: pErr } = await supabase
+        .from('participants')
+        .select('email')
+        .eq('edition_id', edition.id)
+        .limit(5000)
+      if (pErr) throw pErr
+
+      const emails = (rows ?? []).map(r => r.email.trim().toLowerCase())
+      const total = emails.length
+      const isFirstInSeries = priorEmails.size === 0
+      const newCount = emails.filter(e => !priorEmails.has(e)).length
+
+      results.push({
+        edition,
+        totalParticipants: total,
+        newParticipants: newCount,
+        returningParticipants: total - newCount,
+        pctNew: isFirstInSeries ? null : (total > 0 ? (newCount / total) * 100 : 0),
+        isFirstInSeries,
+      })
+
+      for (const e of emails) priorEmails.add(e)
+    }
+  }
+
+  results.sort((a, b) => a.edition.year - b.edition.year || a.edition.name.localeCompare(b.edition.name))
+  return results
+}
+
 // ─── Comparativo por contagem regressiva (dias antes do evento) ──────────────
 
 export interface CountdownPoint { daysBefore: number; cumulative: number }

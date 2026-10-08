@@ -1,5 +1,5 @@
 import { requireAuth } from '@/lib/auth'
-import { getAllEditionsComparison, getEditionsCountdownComparison } from '@/lib/data'
+import { getAllEditionsComparison, getEditionsCountdownComparison, getNewAudienceComparison } from '@/lib/data'
 import { ComparativoCharts } from './comparativo-charts'
 
 export const dynamic = 'force-dynamic'
@@ -10,6 +10,7 @@ export default async function ComparativoPage() {
 
   let data = null
   let countdownData: Awaited<ReturnType<typeof getEditionsCountdownComparison>> = []
+  let newAudienceData: Awaited<ReturnType<typeof getNewAudienceComparison>> = []
   let loadError = false
 
   try {
@@ -17,6 +18,15 @@ export default async function ComparativoPage() {
     countdownData = await getEditionsCountdownComparison()
   } catch {
     loadError = true
+  }
+
+  // Isolado do try/catch acima de propósito: depende da coluna event_series
+  // (migration 031), que pode ainda não ter sido aplicada no banco — uma
+  // falha aqui não deve derrubar o resto da página de Comparativo.
+  try {
+    newAudienceData = await getNewAudienceComparison()
+  } catch {
+    newAudienceData = []
   }
 
   return (
@@ -37,7 +47,9 @@ export default async function ComparativoPage() {
         </div>
       )}
 
-      {!loadError && data && <ComparativoCharts data={data} countdownData={countdownData} />}
+      {!loadError && data && (
+        <ComparativoCharts data={data} countdownData={countdownData} newAudienceData={newAudienceData} />
+      )}
     </div>
   )
 }

@@ -6,7 +6,7 @@ import {
   CartesianGrid, LabelList, Cell, Legend,
 } from 'recharts'
 import { useTheme } from 'next-themes'
-import type { EditionComparison, EditionCountdown } from '@/lib/data'
+import type { EditionComparison, EditionCountdown, NewAudienceStat } from '@/lib/data'
 import { TrendingUp, TrendingDown, Minus, ListFilter } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
@@ -65,7 +65,11 @@ function KpiCard({ label, value, sub, growth }: { label: string; value: string; 
   )
 }
 
-export function ComparativoCharts({ data, countdownData }: { data: EditionComparison[]; countdownData: EditionCountdown[] }) {
+export function ComparativoCharts({ data, countdownData, newAudienceData }: {
+  data: EditionComparison[]
+  countdownData: EditionCountdown[]
+  newAudienceData: NewAudienceStat[]
+}) {
   const { resolvedTheme } = useTheme()
   const dark = resolvedTheme === 'dark'
   const bar = dark ? NAVY_DARK : NAVY_LIGHT
@@ -156,6 +160,15 @@ export function ComparativoCharts({ data, countdownData }: { data: EditionCompar
 
   const inscData = filtered.map(d => ({ name: d.edition.name, value: d.stats.total }))
   const revData = filtered.map(d => ({ name: d.edition.name, value: Math.round(d.stats.total_revenue) }))
+
+  const filteredNewAudience = newAudienceData.filter(s => selectedIds.has(s.edition.id))
+  const newAudienceChartData = filteredNewAudience.map(s => ({
+    name: s.edition.name,
+    Novos: s.newParticipants,
+    Recorrentes: s.returningParticipants,
+    total: s.totalParticipants,
+    label: s.isFirstInSeries ? 'primeira edição' : (s.pctNew != null ? `${s.pctNew.toFixed(0)}% novos` : ''),
+  }))
 
   const tooltipStyle = {
     backgroundColor: 'hsl(var(--popover))',
@@ -335,6 +348,43 @@ export function ComparativoCharts({ data, countdownData }: { data: EditionCompar
               </tbody>
             </table>
           </div>
+        </div>
+      )}
+
+      {/* Novos vs. Recorrentes entre edições da mesma série (congresso, vcday, ...) */}
+      {newAudienceChartData.length > 0 && (
+        <div className="border border-border rounded-lg bg-card p-5 space-y-4">
+          <div>
+            <p className="text-[10px] font-mono tracking-[0.18em] text-muted-foreground uppercase">
+              Novos vs. Recorrentes por Edição
+            </p>
+            <p className="text-xs text-muted-foreground mt-1">
+              Quantos participantes de cada edição já tinham participado de uma edição anterior do mesmo evento
+              (comparado contra a base cumulativa de todas as edições anteriores da série — não só a última).
+            </p>
+          </div>
+
+          <ResponsiveContainer width="100%" height={240}>
+            <BarChart data={newAudienceChartData} margin={{ top: 24, right: 8, left: 0, bottom: 0 }}>
+              <CartesianGrid vertical={false} stroke={GRID_COLOR} strokeOpacity={0.5} />
+              <XAxis dataKey="name" tick={AXIS_STYLE} axisLine={false} tickLine={false} />
+              <YAxis tick={AXIS_STYLE} axisLine={false} tickLine={false} width={40} allowDecimals={false} />
+              <Tooltip
+                contentStyle={tooltipStyle}
+                cursor={{ fill: 'hsl(var(--muted))', opacity: 0.4 }}
+                formatter={(v, name) => [`${v} participantes`, name as string]}
+              />
+              <Legend wrapperStyle={{ fontSize: 11, fontFamily: 'var(--font-mono)' }} />
+              <Bar dataKey="Recorrentes" stackId="audience" fill={bar} fillOpacity={0.55} />
+              <Bar dataKey="Novos" stackId="audience" fill={teal} radius={[4, 4, 0, 0]}>
+                <LabelList
+                  dataKey="label"
+                  position="top"
+                  style={{ ...AXIS_STYLE, fill: 'hsl(var(--foreground))' }}
+                />
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
         </div>
       )}
 

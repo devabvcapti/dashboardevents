@@ -23,8 +23,49 @@ export function EventosClient({ editions, weeklyGoalsByEdition, communicationsBy
   const [showForm, setShowForm] = useState(editions.length === 0)
   const [name, setName] = useState('')
   const [year, setYear] = useState<string>(new Date().getFullYear().toString())
+  const [eventSeries, setEventSeries] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  // Série do evento: id em edição + rascunho + estado de salvamento
+  const [editingSeriesId, setEditingSeriesId] = useState<string | null>(null)
+  const [seriesDraft, setSeriesDraft] = useState('')
+  const [savingSeriesId, setSavingSeriesId] = useState<string | null>(null)
+  const [seriesError, setSeriesError] = useState<string | null>(null)
+
+  function startEditSeries(e: Edition) {
+    setEditingSeriesId(e.id)
+    setSeriesDraft(e.event_series ?? '')
+    setSeriesError(null)
+  }
+
+  async function handleSaveSeries(id: string) {
+    const trimmed = seriesDraft.trim().toLowerCase()
+    if (trimmed !== '' && !/^[a-z0-9-]+$/.test(trimmed)) {
+      setSeriesError('Use só letras minúsculas, números e hífen (ex.: congresso, vcday, lp-day).')
+      return
+    }
+    setSavingSeriesId(id)
+    setSeriesError(null)
+    try {
+      const res = await fetch('/api/edition/update-series', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, eventSeries: trimmed === '' ? null : trimmed }),
+      })
+      if (!res.ok) {
+        const json = await res.json().catch(() => null)
+        setSeriesError((json as { error?: string })?.error ?? 'Falha ao salvar série do evento.')
+        return
+      }
+      setEditingSeriesId(null)
+      router.refresh()
+    } catch {
+      setSeriesError('Erro de rede.')
+    } finally {
+      setSavingSeriesId(null)
+    }
+  }
 
   // Delete state: id pendente de confirmação + id em processo
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
@@ -248,14 +289,14 @@ export function EventosClient({ editions, weeklyGoalsByEdition, communicationsBy
       const res = await fetch('/api/edition/create', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: name.trim(), year: Number(year) }),
+        body: JSON.stringify({ name: name.trim(), year: Number(year), eventSeries: eventSeries.trim() || null }),
       })
       const json = await res.json()
       if (!res.ok) {
         setError((json as { error?: string }).error ?? 'Falha ao criar evento.')
         return
       }
-      setName(''); setYear(new Date().getFullYear().toString())
+      setName(''); setYear(new Date().getFullYear().toString()); setEventSeries('')
       setShowForm(false)
       router.refresh()
     } catch {
@@ -310,6 +351,18 @@ export function EventosClient({ editions, weeklyGoalsByEdition, communicationsBy
               <label className="text-xs font-mono uppercase tracking-wider text-muted-foreground">Ano</label>
               <Input type="number" value={year} onChange={e => setYear(e.target.value)} min={2000} max={2100} required />
             </div>
+            <div className="space-y-2 md:col-span-2">
+              <label className="text-xs font-mono uppercase tracking-wider text-muted-foreground">
+                Série do Evento <span className="normal-case text-muted-foreground/60">(opcional — agrupa edições do mesmo evento pra comparar novos vs. recorrentes)</span>
+              </label>
+              <Input
+                value={eventSeries}
+                onChange={e => setEventSeries(e.target.value)}
+                placeholder="ex.: congresso, vcday, lp-day"
+                maxLength={50}
+                pattern="[a-z0-9-]+"
+              />
+            </div>
           </div>
           {error && <p role="alert" className="text-sm text-red-600">{error}</p>}
           <div className="flex gap-2">
@@ -340,6 +393,50 @@ export function EventosClient({ editions, weeklyGoalsByEdition, communicationsBy
                   criada {new Date(e.created_at).toLocaleDateString('pt-BR')}
                 </p>
               )}
+
+              <div className="mt-3 pt-3 border-t border-border">
+                <p className="text-[10px] font-mono tracking-wider text-muted-foreground uppercase mb-1.5">
+                  Série do Evento
+                </p>
+                {editingSeriesId === e.id ? (
+                  <div className="space-y-2">
+                    <Input
+                      value={seriesDraft}
+                      onChange={ev => setSeriesDraft(ev.target.value)}
+                      placeholder="ex.: congresso, vcday"
+                      className="h-8 text-sm"
+                      autoFocus
+                    />
+                    {seriesError && <p role="alert" className="text-[11px] text-red-600">{seriesError}</p>}
+                    <div className="flex gap-2">
+                      <Button size="sm" disabled={savingSeriesId === e.id} onClick={() => handleSaveSeries(e.id)}>
+                        {savingSeriesId === e.id ? 'Salvando…' : 'Salvar'}
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        disabled={savingSeriesId === e.id}
+                        onClick={() => { setEditingSeriesId(null); setSeriesError(null) }}
+                      >
+                        Cancelar
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => startEditSeries(e)}
+                    className="text-sm text-foreground/80 hover:text-primary transition-colors text-left"
+                  >
+                    {e.event_series
+                      ? e.event_series
+                      : <span className="text-muted-foreground/50 italic">não agrupada — clique para definir</span>}
+                  </button>
+                )}
+                <p className="text-[10px] font-mono text-muted-foreground/50 mt-1">
+                  Agrupa com outras edições do mesmo evento no comparativo de novos vs. recorrentes.
+                </p>
+              </div>
 
               <div className="mt-3 pt-3 border-t border-border">
                 <p className="text-[10px] font-mono tracking-wider text-muted-foreground uppercase mb-1.5">
