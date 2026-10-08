@@ -270,80 +270,6 @@ export function ComparativoCharts({ data, countdownData, newAudienceData }: {
         </div>
       </div>
 
-      {/* Comparativo por contagem regressiva (dias antes do evento) */}
-      {filteredCountdown.length > 0 && (
-        <div className="border border-border rounded-lg bg-card p-5 space-y-4">
-          <div>
-            <p className="text-[10px] font-mono tracking-[0.18em] text-muted-foreground uppercase">
-              Ritmo Comparado — Dias Antes do Evento
-            </p>
-            <p className="text-xs text-muted-foreground mt-1">
-              Inscrições pagas acumuladas, alinhadas pela contagem regressiva até o evento de cada edição.
-            </p>
-          </div>
-
-          <ResponsiveContainer width="100%" height={260}>
-            <LineChart data={countdownChartData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
-              <CartesianGrid vertical={false} stroke={GRID_COLOR} strokeOpacity={0.5} />
-              <XAxis
-                dataKey="daysBefore"
-                tick={AXIS_STYLE}
-                axisLine={false}
-                tickLine={false}
-                tickFormatter={(v) => v === 0 ? 'Evento' : `-${v}d`}
-              />
-              <YAxis tick={AXIS_STYLE} axisLine={false} tickLine={false} width={40} />
-              <Tooltip
-                contentStyle={tooltipStyle}
-                cursor={{ stroke: 'hsl(var(--border))' }}
-                labelFormatter={(v) => v === 0 ? 'No dia do evento' : `${v} dias antes do evento`}
-              />
-              <Legend wrapperStyle={{ fontSize: 11, fontFamily: 'var(--font-mono)' }} />
-              {filteredCountdown.map((ec, i) => (
-                <Line
-                  key={ec.edition.id}
-                  type="monotone"
-                  dataKey={ec.edition.name}
-                  stroke={COUNTDOWN_PALETTE[i % COUNTDOWN_PALETTE.length]}
-                  strokeWidth={2}
-                  dot={false}
-                />
-              ))}
-            </LineChart>
-          </ResponsiveContainer>
-
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-border">
-                  <th className="text-left px-4 py-2 text-[10px] font-mono tracking-wider text-muted-foreground uppercase">Marco</th>
-                  {filteredCountdown.map(ec => (
-                    <th key={ec.edition.id} className="text-right px-4 py-2 text-[10px] font-mono tracking-wider text-muted-foreground uppercase whitespace-nowrap">
-                      {ec.edition.name}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {filteredCountdown[0].milestones.map((m, rowIdx) => (
-                  <tr key={m.label} className="border-b border-border last:border-0 hover:bg-muted/20 transition-colors">
-                    <td className="px-4 py-2.5 text-foreground/80 text-xs">{m.label}</td>
-                    {filteredCountdown.map(ec => {
-                      const cell = ec.milestones[rowIdx]
-                      return (
-                        <td key={ec.edition.id} className="px-4 py-2.5 text-right tabular-nums text-xs">
-                          {cell?.cumulative != null ? cell.cumulative.toLocaleString('pt-BR') : '—'}
-                        </td>
-                      )
-                    })}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
-
       {/* Novos vs. Recorrentes entre edições da mesma série (congresso, vcday, ...) */}
       {filteredNewAudience.length > 0 && (
         <div className="border border-border rounded-lg bg-card p-5 space-y-4">
@@ -424,6 +350,80 @@ export function ComparativoCharts({ data, countdownData, newAudienceData }: {
               <span className="w-2 h-2 rounded-sm opacity-55" style={{ backgroundColor: bar }} />
               Recorrentes
             </span>
+          </div>
+        </div>
+      )}
+
+      {/* Comparativo por contagem regressiva (dias antes do evento) */}
+      {filteredCountdown.length > 0 && (
+        <div className="border border-border rounded-lg bg-card p-5 space-y-4">
+          <div>
+            <p className="text-[10px] font-mono tracking-[0.18em] text-muted-foreground uppercase">
+              Ritmo Comparado — Dias Antes do Evento
+            </p>
+            <p className="text-xs text-muted-foreground mt-1">
+              Inscrições pagas acumuladas, alinhadas pela contagem regressiva até o evento de cada edição.
+            </p>
+          </div>
+
+          <ResponsiveContainer width="100%" height={260}>
+            <LineChart data={countdownChartData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+              <CartesianGrid vertical={false} stroke={GRID_COLOR} strokeOpacity={0.5} />
+              <XAxis
+                dataKey="daysBefore"
+                tick={AXIS_STYLE}
+                axisLine={false}
+                tickLine={false}
+                tickFormatter={(v) => v === 0 ? 'Evento' : `-${v}d`}
+              />
+              <YAxis tick={AXIS_STYLE} axisLine={false} tickLine={false} width={40} />
+              <Tooltip
+                contentStyle={tooltipStyle}
+                cursor={{ stroke: 'hsl(var(--border))' }}
+                labelFormatter={(v) => v === 0 ? 'No dia do evento' : `${v} dias antes do evento`}
+              />
+              <Legend wrapperStyle={{ fontSize: 11, fontFamily: 'var(--font-mono)' }} />
+              {filteredCountdown.map((ec, i) => (
+                <Line
+                  key={ec.edition.id}
+                  type="monotone"
+                  dataKey={ec.edition.name}
+                  stroke={COUNTDOWN_PALETTE[i % COUNTDOWN_PALETTE.length]}
+                  strokeWidth={2}
+                  dot={false}
+                />
+              ))}
+            </LineChart>
+          </ResponsiveContainer>
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-border">
+                  <th className="text-left px-4 py-2 text-[10px] font-mono tracking-wider text-muted-foreground uppercase">Marco</th>
+                  {filteredCountdown.map(ec => (
+                    <th key={ec.edition.id} className="text-right px-4 py-2 text-[10px] font-mono tracking-wider text-muted-foreground uppercase whitespace-nowrap">
+                      {ec.edition.name}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {filteredCountdown[0].milestones.map((m, rowIdx) => (
+                  <tr key={m.label} className="border-b border-border last:border-0 hover:bg-muted/20 transition-colors">
+                    <td className="px-4 py-2.5 text-foreground/80 text-xs">{m.label}</td>
+                    {filteredCountdown.map(ec => {
+                      const cell = ec.milestones[rowIdx]
+                      return (
+                        <td key={ec.edition.id} className="px-4 py-2.5 text-right tabular-nums text-xs">
+                          {cell?.cumulative != null ? cell.cumulative.toLocaleString('pt-BR') : '—'}
+                        </td>
+                      )
+                    })}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
       )}
