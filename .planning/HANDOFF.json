@@ -1,6 +1,6 @@
 {
   "version": "1.0",
-  "timestamp": "2026-10-07T02:14:56.336Z",
+  "timestamp": "2026-10-09T23:01:46.215Z",
   "phase": null,
   "phase_name": null,
   "phase_dir": null,
@@ -9,29 +9,30 @@
   "total_tasks": null,
   "status": "paused",
   "completed_tasks": [
-    {"id": 1, "name": "Inserir ingressos manuais 'na porta': Camila Garavello (UPDATE do registro existente, Cortesia->Pago R$350), Artur Leal (INSERT, VC Day) e Alexandre Werneck (INSERT, Congresso, R$2.750)", "status": "done"},
-    {"id": 2, "name": "Atualizar /dashboard/manual com os 6 módulos que faltavam (Comparativo, Empresas, Análise de LPs, Q&A e Avaliações, Presença, NPS)", "status": "done"},
-    {"id": 3, "name": "Importar atualização de cadastro dos participantes do Congresso (612 linhas, sem mexer em check-in) via 'Participantes Congresso 2026 (sem VC Day) 06.10.26_v2.xlsx'", "status": "done"},
-    {"id": 4, "name": "Descobrir e corrigir bug de fonte de check-in: 'Fez check-in' é pouco confiável, 'Status de check-in da localização principal' é a correta — corrigido em scripts/rebuild-import-sheets.mjs (commit ce6c7b8)", "status": "done"},
-    {"id": 5, "name": "Importar check-in do Congresso 2026 com a fonte corrigida: 502 de 614 confirmados (81,8%)", "status": "done"},
-    {"id": 6, "name": "Explicar ao usuário, em detalhe, a metodologia da Análise de LPs (segmentação, agrupamento por empresa, taxonomia categoria/subcategoria, fórmulas dos 4 KPIs) para ele usar na apresentação", "status": "done"}
+    {"id": 1, "name": "Adicionar subcategoria LP 'Placement Agent / Capital Advisory' (categoria Advisors) — migration 030 aplicada pelo usuário", "status": "done"},
+    {"id": 2, "name": "Script reusável scripts/export-topics-contacts.mjs — gera Excel (1 aba por tema) com nome/email/empresa de quem marcou cada tema de interesse; rodado pra Congresso e VC Day 2026", "status": "done"},
+    {"id": 3, "name": "Feature 'Novos vs. Recorrentes por Edição' em /dashboard/comparativo — campo event_series em editions (migration 031, aplicada), getNewAudienceComparison() em lib/data.ts, donut por edição (não stacked bar, trocado a pedido do usuário), bloco reposicionado pra antes do Ritmo Comparado", "status": "done"},
+    {"id": 4, "name": "/dashboard/eventos — campo Série do Evento no formulário de criação + edição inline nos cards (api/edition/update-series)", "status": "done"},
+    {"id": 5, "name": "Liberar eventos@abvcap.com.br e cnascimento@abvcap.com.br em lib/auth-config.ts (ALLOWED_EMAILS) — ainda sem conta criada (nunca logaram), precisam logar 1x antes de poder virar admin", "status": "done"}
   ],
   "remaining_tasks": [
-    {"id": 7, "name": "(Opcional, não bloqueante) VC Day tem 286 checked_in no banco vs 288 que a fonte corrigida indicaria — diferença de 2 pessoas; usuário disse que pode ficar pra depois", "status": "not_started"},
-    {"id": 8, "name": "(Opcional) 3 empresas LP do Congresso 2026 ainda não classificadas na taxonomia (apareceram em imports recentes, depois da classificação original de 58 empresas)", "status": "not_started"},
-    {"id": 9, "name": "Apresentação do dashboard é hoje/amanhã (contexto da sessão) — nenhuma ação pendente conhecida além do acima", "status": "not_started"}
+    {"id": 6, "name": "Promover eventos@abvcap.com.br e cnascimento@abvcap.com.br a admin assim que eles fizerem o primeiro login (cria a conta como viewer automaticamente) — via /dashboard/usuarios ou via script com supabase.auth.admin.updateUserById", "status": "not_started"},
+    {"id": 7, "name": "Decisão pendente do usuário: conta pborges@abvcap.com.br existe no banco sem role definido e fora do ALLOWED_EMAILS atual (barrada no login) — perguntei se é pra ignorar, remover ou liberar; resposta ainda não chegou", "status": "not_started"},
+    {"id": 8, "name": "(Opcional, de sessões anteriores) VC Day: 286 checked_in no banco vs 288 pela fonte corrigida — diferença de 2, não bloqueante", "status": "not_started"},
+    {"id": 9, "name": "(Opcional, de sessões anteriores) 3 empresas LP do Congresso 2026 ainda sem subcategoria classificada", "status": "not_started"}
   ],
   "blockers": [],
-  "human_actions_pending": [],
+  "human_actions_pending": [
+    {"action": "Decidir o que fazer com a conta pborges@abvcap.com.br (ignorar / remover / liberar)", "context": "Existe no banco (já logou antes), sem role e fora do allowlist atual — hoje não consegue mais entrar", "blocking": false}
+  ],
   "decisions": [
-    {"decision": "Ingressos manuais 'na porta' usam ticket_name='Ingresso na Porta' e payment_status='Pago na Porta (Maquininha ABVCAP)' em vez de categoria/enum nova", "rationale": "ticket_name já é texto livre, aparece nas quebras por tipo de ingresso sem precisar de migration", "phase": null},
-    {"decision": "Para participante já existente com registro conflitante (Camila Garavello: Cortesia/R$0), usar UPDATE com valor_pago_manual em vez de criar um segundo registro com email fictício", "rationale": "evita contar a mesma pessoa duas vezes nas métricas de receita/audiência; valor_pago_manual é exatamente o campo que o sistema já tem pra esse tipo de correção manual (ver migration 017)", "phase": null},
-    {"decision": "scripts/rebuild-import-sheets.mjs agora prioriza 'Status de check-in da localização principal' sobre 'Fez check-in' como fonte do campo de presença, sempre que a primeira existir no arquivo de origem", "rationale": "validado comparando contra o VC Day já confirmado em produção (288 vs 286 já importado, contra só 53 que 'Fez check-in' indicava) — 'Fez check-in' parece rastrear um check-in secundário via app/QR pouco usado", "phase": null}
+    {"decision": "Gráfico de Novos vs. Recorrentes usa donut por edição (não stacked bar)", "rationale": "usuário achou o stacked bar confuso — altura total (sem significado comparável entre edições com totais diferentes) chamava mais atenção que a proporção; donut com % central é mais fácil de comparar num olhar, mesmo padrão já usado em Presença/Visão Geral", "phase": null},
+    {"decision": "event_series é um campo de texto livre (slug minúsculo) em vez de enum fixo", "rationale": "precisa acomodar futuros co-eventos do ABVCAP Experience (LP Day, Women Connection) sem precisar de code change/migration toda vez que um evento novo for criado", "phase": null}
   ],
   "uncommitted_files": [
     ".planning/config.json (pré-existente, não relacionado a esta sessão)",
     "abvcap-congress (submódulo, pré-existente, não relacionado a esta sessão)"
   ],
-  "next_action": "Nenhuma ação obrigatória pendente. Se o usuário retomar, perguntar se quer tratar os itens opcionais (ajustar os 2 check-ins do VC Day, classificar as 3 empresas LP novas do Congresso) ou se tem algo novo.",
-  "context_notes": "Sessão longa cobrindo vários itens operacionais soltos do dashboard, todos concluídos e já em produção (main, via push direto — preferência do usuário registrada em memória): import de LPs classificados, fix de .env.local (credenciais 'Sensitive' do Vercel), import de check-in do VC Day, gráfico de Presença, fix de rótulo NPS, manual atualizado, 3 ingressos manuais 'na porta' inseridos, import de cadastro + check-in do Congresso (com bug de fonte de check-in descoberto e corrigido no processo), e explicação detalhada da metodologia de Análise de LPs. Nada ficou bloqueado — é uma pausa de checkpoint, não por impedimento."
+  "next_action": "Se eventos@ ou cnascimento@ já tiverem logado, promover a admin. Senão, perguntar ao usuário sobre a conta pborges@abvcap.com.br (ainda sem resposta) ou aguardar novo pedido.",
+  "context_notes": "Sessão longa e contínua (múltiplos checkpoints salvos ao longo do caminho — ver commits ba45efd, 7cbeacd anteriores a este). Desde o último checkpoint (ba45efd): nova subcategoria de LP, export de contatos por tema de interesse (ferramenta reusável), feature completa de Novos vs Recorrentes entre edições (com iteração de design: usuário pediu localização dentro de Comparativo, pediu troca de stacked bar pra donut, pediu reposicionamento do bloco), e liberação de 2 novos emails de acesso (ainda pendente de promoção a admin, que depende do primeiro login deles). Tudo commitado e em produção via push direto em main."
 }
