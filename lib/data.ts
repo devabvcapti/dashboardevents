@@ -1423,19 +1423,20 @@ export async function restoreLpCompany(companyKey: string): Promise<void> {
 // pela classificação por subcategoria quanto pela cobertura vs. planilha mestre.
 // Empresas em lp_excluded_companies nunca contam como LP em nenhuma métrica.
 async function getLpParticipantCompanyCounts(editionId: string): Promise<Map<string, { displayName: string; count: number }>> {
-  const [{ data, error }, excluded] = await Promise.all([
+  const [{ data, error }, excluded, categories] = await Promise.all([
     getSupabase()
       .from('participants')
-      .select('company')
+      .select('company, company_segment_normalized')
       .eq('edition_id', editionId)
-      .eq('company_segment_normalized', 'LP')
       .not('company', 'is', null)
       .limit(5000),
     getLpExcludedCompanies(),
+    getLpCompanyCategories(),
   ])
   if (error) throw error
 
   const excludedKeys = new Set(excluded.map(e => e.companyKey))
+  const classifiedKeys = new Set(categories.map(c => c.companyKey))
 
   const companyCounts = new Map<string, { displayName: string; count: number }>()
   for (const row of data ?? []) {
@@ -1443,6 +1444,12 @@ async function getLpParticipantCompanyCounts(editionId: string): Promise<Map<str
     if (!raw) continue
     const key = normalizeCompanyKey(raw)
     if (excludedKeys.has(key)) continue
+    // Conta como LP quem se autodeclarou LP OU cuja empresa já foi
+    // classificada manualmente na taxonomia (lp_company_categories) — a
+    // classificação por empresa vale pra todo mundo dela. Resolve casos como
+    // BNDES/GIC, onde parte da equipe se autodeclarou "Governo"/"Investment
+    // Banking"/deixou em branco, mas a empresa já é uma LP conhecida.
+    if (row.company_segment_normalized !== 'LP' && !classifiedKeys.has(key)) continue
     const existing = companyCounts.get(key)
     if (existing) existing.count++
     else companyCounts.set(key, { displayName: raw, count: 1 })
