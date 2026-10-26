@@ -2077,11 +2077,11 @@ export interface NpsYearResult {
 }
 
 // event_slug vira o nome do evento exibido nas abas do histórico de NPS —
-// sem isso, dois eventos do mesmo ano (ex. Experience e um fórum parceiro)
-// mostrariam o mesmo rótulo "2026" lado a lado, indistinguíveis.
+// sem isso, dois eventos do mesmo ano mostrariam o mesmo rótulo "2026" lado
+// a lado, indistinguíveis. Eventos de terceiros (ex. "pevc-inbrazil-forum-2026")
+// não entram aqui — são filtrados antes de chegar na UI (ver getNpsHistory).
 const EVENT_SLUG_LABELS: Record<string, string> = {
   'experience-2026': 'ABVCAP Experience',
-  'pevc-inbrazil-forum-2026': 'Formulário de Pesquisa',
 }
 function eventSlugLabel(slug: string): string {
   if (EVENT_SLUG_LABELS[slug]) return EVENT_SLUG_LABELS[slug]
@@ -2197,6 +2197,11 @@ export async function getNpsHistory(): Promise<NpsYearResult[]> {
       const yearMatch = eventSlug.match(/(\d{4})/)
       return { eventSlug, eventLabel: eventSlugLabel(eventSlug), year: yearMatch ? yearMatch[1] : eventSlug, surveys }
     })
+    // vcday_nps_responses é uma tabela compartilhada (ver comentário acima) — eventos
+    // de terceiros (não-ABVCAP) podem gravar respostas nela sob um event_slug próprio.
+    // Só mostra a aba do evento se pelo menos uma pesquisa cadastrada (NPS_SURVEYS)
+    // tiver resposta — senão a aba apareceria vazia (todas as pesquisas com 0).
+    .filter(y => y.surveys.some(s => s.responseCount > 0))
     .sort((a, b) => b.year.localeCompare(a.year) || a.eventLabel.localeCompare(b.eventLabel))
 
   return years
