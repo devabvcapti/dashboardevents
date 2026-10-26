@@ -113,6 +113,7 @@ interface Props {
   stats: OverviewStats
   registrationGoal: number | null
   weeklyGoals: RegistrationWeeklyGoal[]
+  stripeRevenue: number
 }
 
 const SEMAFORO: Record<'green' | 'yellow' | 'red', { label: string; dot: string; text: string; bg: string }> = {
@@ -121,7 +122,7 @@ const SEMAFORO: Record<'green' | 'yellow' | 'red', { label: string; dot: string;
   red:    { label: 'Atrasado',           dot: 'bg-red-500',     text: 'text-red-700',     bg: 'bg-red-50 border-red-200' },
 }
 
-export function OverviewCharts({ participants, stats, registrationGoal, weeklyGoals }: Props) {
+export function OverviewCharts({ participants, stats, registrationGoal, weeklyGoals, stripeRevenue }: Props) {
   const CHART_COLORS = useChartColors()
   const [granularity, setGranularity] = useState<'daily' | 'weekly'>('daily')
   const [ticketFilter, setTicketFilter] = useState<TicketFilter>('all')
@@ -346,6 +347,7 @@ export function OverviewCharts({ participants, stats, registrationGoal, weeklyGo
         freeCount={freeCountAll}
         paidMembers={paidMembers}
         paidNaoMembers={paidNaoMembers}
+        stripeRevenue={stripeRevenue}
       />
       {(registrationGoal !== null || sortedWeeklyGoals.length > 0) && (
         <div className="bg-card border border-border rounded-lg p-5 shadow-sm">

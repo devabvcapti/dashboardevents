@@ -29,6 +29,32 @@ export async function getOverviewStats(editionId: string): Promise<OverviewStats
   return data as unknown as OverviewStats
 }
 
+// Soma de valor_efetivo apenas das inscrições pagas via gateway online
+// (Stripe). "Faturamento Offline" na Visão Geral é total_revenue - este
+// valor, não uma soma separada — garante que os dois cards sempre fecham
+// com a Receita Total, mesmo cobrindo canais fora do sistema de cupons
+// (transferência bancária, maquininha) que "Pagamento Offline" (cupons) não vê.
+export async function getOverviewStripeRevenue(editionId: string): Promise<number> {
+  const supabase = getSupabase()
+  let total = 0
+  let from = 0
+  const PAGE = 1000
+  while (true) {
+    const { data, error } = await supabase
+      .from('participants')
+      .select('valor_efetivo')
+      .eq('edition_id', editionId)
+      .eq('payment_status', 'Pago Online - Cartão de crédito (Stripe)')
+      .range(from, from + PAGE - 1)
+    if (error) throw error
+    if (!data || data.length === 0) break
+    for (const row of data) total += row.valor_efetivo ?? 0
+    if (data.length < PAGE) break
+    from += PAGE
+  }
+  return total
+}
+
 // ─── Editions ────────────────────────────────────────────────────────────────
 
 export async function getEditions(): Promise<Edition[]> {

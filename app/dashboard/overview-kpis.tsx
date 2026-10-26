@@ -7,6 +7,7 @@ interface Props {
   freeCount: number
   paidMembers: number
   paidNaoMembers: number
+  stripeRevenue: number
 }
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
@@ -17,11 +18,18 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
   )
 }
 
-export function OverviewKpis({ stats, paidCount, freeCount, paidMembers, paidNaoMembers }: Props) {
+export function OverviewKpis({ stats, paidCount, freeCount, paidMembers, paidNaoMembers, stripeRevenue }: Props) {
   const paidPct = stats.total > 0 ? Math.round((paidCount / stats.total) * 100) : 0
   const freePct = stats.total > 0 ? Math.round((freeCount / stats.total) * 100) : 0
   const paidMemberPct = paidCount > 0 ? Math.round((paidMembers / paidCount) * 100) : 0
   const paidNaoMemberPct = paidCount > 0 ? Math.round((paidNaoMembers / paidCount) * 100) : 0
+
+  // Offline = tudo que não foi pago pelo gateway Stripe (cupons categorizados
+  // "Pagamento Offline", transferência bancária, maquininha etc.). Por
+  // construção, Stripe + Offline fecha exatamente com Receita Total.
+  const offlineRevenue = stats.total_revenue - stripeRevenue
+  const stripePct = stats.total_revenue > 0 ? Math.round((stripeRevenue / stats.total_revenue) * 100) : 0
+  const offlinePct = stats.total_revenue > 0 ? Math.round((offlineRevenue / stats.total_revenue) * 100) : 0
 
   const formatBRL = (v: number) =>
     `R$ ${Number(v).toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`
@@ -54,7 +62,7 @@ export function OverviewKpis({ stats, paidCount, freeCount, paidMembers, paidNao
       </div>
       <div>
         <SectionLabel>Detalhamento — Ingressos Pagos</SectionLabel>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
           <StatCard
             title="Membros"
             value={paidMembers}
@@ -71,6 +79,18 @@ export function OverviewKpis({ stats, paidCount, freeCount, paidMembers, paidNao
             title="Receita Total"
             value={formatBRL(stats.total_revenue)}
             accent="teal"
+          />
+          <StatCard
+            title="Faturamento Stripe"
+            value={formatBRL(stripeRevenue)}
+            subtitle={`${stripePct}% da receita total`}
+            accent="blue"
+          />
+          <StatCard
+            title="Faturamento Offline"
+            value={formatBRL(offlineRevenue)}
+            subtitle={`${offlinePct}% da receita total`}
+            accent="amber"
           />
           <StatCard
             title="Ticket Médio"

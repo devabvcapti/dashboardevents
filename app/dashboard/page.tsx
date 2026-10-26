@@ -1,5 +1,5 @@
 import { requireAuth } from '@/lib/auth'
-import { getOverviewStats, getOverviewParticipants, getEditions, getRegistrationWeeklyGoals } from '@/lib/data'
+import { getOverviewStats, getOverviewParticipants, getEditions, getRegistrationWeeklyGoals, getOverviewStripeRevenue } from '@/lib/data'
 import { getActiveEditionId } from '@/lib/edition-cookie'
 import Link from 'next/link'
 import { OverviewCharts } from './overview-charts'
@@ -48,17 +48,20 @@ export default async function DashboardPage() {
   let registrationGoal: number | null = null
   let weeklyGoals: Awaited<ReturnType<typeof getRegistrationWeeklyGoals>> = []
   let isMock = false
+  let stripeRevenue = 0
 
   try {
-    const [s, p, editions, wg] = await Promise.all([
+    const [s, p, editions, wg, stripeRev] = await Promise.all([
       getOverviewStats(editionId),
       getOverviewParticipants(editionId),
       getEditions(),
       getRegistrationWeeklyGoals(editionId),
+      getOverviewStripeRevenue(editionId),
     ])
     stats = s
     participants = p
     weeklyGoals = wg
+    stripeRevenue = stripeRev
     const activeEdition = editions.find(e => e.id === editionId)
     editionName = activeEdition?.name ?? null
     registrationGoal = activeEdition?.registration_goal ?? null
@@ -97,6 +100,7 @@ export default async function DashboardPage() {
         stats={display}
         registrationGoal={registrationGoal}
         weeklyGoals={weeklyGoals}
+        stripeRevenue={stripeRevenue}
       />
     </div>
   )
