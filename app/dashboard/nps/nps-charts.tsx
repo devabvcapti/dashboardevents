@@ -27,7 +27,7 @@ export function NpsCharts({ years }: Props) {
                 i === yearIdx ? 'bg-primary text-primary-foreground border-primary' : 'border-border text-muted-foreground hover:border-primary/40'
               }`}
             >
-              {y.year}
+              {y.eventLabel} {y.year}
             </button>
           ))}
         </div>

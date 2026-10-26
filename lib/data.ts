@@ -2071,8 +2071,26 @@ export interface NpsSurveyResult {
 
 export interface NpsYearResult {
   eventSlug: string
+  eventLabel: string
   year: string
   surveys: NpsSurveyResult[]
+}
+
+// event_slug vira o nome do evento exibido nas abas do histórico de NPS —
+// sem isso, dois eventos do mesmo ano (ex. Experience e um fórum parceiro)
+// mostrariam o mesmo rótulo "2026" lado a lado, indistinguíveis.
+const EVENT_SLUG_LABELS: Record<string, string> = {
+  'experience-2026': 'ABVCAP Experience',
+  'pevc-inbrazil-forum-2026': 'PEVC in Brazil Forum',
+}
+function eventSlugLabel(slug: string): string {
+  if (EVENT_SLUG_LABELS[slug]) return EVENT_SLUG_LABELS[slug]
+  return slug
+    .replace(/-?\d{4}$/, '')
+    .split('-')
+    .filter(Boolean)
+    .map(w => w[0].toUpperCase() + w.slice(1))
+    .join(' ') || slug
 }
 
 function npsQuestionResult(
@@ -2177,9 +2195,9 @@ export async function getNpsHistory(): Promise<NpsYearResult[]> {
         }
       })
       const yearMatch = eventSlug.match(/(\d{4})/)
-      return { eventSlug, year: yearMatch ? yearMatch[1] : eventSlug, surveys }
+      return { eventSlug, eventLabel: eventSlugLabel(eventSlug), year: yearMatch ? yearMatch[1] : eventSlug, surveys }
     })
-    .sort((a, b) => b.year.localeCompare(a.year))
+    .sort((a, b) => b.year.localeCompare(a.year) || a.eventLabel.localeCompare(b.eventLabel))
 
   return years
 }
