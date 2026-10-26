@@ -739,6 +739,7 @@ export type Database = {
         | "PARCEIRO"
         | "LPS"
         | "FINANCEIRO"
+        | "PAGAMENTO_OFFLINE"
       import_status: "PENDING" | "PROCESSING" | "COMPLETED" | "FAILED"
       lp_category:
         | "PENSION"
@@ -924,6 +925,7 @@ export const Constants = {
         "PARCEIRO",
         "LPS",
         "FINANCEIRO",
+        "PAGAMENTO_OFFLINE",
       ],
       import_status: ["PENDING", "PROCESSING", "COMPLETED", "FAILED"],
       lp_category: [

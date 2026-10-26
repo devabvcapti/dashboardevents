@@ -394,6 +394,7 @@ export const COUPON_CATEGORIES: { value: CouponCategory; label: string }[] = [
   { value: 'PARCEIRO', label: 'Parceiro' },
   { value: 'LPS', label: 'LPs' },
   { value: 'FINANCEIRO', label: 'Financeiro' },
+  { value: 'PAGAMENTO_OFFLINE', label: 'Pagamento Offline' },
 ]
 
 export const COUPON_CATEGORY_LABELS: Record<CouponCategory, string> =
@@ -417,7 +418,7 @@ export interface CuponSummaryRow {
   discount_pct_estimate: number | null
   companies: string[]
   participants: { name: string; company: string | null; segment: string | null }[]
-  category: CouponCategory | 'PAGAMENTO_OFFLINE' | null
+  category: CouponCategory | null
 }
 
 export interface OfflinePaymentParticipant {
@@ -501,11 +502,20 @@ export async function getCuponsSummary(editionId: string): Promise<CuponsStats> 
     ? noCouponValues.reduce((s, v) => s + v, 0) / noCouponValues.length
     : null
 
-  // Cupons "PAGAMENTO OFFLINE X" não são desconto promocional — são marcadores
+  // Cupons de pagamento offline não são desconto promocional — são marcadores
   // operacionais de pagamento via boleto fora do gateway. Tratados à parte,
-  // sem contaminar os KPIs/estatísticas de cupons de desconto reais.
-  const offlineRows = rows.filter(r => r.coupon_code && isOfflinePaymentCoupon(r.coupon_code))
-  const withCoupon = rows.filter(r => r.coupon_code && !isOfflinePaymentCoupon(r.coupon_code))
+  // sem contaminar os KPIs/estatísticas de cupons de desconto reais. A
+  // categoria atribuída manualmente (coupon_categories) tem prioridade sobre
+  // a detecção automática por nome — permite tanto marcar manualmente um
+  // código que o padrão de nome não pega, quanto tirar um falso positivo da
+  // detecção automática atribuindo outra categoria.
+  function isOfflinePayment(code: string): boolean {
+    const assigned = categories[code]
+    if (assigned) return assigned === 'PAGAMENTO_OFFLINE'
+    return isOfflinePaymentCoupon(code)
+  }
+  const offlineRows = rows.filter(r => r.coupon_code && isOfflinePayment(r.coupon_code))
+  const withCoupon = rows.filter(r => r.coupon_code && !isOfflinePayment(r.coupon_code))
 
   const byCode: Record<string, { count: number; values: number[]; companies: Set<string>; participants: { name: string; company: string | null; segment: string | null }[] }> = {}
   const companyCounts: Record<string, number> = {}
@@ -582,7 +592,7 @@ export async function getCuponsSummary(editionId: string): Promise<CuponsStats> 
       discount_pct_estimate: null,
       companies: Array.from(new Set(g.participants.map(p => p.company).filter((c): c is string => !!c))).sort(),
       participants: g.participants.map(p => ({ name: p.name, company: p.company, segment: p.segment })),
-      category: 'PAGAMENTO_OFFLINE',
+      category: categories[g.coupon_code] ?? 'PAGAMENTO_OFFLINE',
     })),
   ].sort((a, b) => b.count - a.count)
 

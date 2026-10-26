@@ -9,11 +9,10 @@ import { CouponCategorySelect } from './coupon-category-select'
 const formatBRL = (v: number) =>
   `R$ ${v.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`
 
-type CategoryFilter = 'ALL' | CouponCategory | 'SEM_CATEGORIA' | 'PAGAMENTO_OFFLINE'
+type CategoryFilter = 'ALL' | CouponCategory | 'SEM_CATEGORIA'
 
 function categoryLabel(c: string): string {
   if (c === 'SEM_CATEGORIA') return 'Sem Categoria'
-  if (c === 'PAGAMENTO_OFFLINE') return 'Pagamento Offline'
   return COUPON_CATEGORY_LABELS[c as CouponCategory]
 }
 
@@ -136,20 +135,12 @@ export function CuponsAnalysis({
                     {row.coupon_code}
                   </td>
                   <td className="px-5 py-3">
-                    {row.category === 'PAGAMENTO_OFFLINE' ? (
-                      <Select value="PAGAMENTO_OFFLINE" disabled>
-                        <SelectTrigger size="sm" className="h-7 text-[11px] w-[180px]">
-                          <SelectValue>Pagamento Offline</SelectValue>
-                        </SelectTrigger>
-                      </Select>
-                    ) : (
-                      <CouponCategorySelect
-                        editionId={editionId}
-                        couponCode={row.coupon_code}
-                        category={row.category}
-                        isAdmin={isAdmin}
-                      />
-                    )}
+                    <CouponCategorySelect
+                      editionId={editionId}
+                      couponCode={row.coupon_code}
+                      category={row.category}
+                      isAdmin={isAdmin}
+                    />
                   </td>
                   <td className="px-5 py-3 text-right font-mono tabular-nums">
                     {row.count}
