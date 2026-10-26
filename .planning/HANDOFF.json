@@ -1,6 +1,6 @@
 {
   "version": "1.0",
-  "timestamp": "2026-10-23T22:43:31.756Z",
+  "timestamp": "2026-10-26T13:56:05.100Z",
   "phase": null,
   "phase_name": null,
   "phase_dir": null,
@@ -9,33 +9,34 @@
   "total_tasks": null,
   "status": "paused",
   "completed_tasks": [
-    {"id": 1, "name": "Analisar planilha 'LP_Completa_Consolidada.xlsx' (recepção) contra o cadastro atual de participantes — cruzamento completo por email", "status": "done"},
-    {"id": 2, "name": "Descobrir e corrigir bug grave de paginação nos scripts de análise: Supabase/PostgREST limita a 1000 linhas por request mesmo com .limit(5000); total real é 1794 participantes — refeita toda a análise com .range() paginado", "status": "done"},
-    {"id": 3, "name": "Gerar Excel 'LP_Contatos_Nao_Encontrados_No_Sistema.xlsx' com os 15 contatos (número correto, pós-fix de paginação) que não existem no cadastro", "status": "done"},
-    {"id": 4, "name": "Redigir email pro time de recepção com as 3 perguntas de confirmação (edição/evento da coluna Presente; os 15 não-encontrados realmente estiveram presentes; como tratar CVC)", "status": "done"},
-    {"id": 5, "name": "Análise comparativa hoje-vs-recepção: identificar 4 gaps (46 confirmados-mas-não-contam-LP / 12 contam-LP-mas-recepção-diz-ausente / 14 contam-LP-mas-fora-da-planilha / 11 confirmados-mas-sem-cadastro)", "status": "done"},
-    {"id": 6, "name": "Diagnosticar causa raiz do Gap 1 (46 pessoas): NÃO é bug de regex no segment-mapper — é que o sistema só contava LP quem autodeclarou segmento=LP, ignorando empresas já classificadas manualmente na taxonomia (BNDES, GIC, Siguler Guff etc. com texto autodeclarado diferente ou vazio)", "status": "done"},
-    {"id": 7, "name": "Corrigir lib/data.ts (getLpParticipantCompanyCounts): conta como LP quem autodeclarou LP OU cuja empresa já está em lp_company_categories — commit 75425e7, validado e em produção (Congresso 2026: 78→115 participantes LP, 52→53 empresas)", "status": "done"}
+    {"id": 1, "name": "Tratar os 5 itens pendentes da reconciliação de LP um a um: CVC->LP (empresas dedicadas + 3 overrides individuais), Gap 2 removido (12 pessoas), Gap 3 deixado como está + nota em memória (14 pessoas), conta pborges@ removida, acesso eventos@/cnascimento@ revogado do allowlist", "status": "done"},
+    {"id": 2, "name": "Resolver push bloqueado por conta GitHub errada ativa (gh auth switch de fynxiaerp -> devabvcapti)", "status": "done"},
+    {"id": 3, "name": "Visão Geral: limitar gráfico 'Perfil por Tipo de Empresa' ao Top 10", "status": "done"},
+    {"id": 4, "name": "Análise de Público: expandir agrupamento de cargos (Sócio/Partner/Fundador + Managing Partner/Founder/Co-founder/General Partner/Venture Partner/Corporate Partner/etc., CEO/Presidente, CFO/Diretor Financeiro, Advogado(a), Associate/Associado(a), RI, Investidor/Investor, Gerente, Gerente Jurídico(a), Economista, lixo->Outros)", "status": "done"},
+    {"id": 5, "name": "NPS: corrigir abas de histórico que mostravam '2026' duplicado sem diferenciação (experience-2026 vs pevc-inbrazil-forum-2026) — adicionado eventLabel; renomeado pra 'Formulário de Pesquisa 2026' a pedido do usuário", "status": "done"},
+    {"id": 6, "name": "Descobrir que existem 3 pesquisas NPS com respostas reais no banco (gestores-lpday: 38, investidores-lpday: 8, participantes-inbrazil: 2 — 46 respostas) que NÃO estão cadastradas em NPS_SURVEYS — ficam invisíveis/inacessíveis no dashboard hoje", "status": "done"}
   ],
   "remaining_tasks": [
-    {"id": 8, "name": "Usuário precisa enviar o email redigido pra recepção e aguardar as 3 respostas antes de resolver Gap 2 (12 pessoas), Gap 3 (14 pessoas) e confirmar Gap 4 (11 pessoas sem cadastro — se confirmado, inserir manualmente como fizemos com 'ingresso na porta')", "status": "not_started"},
-    {"id": 9, "name": "Decidir tratamento de CVC (Corporate Venture Capital) na taxonomia de LP — pergunta 3 do email, ainda sem resposta", "status": "not_started"},
-    {"id": 10, "name": "(De sessão anterior) Decisão pendente do usuário sobre conta pborges@abvcap.com.br (ignorar/remover/liberar)", "status": "not_started"},
-    {"id": 11, "name": "(De sessão anterior) Promover eventos@abvcap.com.br e cnascimento@abvcap.com.br a admin assim que fizerem o primeiro login", "status": "not_started"},
-    {"id": 12, "name": "(Opcional, antigo) VC Day: 286 checked_in no banco vs 288 pela fonte corrigida — diferença de 2, não bloqueante", "status": "not_started"}
+    {"id": 7, "name": "Cadastrar as 3 pesquisas faltantes (gestores-lpday, investidores-lpday, participantes-inbrazil) em NPS_SURVEYS — BLOQUEADO: preciso do texto exato das perguntas/opções do site externo (congresso2026.abvcap.com.br/nps-*.html), que renderiza via JS; extensão do Chrome não conectada nesta sessão pra eu abrir direto. Usuário vai mandar print/texto ou trecho do nps.js", "status": "not_started"}
   ],
-  "blockers": [],
+  "blockers": [
+    {
+      "description": "Preciso do conteúdo exato (perguntas + opções de resposta) de 3 páginas do site externo de NPS (gestores-lpday, investidores-lpday, participantes-inbrazil) pra cadastrar essas pesquisas em NPS_SURVEYS (lib/data.ts). As páginas renderizam via JS (WebFetch não mostra conteúdo real) e a extensão do Chrome não está conectada nesta sessão.",
+      "type": "human_action",
+      "workaround": "Usuário vai mandar print/texto das 3 páginas, ou o trecho relevante do nps.js do site externo."
+    }
+  ],
   "human_actions_pending": [
-    {"action": "Enviar o email redigido pra recepção e repassar as respostas quando chegarem", "context": "3 perguntas: (1) 'Presente' é sobre o Congresso ABVCAP 2026? (2) os 15 contatos não cadastrados realmente estiveram no evento? (3) CVC conta como LP, GP, ou categoria própria?", "blocking": false}
+    {"action": "Mandar o texto/print das 3 páginas de pesquisa (gestores-lpday, investidores-lpday, participantes-inbrazil) ou o trecho do nps.js correspondente", "context": "São 46 respostas reais já no banco, hoje invisíveis no dashboard por falta de cadastro da definição da pesquisa (perguntas/opções)", "blocking": true}
   ],
   "decisions": [
-    {"decision": "getLpParticipantCompanyCounts agora usa 'segmento autodeclarado = LP OU empresa já classificada em lp_company_categories' como critério de contagem", "rationale": "autodeclaração do formulário é inconsistente dentro da mesma empresa (algumas pessoas do BNDES se descreveram como 'Investment Banking', 'Órgão Governamental', ou deixaram em branco, mesmo a empresa já sendo uma LP conhecida); classificação por empresa deve valer pra todo mundo dela, consistente com o resto da página de Análise de LPs", "phase": null},
-    {"decision": "Scripts de análise ad-hoc devem sempre paginar com .range() em vez de confiar em .limit(N) — PostgREST tem teto de 1000 linhas por request independente do .limit() pedido", "rationale": "causou uma análise inteira errada nesta sessão (67 vs 15 'não encontrados', 87 vs 139 matches) até ser descoberto comparando contagens inconsistentes entre dois scripts equivalentes", "phase": null}
+    {"decision": "CVC conta como LP: empresas dedicadas (BizDev BB Ventures, BB Ventures, Itaú Ventures, Vale Ventures, Wayra & Vivo Ventures) classificadas em lp_company_categories como CORPORATION; pessoas em empresas-mãe genéricas demais (Natura, Saint-Gobain, Visa) tiveram override individual de segmento, sem classificar a empresa toda", "rationale": "classificar 'Visa' ou 'Natura' inteiras como LP contaria qualquer funcionário dessas empresas que compareceu por outro motivo", "phase": null},
+    {"decision": "Botão da aba NPS 'pevc-inbrazil-forum-2026' renomeado pra 'Formulário de Pesquisa 2026' em vez do nome do evento", "rationale": "pedido explícito do usuário", "phase": null}
   ],
   "uncommitted_files": [
     ".planning/config.json (pré-existente, não relacionado a esta sessão)",
     "abvcap-congress (submódulo, pré-existente, não relacionado a esta sessão)"
   ],
-  "next_action": "Aguardar o usuário enviar o email e trazer as respostas da recepção. Quando chegarem: (a) se confirmado que é sobre Congresso 2026 e os 15 realmente estiveram presentes, inserir esses 11-15 manualmente; (b) resolver Gap 2/3 conforme as respostas; (c) decidir e aplicar o tratamento de CVC.",
-  "context_notes": "Sessão longa e contínua, múltiplos checkpoints. Este trecho foi o mais delicado até agora: o usuário estava 'super inseguro' com a qualidade do dado da planilha de recepção, pedi pra nunca importar sem mostrar antes — e no meio do caminho descobri um bug real nos MEUS PRÓPRIOS scripts de análise (paginação do Supabase truncando em 1000 linhas), que inflou dramaticamente os números de divergência na primeira passada. Corrigi, refiz tudo, e fui transparente com o usuário sobre o erro antes de seguir. O fix de produção que saiu disso (contar LP por empresa classificada, não só por autodeclaração) é real e válido, não depende da resposta da recepção — já está em produção. O que depende da recepção é só os Gaps 2/3/4 (ausências, pessoas sem cadastro) e a decisão sobre CVC."
+  "next_action": "Aguardar o usuário mandar o conteúdo das 3 páginas de pesquisa NPS faltantes. Quando chegar: cadastrar gestores-lpday, investidores-lpday e participantes-inbrazil em NPS_SURVEYS (lib/data.ts), seguindo o padrão já existente (NpsQuestionDef: nps/scale/single/multi/text, com options quando aplicável).",
+  "context_notes": "Sessão muito longa, muitos checkpoints. Este trecho: fechamos a reconciliação de LP (5 itens tratados um a um), corrigimos um problema de autenticação git (conta GitHub ativa errada na máquina — gh tinha 4 contas logadas, a ativa não era a dona do repo), e fizemos uma sequência de ajustes de UI/dados (top 10 no gráfico de empresas, agrupamento de cargos expandido, labels de evento no histórico NPS). No meio disso, descobrimos um gap real: 46 respostas de NPS de 3 públicos (LP Day gestores/investidores, PEVC in Brazil Forum) estão no banco mas invisíveis no dashboard por falta de cadastro — isso ficou como único item bloqueado, aguardando o usuário trazer o conteúdo das perguntas do site externo."
 }
