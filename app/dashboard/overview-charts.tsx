@@ -287,6 +287,7 @@ export function OverviewCharts({ participants, stats, registrationGoal, weeklyGo
         label: `${count} (${sumCompany > 0 ? Math.round((count / sumCompany) * 100) : 0}%)`,
       }))
       .sort((a, b) => b.count - a.count)
+      .slice(0, 10)
   }, [filtered])
 
   // Grátis vs Pagos — cruzado pelo filtro Membros/Não-Membros
@@ -539,7 +540,7 @@ export function OverviewCharts({ participants, stats, registrationGoal, weeklyGo
 
       {/* OV-04 — Barras HORIZONTAIS por tipo de empresa (sorted desc) — linha própria */}
       <div className="bg-card border border-border rounded-lg p-5 shadow-sm">
-        <ChartLabel>Perfil por Tipo de Empresa</ChartLabel>
+        <ChartLabel>Perfil por Tipo de Empresa (Top 10)</ChartLabel>
         {companyData.length === 0 ? <EmptyChart /> : (
           <ResponsiveContainer width="100%" height={Math.max(260, companyData.length * 42)}>
             <BarChart data={companyData} layout="vertical" margin={{ top: 8, right: 48, left: 8, bottom: 0 }}
