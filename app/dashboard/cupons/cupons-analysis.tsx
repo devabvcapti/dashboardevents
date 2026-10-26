@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from 'react'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Badge } from '@/components/ui/badge'
 import { COUPON_CATEGORY_LABELS } from '@/lib/data'
 import type { CuponSummaryRow, CouponCategory } from '@/lib/data'
 import { CouponCategorySelect } from './coupon-category-select'
@@ -9,7 +10,13 @@ import { CouponCategorySelect } from './coupon-category-select'
 const formatBRL = (v: number) =>
   `R$ ${v.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`
 
-type CategoryFilter = 'ALL' | CouponCategory | 'SEM_CATEGORIA'
+type CategoryFilter = 'ALL' | CouponCategory | 'SEM_CATEGORIA' | 'PAGAMENTO_OFFLINE'
+
+function categoryLabel(c: string): string {
+  if (c === 'SEM_CATEGORIA') return 'Sem Categoria'
+  if (c === 'PAGAMENTO_OFFLINE') return 'Pagamento Offline'
+  return COUPON_CATEGORY_LABELS[c as CouponCategory]
+}
 
 interface Props {
   editionId: string
@@ -28,21 +35,26 @@ export function CuponsAnalysis({
 
   const categoryOptions = useMemo(() => {
     const present = new Set<string>(byCoupon.map(r => r.category ?? 'SEM_CATEGORIA'))
-    return Array.from(present).sort((a, b) => {
-      const la = a === 'SEM_CATEGORIA' ? 'Sem Categoria' : COUPON_CATEGORY_LABELS[a as CouponCategory]
-      const lb = b === 'SEM_CATEGORIA' ? 'Sem Categoria' : COUPON_CATEGORY_LABELS[b as CouponCategory]
-      return la.localeCompare(lb)
-    })
+    return Array.from(present).sort((a, b) => categoryLabel(a).localeCompare(categoryLabel(b)))
   }, [byCoupon])
 
   const filtered = category === 'ALL' ? byCoupon : byCoupon.filter(r => (r.category ?? 'SEM_CATEGORIA') === category)
+  const isOfflineFilter = category === 'PAGAMENTO_OFFLINE'
 
   const totalWithCoupon = filtered.reduce((s, r) => s + r.count, 0)
   const uniqueCoupons = filtered.length
   const pct = totalParticipants > 0 ? Math.round((totalWithCoupon / totalParticipants) * 100) : 0
+  // Pagamento offline não é "desconto" (avg_ticket ali é o valor pago, não um
+  // preço promocional) — sempre excluído dessa estimativa, mesmo na visão
+  // "Todas as categorias", senão infla/distorce o número sem sentido.
   const discountEstimate = avgTicketNoCoupon !== null
-    ? filtered.reduce((s, r) => s + (r.avg_ticket !== null ? Math.max(0, avgTicketNoCoupon - r.avg_ticket) * r.count : 0), 0)
+    ? filtered
+        .filter(r => r.category !== 'PAGAMENTO_OFFLINE')
+        .reduce((s, r) => s + (r.avg_ticket !== null ? Math.max(0, avgTicketNoCoupon - r.avg_ticket) * r.count : 0), 0)
     : null
+  const offlineRevenueInFilter = filtered
+    .filter(r => r.category === 'PAGAMENTO_OFFLINE')
+    .reduce((s, r) => s + (r.avg_ticket ?? 0) * r.count, 0)
 
   const showOfflineCard = category === 'ALL' && hasOfflinePayments
 
@@ -53,11 +65,19 @@ export function CuponsAnalysis({
         <KpiCard title="Usaram Cupom" value={totalWithCoupon.toLocaleString('pt-BR')} />
         <KpiCard title="Cupons Únicos" value={uniqueCoupons.toLocaleString('pt-BR')} />
         <KpiCard title="% com Cupom" value={`${pct}%`} />
-        <KpiCard
-          title="Desconto Total Concedido"
-          value={discountEstimate !== null ? formatBRL(discountEstimate) : '—'}
-          sub="estimativa vs. preço sem cupom"
-        />
+        {isOfflineFilter ? (
+          <KpiCard
+            title="Receita Offline Registrada"
+            value={formatBRL(offlineRevenueInFilter)}
+            sub="soma dos valores lançados manualmente"
+          />
+        ) : (
+          <KpiCard
+            title="Desconto Total Concedido"
+            value={discountEstimate !== null ? formatBRL(discountEstimate) : '—'}
+            sub="estimativa vs. preço sem cupom"
+          />
+        )}
         {showOfflineCard && (
           <KpiCard
             title="Receita Offline Registrada"
@@ -89,9 +109,7 @@ export function CuponsAnalysis({
               <SelectContent>
                 <SelectItem value="ALL">Todas as categorias</SelectItem>
                 {categoryOptions.map(c => (
-                  <SelectItem key={c} value={c}>
-                    {c === 'SEM_CATEGORIA' ? 'Sem Categoria' : COUPON_CATEGORY_LABELS[c as CouponCategory]}
-                  </SelectItem>
+                  <SelectItem key={c} value={c}>{categoryLabel(c)}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -119,12 +137,16 @@ export function CuponsAnalysis({
                     {row.coupon_code}
                   </td>
                   <td className="px-5 py-3">
-                    <CouponCategorySelect
-                      editionId={editionId}
-                      couponCode={row.coupon_code}
-                      category={row.category}
-                      isAdmin={isAdmin}
-                    />
+                    {row.category === 'PAGAMENTO_OFFLINE' ? (
+                      <Badge variant="outline" className="text-[10px] font-mono">Pagamento Offline</Badge>
+                    ) : (
+                      <CouponCategorySelect
+                        editionId={editionId}
+                        couponCode={row.coupon_code}
+                        category={row.category}
+                        isAdmin={isAdmin}
+                      />
+                    )}
                   </td>
                   <td className="px-5 py-3 text-right font-mono tabular-nums">
                     {row.count}

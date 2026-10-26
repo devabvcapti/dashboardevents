@@ -417,7 +417,7 @@ export interface CuponSummaryRow {
   discount_pct_estimate: number | null
   companies: string[]
   participants: { name: string; company: string | null; segment: string | null }[]
-  category: CouponCategory | null
+  category: CouponCategory | 'PAGAMENTO_OFFLINE' | null
 }
 
 export interface OfflinePaymentParticipant {
@@ -456,9 +456,14 @@ export interface CuponsStats {
   offline_total_paid: number
 }
 
-const OFFLINE_COUPON_PREFIX = 'PAGAMENTO OFFLINE'
-
 const DIACRITICS_REGEX = new RegExp('[\\u0300-\\u036f]', 'g')
+
+// Cobre variações reais de nomenclatura ("PAGAMENTO OFFLINE X", "BNDES PGTO OFF
+// LINE", "PAGAMENTO OFF LINE KPMG"...) — o marcador "OFF LINE"/"OFFLINE" pode
+// vir em qualquer posição do código, não só no início. Um startsWith() estrito
+// deixava passar várias dessas, que caíam no fluxo de cupom de desconto normal
+// (com -100% de "desconto" sem sentido) em vez do de pagamento offline.
+const OFFLINE_PAYMENT_PATTERN = /PAGAMENTO OFF ?LINE|PGTO OFF ?LINE/
 
 function isOfflinePaymentCoupon(code: string): boolean {
   const normalized = code
@@ -466,7 +471,7 @@ function isOfflinePaymentCoupon(code: string): boolean {
     .replace(DIACRITICS_REGEX, '')
     .trim()
     .toUpperCase()
-  return normalized.startsWith(OFFLINE_COUPON_PREFIX)
+  return OFFLINE_PAYMENT_PATTERN.test(normalized)
 }
 
 export async function getCuponsSummary(editionId: string): Promise<CuponsStats> {
@@ -519,39 +524,6 @@ export async function getCuponsSummary(editionId: string): Promise<CuponsStats> 
     }
   }
 
-  const by_coupon: CuponSummaryRow[] = Object.entries(byCode)
-    .map(([code, d]) => {
-      const avg = d.values.length > 0 ? d.values.reduce((s, v) => s + v, 0) / d.values.length : null
-      const discount = avg !== null && avgNoCopon !== null && avgNoCopon > 0
-        ? Math.round(((avgNoCopon - avg) / avgNoCopon) * 100)
-        : null
-      return {
-        coupon_code: code,
-        count: d.count,
-        avg_ticket: avg !== null ? Math.round(avg * 100) / 100 : null,
-        discount_pct_estimate: discount,
-        companies: Array.from(d.companies).sort(),
-        participants: d.participants.sort((a, b) => a.name.localeCompare(b.name)),
-        category: categories[code] ?? null,
-      }
-    })
-    .sort((a, b) => b.count - a.count)
-
-  const top_companies = Object.entries(companyCounts)
-    .map(([company, count]) => ({ company, count }))
-    .sort((a, b) => b.count - a.count)
-    .slice(0, 10)
-
-  let total_discount_estimate: number | null = null
-  if (avgNoCopon !== null) {
-    total_discount_estimate = Math.round(
-      withCoupon.reduce((sum, r) => {
-        if (r.ticket_value === null) return sum
-        return sum + Math.max(0, avgNoCopon - r.ticket_value)
-      }, 0) * 100
-    ) / 100
-  }
-
   const offlineByCode: Record<string, OfflinePaymentParticipant[]> = {}
   for (const row of offlineRows) {
     const code = row.coupon_code!
@@ -581,18 +553,59 @@ export async function getCuponsSummary(editionId: string): Promise<CuponsStats> 
     offline_payments.reduce((s, g) => s + g.total_paid, 0) * 100
   ) / 100
 
+  // Pagamento offline entra em by_coupon com category 'PAGAMENTO_OFFLINE' —
+  // aparece na tabela "Por Código de Cupom" e no filtro de categoria, em vez
+  // de ficar escondido (ou mal categorizado como um cupom de desconto comum,
+  // ver OFFLINE_PAYMENT_PATTERN acima). avg_ticket aqui é o valor médio
+  // efetivamente pago (não um "desconto" — por isso discount_pct_estimate
+  // fica null, não faz sentido comparar contra o ticket sem cupom).
+  const by_coupon: CuponSummaryRow[] = [
+    ...Object.entries(byCode).map(([code, d]) => {
+      const avg = d.values.length > 0 ? d.values.reduce((s, v) => s + v, 0) / d.values.length : null
+      const discount = avg !== null && avgNoCopon !== null && avgNoCopon > 0
+        ? Math.round(((avgNoCopon - avg) / avgNoCopon) * 100)
+        : null
+      return {
+        coupon_code: code,
+        count: d.count,
+        avg_ticket: avg !== null ? Math.round(avg * 100) / 100 : null,
+        discount_pct_estimate: discount,
+        companies: Array.from(d.companies).sort(),
+        participants: d.participants.sort((a, b) => a.name.localeCompare(b.name)),
+        category: categories[code] ?? null,
+      }
+    }),
+    ...offline_payments.map((g): CuponSummaryRow => ({
+      coupon_code: g.coupon_code,
+      count: g.count,
+      avg_ticket: g.count > 0 ? Math.round((g.total_paid / g.count) * 100) / 100 : null,
+      discount_pct_estimate: null,
+      companies: Array.from(new Set(g.participants.map(p => p.company).filter((c): c is string => !!c))).sort(),
+      participants: g.participants.map(p => ({ name: p.name, company: p.company, segment: p.segment })),
+      category: 'PAGAMENTO_OFFLINE',
+    })),
+  ].sort((a, b) => b.count - a.count)
+
+  const top_companies = Object.entries(companyCounts)
+    .map(([company, count]) => ({ company, count }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 10)
+
+  let total_discount_estimate: number | null = null
+  if (avgNoCopon !== null) {
+    total_discount_estimate = Math.round(
+      withCoupon.reduce((sum, r) => {
+        if (r.ticket_value === null) return sum
+        return sum + Math.max(0, avgNoCopon - r.ticket_value)
+      }, 0) * 100
+    ) / 100
+  }
+
   const categoryGroups: Record<string, { name: string; company: string | null; segment: string | null }[]> = {}
   for (const row of by_coupon) {
     const key = row.category ?? 'SEM_CATEGORIA'
     if (!categoryGroups[key]) categoryGroups[key] = []
     categoryGroups[key].push(...row.participants)
-  }
-  if (offline_payments.length > 0) {
-    const key = 'PAGAMENTO_OFFLINE'
-    if (!categoryGroups[key]) categoryGroups[key] = []
-    for (const g of offline_payments) {
-      for (const p of g.participants) categoryGroups[key].push({ name: p.name, company: p.company, segment: p.segment })
-    }
   }
 
   const by_category: CategorySummaryGroup[] = Object.entries(categoryGroups)
