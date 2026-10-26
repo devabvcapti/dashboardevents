@@ -2,7 +2,6 @@
 
 import { useMemo, useState } from 'react'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Badge } from '@/components/ui/badge'
 import { COUPON_CATEGORY_LABELS } from '@/lib/data'
 import type { CuponSummaryRow, CouponCategory } from '@/lib/data'
 import { CouponCategorySelect } from './coupon-category-select'
@@ -138,7 +137,11 @@ export function CuponsAnalysis({
                   </td>
                   <td className="px-5 py-3">
                     {row.category === 'PAGAMENTO_OFFLINE' ? (
-                      <Badge variant="outline" className="text-[10px] font-mono">Pagamento Offline</Badge>
+                      <Select value="PAGAMENTO_OFFLINE" disabled>
+                        <SelectTrigger size="sm" className="h-7 text-[11px] w-[180px]">
+                          <SelectValue>Pagamento Offline</SelectValue>
+                        </SelectTrigger>
+                      </Select>
                     ) : (
                       <CouponCategorySelect
                         editionId={editionId}
