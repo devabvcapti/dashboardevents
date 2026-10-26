@@ -2081,7 +2081,7 @@ export interface NpsYearResult {
 // mostrariam o mesmo rótulo "2026" lado a lado, indistinguíveis.
 const EVENT_SLUG_LABELS: Record<string, string> = {
   'experience-2026': 'ABVCAP Experience',
-  'pevc-inbrazil-forum-2026': 'PEVC in Brazil Forum',
+  'pevc-inbrazil-forum-2026': 'Formulário de Pesquisa',
 }
 function eventSlugLabel(slug: string): string {
   if (EVENT_SLUG_LABELS[slug]) return EVENT_SLUG_LABELS[slug]
